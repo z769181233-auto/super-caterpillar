@@ -12,7 +12,11 @@ import {
 export class PermissionService {
   private readonly logger = new Logger(PermissionService.name);
 
-  private getFallbackRolePermissions(roleName: string): string[] {
+  private isPermissionFallbackEnabled(): boolean {
+    return process.env.ALLOW_PERMISSION_FALLBACK === '1';
+  }
+
+  private getLegacyRolePermissions(roleName: string): string[] {
     const normalized = roleName.trim().toUpperCase();
     switch (normalized) {
       case 'OWNER':
@@ -110,14 +114,20 @@ export class PermissionService {
         },
         include: { permission: true },
       })
-      .catch(() => []);
+      .catch((error) => {
+        this.logger.error(
+          `[PERM_DB_QUERY_FAILED] userId=${userId} contextOrg=${contextOrgId ?? 'N/A'} roles=[${Array.from(roleNames).join(',')}] message=${error?.message ?? 'unknown_error'}`
+        );
+        return [];
+      });
 
     const dbPerms = rolePerms.map((rp: any) => rp.permission.key) as string[];
+    const allowFallback = this.isPermissionFallbackEnabled();
     const fallbackPerms =
-      dbPerms.length === 0
+      allowFallback && dbPerms.length === 0
         ? Array.from(
             new Set(
-              Array.from(roleNames).flatMap((roleName) => this.getFallbackRolePermissions(roleName)),
+              Array.from(roleNames).flatMap((roleName) => this.getLegacyRolePermissions(roleName)),
             ),
           )
         : [];
@@ -125,7 +135,13 @@ export class PermissionService {
 
     if (dbPerms.length === 0 && fallbackPerms.length > 0) {
       this.logger.warn(
-        `[PERM_FALLBACK] userId=${userId} contextOrg=${contextOrgId ?? 'N/A'} roles=[${Array.from(roleNames).join(',')}] perms=[${fallbackPerms.join(',')}]`,
+        `[PERM_FALLBACK_ENABLED] userId=${userId} contextOrg=${contextOrgId ?? 'N/A'} roles=[${Array.from(roleNames).join(',')}] perms=[${fallbackPerms.join(',')}]`,
+      );
+    }
+
+    if (dbPerms.length === 0 && roleNames.size > 0 && !allowFallback) {
+      this.logger.error(
+        `[PERM_STRICT_DENY] userId=${userId} contextOrg=${contextOrgId ?? 'N/A'} roles=[${Array.from(roleNames).join(',')}] reason=role_permissions_missing`,
       );
     }
 

@@ -1,4 +1,4 @@
-import { JobType, AssetOwnerType, AssetType, PrismaClient, AssetStatus } from 'database';
+import { JobType, AssetOwnerType, AssetRole, AssetType, PrismaClient, AssetStatus } from 'database';
 import { ApiClient } from '../api-client';
 import { CostLedgerService } from '../billing/cost-ledger.service';
 import { ProcessorContext } from '../types/processor-context';
@@ -18,13 +18,19 @@ export interface ProcessorResult {
   error?: string;
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 export async function processCE04VisualEnrichmentJob(
   context: ProcessorContext
 ): Promise<ProcessorResult> {
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
   const comfy = new ComfyUIClient();
-  const traceId = job.payload?.traceId;
   let shotId = job.shotId;
 
   try {
@@ -45,6 +51,8 @@ export async function processCE04VisualEnrichmentJob(
     if (!shotId) {
       throw new Error(`[CE04] Shot ID is required for job ${job.id}`);
     }
+    const traceId = requireNonEmptyString(fullJob.traceId ?? job.traceId ?? job.payload?.traceId, 'CE04', 'traceId');
+    const pipelineRunId = requireNonEmptyString(job.payload?.pipelineRunId, 'CE04', 'pipelineRunId');
 
     // 2. ComfyUI Image Generation (P1 + B2 Style Lock)
     const shotParams = fullJob.shot.params as { prompt?: string } | null;
@@ -91,9 +99,10 @@ export async function processCE04VisualEnrichmentJob(
     // 3. Asset Persistence
     await prisma.asset.upsert({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
           ownerId: shotId,
           ownerType: AssetOwnerType.SHOT,
+          role: AssetRole.PRIMARY,
           type: AssetType.IMAGE,
         },
       },
@@ -102,6 +111,7 @@ export async function processCE04VisualEnrichmentJob(
         projectId,
         ownerId: shotId,
         ownerType: AssetOwnerType.SHOT,
+        role: AssetRole.PRIMARY,
         type: AssetType.IMAGE,
         storageKey,
         status: 'GENERATED',
@@ -118,8 +128,6 @@ export async function processCE04VisualEnrichmentJob(
     fs.writeFileSync(framesTxtPath, framesContent);
 
     // 5. Billing & Audit
-    const pipelineRunId = job.payload?.pipelineRunId;
-
     await prisma.auditLog.create({
       data: {
         resourceType: 'shot',
@@ -136,35 +144,30 @@ export async function processCE04VisualEnrichmentJob(
     });
 
     // 6. Spawn SHOT_RENDER
-    const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `run_${job.id}`;
-    const renderDedupeKey = `ce04_shot_render_${shotId}_${validPipelineRunId}`;
+    const renderDedupeKey = `ce04_shot_render_${shotId}_${pipelineRunId}`;
 
-    const existingRenderByDedupe = await prisma.shotJob.findUnique({
+    await prisma.shotJob.upsert({
       where: { dedupeKey: renderDedupeKey },
-      select: { id: true },
-    });
-
-    if (!existingRenderByDedupe) {
-      await prisma.shotJob.create({
-        data: {
-          projectId,
-          organizationId: jobOrgId,
-          episodeId: fullJob.episodeId,
-          sceneId: sceneId,
-          shotId: shotId,
-          type: 'SHOT_RENDER',
-          status: 'PENDING',
-          dedupeKey: renderDedupeKey,
-          payload: {
-            ...job.payload,
-            sourceJobId: job.id,
-            sourceImagePath: absKeyframePath, // Pass absolute path for ShotRender
-            pipelineRunId: validPipelineRunId,
-          },
-          traceId: fullJob.traceId,
+      update: {},
+      create: {
+        projectId,
+        organizationId: jobOrgId,
+        episodeId: fullJob.episodeId,
+        sceneId: sceneId,
+        shotId: shotId,
+        type: 'SHOT_RENDER',
+        status: 'PENDING',
+        dedupeKey: renderDedupeKey,
+        payload: {
+          ...job.payload,
+          sourceJobId: job.id,
+          sourceImagePath: absKeyframePath, // Pass absolute path for ShotRender
+          pipelineRunId,
+          traceId,
         },
-      });
-    }
+        traceId,
+      },
+    });
 
     return {
       status: 'SUCCEEDED',

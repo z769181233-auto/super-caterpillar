@@ -20,6 +20,10 @@ import { execAsync } from '../../../../../packages/shared/os_exec';
  */
 @Injectable()
 export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
+  private isStubEnabled(): boolean {
+    return process.env.ALLOW_VG_STUBS === '1';
+  }
+
   constructor(
     @Inject(RedisService) redis: RedisService,
     @Inject(AuditService) audit: AuditService,
@@ -48,6 +52,12 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
    * }
    */
   protected async processLogic(payload: any): Promise<any> {
+    if (!this.isStubEnabled()) {
+      throw new Error(
+        'VG06_SKELETAL_ANIMATION_NOT_IMPLEMENTED: stub output disabled unless ALLOW_VG_STUBS=1'
+      );
+    }
+
     const characterId = payload.characterId || 'char_default';
     const action = payload.action || 'idle';
     const duration = payload.duration || 2.0;
@@ -72,8 +82,7 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
     await this.generateAnimationPreview(animationData, previewPath, fps);
 
     return {
-      animationDataUrl: `file://${dataPath}`,
-      previewVideoUrl: `file://${previewPath}`,
+      assetUrl: `file://${dataPath}`,
       meta: {
         characterId,
         action,
@@ -83,6 +92,8 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
         boneCount: animationData.skeleton.bones.length,
         style,
         layered,
+        animationDataUrl: `file://${dataPath}`,
+        previewVideoUrl: `file://${previewPath}`,
       },
     };
   }
@@ -213,28 +224,22 @@ export class VG06SkeletalAnimationAdapter extends VgBaseEngine {
     outputPath: string,
     fps: number
   ): Promise<void> {
-    // 简化版: 生成纯色视频作为placeholder
-    // 实际生产中应该绘制骨架线框
+    // 当前仍是 stub 预览；只有显式允许 stub 时才会走到这里。
     const duration = animationData.duration;
-    try {
-      const res = await execAsync('ffmpeg', [
-        '-y',
-        '-f',
-        'lavfi',
-        '-i',
-        `color=c=0x2a2a2a:s=512x512:r=${fps}`,
-        '-t',
-        String(duration),
-        '-pix_fmt',
-        'yuv420p',
-        outputPath,
-      ]);
-      if (res.code !== 0) {
-        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
-      }
-    } catch (error) {
-      // Fallback: 如果FFmpeg失败，创建空文件
-      writeFileSync(outputPath, '');
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      `color=c=0x2a2a2a:s=512x512:r=${fps}`,
+      '-t',
+      String(duration),
+      '-pix_fmt',
+      'yuv420p',
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
     }
   }
 }

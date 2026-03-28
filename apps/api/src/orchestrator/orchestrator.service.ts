@@ -57,7 +57,23 @@ function toRecord(value: unknown): JsonRecord {
 
 function getStringField(source: JsonRecord, key: string): string | undefined {
   const value = source[key];
-  return typeof value === 'string' ? value : undefined;
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getTrimmedStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function requireJobTraceId(job: Pick<JobLike, 'id' | 'traceId'>, contextTag: string): string {
+  if (typeof job.traceId === 'string' && job.traceId.length > 0) {
+    return job.traceId;
+  }
+  throw new Error(`[${contextTag}] Missing traceId for job ${job.id}`);
 }
 
 function getOutputRecord(value: unknown): JsonRecord | undefined {
@@ -625,7 +641,10 @@ export class OrchestratorService {
       },
     });
 
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[Orchestrator] Received completion event for missing job ${jobId}; skipping DAG.`);
+      return;
+    }
 
     // DAG Logic for Stage 1: SHOT_RENDER -> VIDEO_RENDER
     if (job.type === JobTypeEnum.SHOT_RENDER && job.status === JobStatusEnum.SUCCEEDED) {
@@ -642,6 +661,13 @@ export class OrchestratorService {
     // PLAN-2: DAG Logic: AUDIO -> VIDEO_RENDER (Merge check from Audio side)
     if (job.type === JobTypeEnum.AUDIO && job.status === JobStatusEnum.SUCCEEDED) {
       this.logger.log(`[DAG] AUDIO ${jobId} completed. Checking Stage 1 pipeline progress...`);
+      await this.checkAndSpawnStage1VideoRender(job);
+    }
+
+    if (job.type === JobTypeEnum.AUDIO && job.status === JobStatusEnum.FAILED) {
+      this.logger.warn(
+        `[DAG] AUDIO ${jobId} failed. Re-checking Stage 1 pipeline progress without audio.`
+      );
       await this.checkAndSpawnStage1VideoRender(job);
     }
 
@@ -666,7 +692,18 @@ export class OrchestratorService {
    */
   private async handleV1PipelineChain(completedChildJob: JobLike, rootJobId: string) {
     const rootJob = await this.prisma.shotJob.findUnique({ where: { id: rootJobId } });
-    if (!rootJob || rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) return;
+    if (!rootJob) {
+      this.logger.warn(
+        `[V1-ORCH] Root job ${rootJobId} referenced by child ${completedChildJob.id} not found; skipping chain.`
+      );
+      return;
+    }
+    if (rootJob.type !== JobTypeEnum.PIPELINE_PROD_VIDEO_V1) {
+      this.logger.warn(
+        `[V1-ORCH] Root job ${rootJobId} for child ${completedChildJob.id} has unexpected type ${rootJob.type}; skipping chain.`
+      );
+      return;
+    }
     if (!rootJob.organizationId) {
       throw new Error(`Organization missing for root job ${rootJobId}`);
     }
@@ -684,21 +721,17 @@ export class OrchestratorService {
 
     if (completedChildJob.type === JobTypeEnum.CE06_NOVEL_PARSING) {
       const chapterId = getStringField(payload, 'chapterId');
-      let scenes = [];
-      if (chapterId) {
-        scenes = await this.prisma.scene.findMany({ where: { chapterId } });
-        this.logger.log(
-          `[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`
+      if (!chapterId) {
+        this.logger.error(
+          `[V1-ORCH] CE06 ${completedChildJob.id} missing chapterId; refusing project-wide SHOT_RENDER fanout.`
         );
-      } else {
-        this.logger.warn(
-          `[V1-ORCH] CE06 done but no chapterId in payload ${completedChildJob.id}. Falling back to Project=${rootJob.projectId}`
-        );
-        scenes = await this.prisma.scene.findMany({ where: { projectId: rootJob.projectId } });
-        this.logger.log(
-          `[V1-ORCH] Found ${scenes.length} scenes for Project=${rootJob.projectId}.`
-        );
+        return;
       }
+
+      const scenes = await this.prisma.scene.findMany({ where: { chapterId } });
+      this.logger.log(
+        `[V1-ORCH] CE06 done for Chapter=${chapterId}. Found ${scenes.length} scenes.`
+      );
 
       for (const scene of scenes) {
         // V1-ORCH: Because CE03/CE04 are now internal to CE06 in V1,
@@ -818,6 +851,34 @@ export class OrchestratorService {
         return;
       }
 
+      const sceneId =
+        getTrimmedStringField(payload, 'sceneId') ??
+        contextJob.sceneId ??
+        contextJob.shot?.sceneId ??
+        undefined;
+      if (!sceneId) {
+        this.logger.warn(`[DAG] Cannot spawn AUDIO job for ${contextJob.id}: missing sceneId.`);
+        return;
+      }
+
+      const explicitAudioText =
+        getTrimmedStringField(payload, 'text') ?? getTrimmedStringField(payload, 'audioText');
+      const scene = explicitAudioText
+        ? null
+        : await this.prisma.scene.findUnique({
+            where: { id: sceneId },
+            select: { enrichedText: true },
+          });
+      const authoritativeAudioText =
+        explicitAudioText ??
+        ((typeof scene?.enrichedText === 'string' ? scene.enrichedText.trim() : '') || undefined);
+      if (!authoritativeAudioText) {
+        this.logger.warn(
+          `[DAG] Cannot spawn AUDIO job for ${contextJob.id}: missing authoritative audio text for scene ${sceneId}.`
+        );
+        return;
+      }
+
       await this.jobService.create(
         contextJob.shotId || contextJob.id,
         {
@@ -825,12 +886,13 @@ export class OrchestratorService {
           dedupeKey: audioDedupeKey,
           payload: {
             pipelineRunId,
-            text: 'AUTO_GENERATED_FROM_NOVEL_SOURCE_V1',
+            text: authoritativeAudioText,
             mode: 'full_mix',
             projectId: contextJob.projectId,
             episodeId: contextJob.episodeId,
-            sceneId: contextJob.sceneId,
+            sceneId,
             shotId: contextJob.shotId,
+            traceId: contextJob.traceId ?? getTrimmedStringField(payload, 'traceId'),
           },
         },
         'gate-user', // Use a user that exists in Gate
@@ -840,7 +902,7 @@ export class OrchestratorService {
       this.logger.error(
         `[DAG] Error in checkAndSpawnAudioGen: ${e instanceof Error ? e.message : String(e)}`
       );
-      }
+    }
   }
 
   /**
@@ -893,7 +955,7 @@ export class OrchestratorService {
     // PLAN-2: Audio Barrier Check
     let audioReady = false;
     let audioTrack: unknown = null;
-    const audioEnabled = true;
+    const audioEnabled = (env as typeof env & { orchV2AudioEnabled?: boolean }).orchV2AudioEnabled === true;
 
     if (audioEnabled) {
       const audioJob = await this.prisma.shotJob.findUnique({
@@ -904,12 +966,13 @@ export class OrchestratorService {
         audioReady = true;
         const output = getOutputRecord(audioJob.result) ?? getOutputRecord(audioJob.payload);
         if (output) audioTrack = output;
+      } else if (audioJob && audioJob.status === JobStatusEnum.FAILED) {
+        this.logger.warn(
+          `[DAG] Audio job ${audioJob.id} failed for ${pipelineRunId}; proceeding without audio track.`
+        );
+        audioReady = true;
       } else if (!audioJob) {
-        // If Audio enabled but no job exists yet (maybe Video finished before lazy spawn?)
-        // Lazy spawn should have happened on first SHOT completion.
-        // If we are here, at least one SHOT is complete.
-        // So Audio Job *should* trigger soon.
-        // We treat it as Not Ready.
+        await this.checkAndSpawnAudioGen(completedJob);
       }
     } else {
       // Bypass if disabled
@@ -939,24 +1002,16 @@ export class OrchestratorService {
     const sceneId =
       getStringField(contextPayload, 'sceneId') ??
       contextJob.sceneId ??
-      contextJob.shot?.sceneId ??
-      'unknown_scene';
-    const traceKey = pipelineRunId || contextJob.traceId || 'unknown_trace';
-    const dedupeKey = `video_render_${sceneId}_${traceKey}`;
-
-    // 2.1 Idempotency Check: Did we already spawn a VIDEO_RENDER for this run?
-    const existingVideoJob = await this.prisma.shotJob.findUnique({
-      where: { dedupeKey },
-    });
-
-    if (existingVideoJob) {
-      this.logger.log(
-        `[DAG] VIDEO_RENDER for ${pipelineRunId} already exists (${existingVideoJob.id}). Skipping.`
+      contextJob.shot?.sceneId;
+    if (!sceneId) {
+      throw new Error(
+        `Missing sceneId for VIDEO_RENDER spawn on pipeline ${pipelineRunId}`
       );
-      return;
     }
+    const traceId = requireJobTraceId(contextJob, 'Orchestrator.VIDEO_RENDER_SPAWN');
+    const dedupeKey = `video_render_${sceneId}_${pipelineRunId}`;
 
-    // 2.2 Collect Frames
+    // 2.1 Collect Frames
     const frames: string[] = [];
     // Sort shots by createdAt to be deterministic-ish
     shots.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
@@ -1011,18 +1066,17 @@ export class OrchestratorService {
         contextJob.shotId ?? contextJob.id, // Owner context
         {
           type: JobTypeEnum.VIDEO_RENDER,
-          traceId: contextJob.traceId ?? undefined,
+          traceId,
           isVerification,
           dedupeKey,
           payload: {
             pipelineRunId,
             projectId: contextJob.projectId,
             episodeId: contextJob.shot?.episodeId || contextJob.episodeId,
-            sceneId: contextJob.shot?.sceneId,
+            sceneId,
             frames,
             audioTrack: audioTrack || undefined, // PLAN-3: Audio Injection
-            publish: true, // Worker handles publishing (with dedupe_key idempotency)
-            traceId: contextJob.traceId,
+            traceId,
             isVerification, // 也在 payload 中携带，便于 Worker 识别
             rootJobId: getStringField(contextPayload, 'rootJobId'), // Propagate for V1 chain
           },
@@ -1074,6 +1128,7 @@ export class OrchestratorService {
     this.logger.log(`[DAG] Spawning CE09 for ${pipelineRunId} from VIDEO_RENDER asset ${assetId}`);
 
     try {
+      const traceId = requireJobTraceId(videoJob, 'Orchestrator.VIDEO_RENDER_TO_CE09');
       const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
       const projectId = getStringField(payload, 'projectId') ?? videoJob.projectId ?? undefined;
       if (!projectId) {
@@ -1092,7 +1147,7 @@ export class OrchestratorService {
         projectId,
         organizationId: project.organizationId,
         jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
-        traceId: videoJob.traceId ?? undefined,
+        traceId,
         dedupeKey: ce09DedupeKey,
         payload: {
           pipelineRunId,
@@ -1102,7 +1157,7 @@ export class OrchestratorService {
           shotId: videoJob.shotId ?? undefined,
           assetId,
           videoAssetStorageKey: storageKey,
-          traceId: videoJob.traceId ?? undefined,
+          traceId,
           engineKey: 'ce09_security_real',
           rootJobId: getStringField(payload, 'rootJobId'),
         },
@@ -1263,11 +1318,15 @@ export class OrchestratorService {
         },
       });
 
-      // Save actual text to Scene (Minimal context)
-      await this.prisma.scene.create({
+      // Save actual text to a real Scene and reuse it as the pipeline root scene.
+      const scene = await this.prisma.scene.create({
         data: {
           chapterId: chapter.id,
+          episodeId: null,
+          projectId,
           sceneIndex: 1, // V3.0 compliance
+          title: 'Stage 1 Source Scene',
+          summary: 'Source scene for stage1 orchestration',
           enrichedText: novelText,
         },
       });
@@ -1285,14 +1344,11 @@ export class OrchestratorService {
         },
       });
 
-      // 3.5 Create placeholder Scene & Shot for Pipeline Job
-      const scene = await this.prisma.scene.create({
+      await this.prisma.scene.update({
+        where: { id: scene.id },
         data: {
           episodeId: episode.id,
           projectId,
-          sceneIndex: 1,
-          title: 'Stage 1 Pipeline Scene',
-          summary: 'Auto-generated for pipeline orchestration',
         },
       });
 
@@ -1300,10 +1356,13 @@ export class OrchestratorService {
         data: {
           sceneId: scene.id,
           index: 1,
-          title: 'Stage 1 Pipeline Shot',
-          description: 'Auto-generated for pipeline orchestration',
+          title: 'Stage 1 Root Shot',
+          description: 'Synthetic root shot for stage1 orchestration',
           type: 'pipeline_stage1',
-          params: {},
+          params: {
+            syntheticRoot: true,
+            orchestrationStage: 'stage1',
+          },
           organizationId,
         },
       });

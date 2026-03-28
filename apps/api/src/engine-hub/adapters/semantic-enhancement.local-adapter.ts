@@ -21,14 +21,21 @@ export class SemanticEnhancementLocalAdapter implements EngineAdapter {
 
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const payload = input.payload as SemanticEnhancementEngineInput;
-    const text = payload?.text || '';
+    const text = payload?.text?.trim() || '';
+
+    if (!text) {
+      return {
+        status: EngineInvokeStatus.FAILED,
+        error: {
+          message: 'SEMANTIC_ENHANCEMENT_INPUT_MISSING: text is required',
+        },
+      };
+    }
 
     // Simulate realistic analysis time
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    // Basic "Semantic Analysis" Simulation
-    const summary =
-      text.length > 50 ? text.substring(0, 47) + '...' : text || 'No content provided.';
+    const summary = text.length > 50 ? text.substring(0, 47) + '...' : text;
 
     // Extract pseudo-keywords (simulate NLP)
     const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to']);
@@ -44,16 +51,11 @@ export class SemanticEnhancementLocalAdapter implements EngineAdapter {
       )
     );
 
-    // Fallback if no keywords found
-    if (keywords.length === 0) keywords.push('scene', 'draft');
-
     return {
       status: EngineInvokeStatus.SUCCESS,
       output: {
-        summary: `[AI Analysis] ${summary}`,
+        summary,
         keywords,
-        emotion: ['neutral'], // Mock emotion
-        entities: [], // Mock entities
       },
     };
   }

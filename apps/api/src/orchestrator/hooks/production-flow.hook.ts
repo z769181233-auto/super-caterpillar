@@ -11,13 +11,30 @@ type JobEvent = {
   type?: string;
 };
 
+type TraceableJob = {
+  id: string;
+  traceId?: string | null;
+};
+
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function getStringField(source: JsonRecord, key: string): string | undefined {
   const value = source[key];
-  return typeof value === 'string' ? value : undefined;
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getOutputRecord(source: JsonRecord): JsonRecord | undefined {
+  const output = source.output;
+  return isRecord(output) ? output : undefined;
+}
+
+function requireJobTraceId(job: TraceableJob, contextTag: string): string {
+  if (typeof job.traceId === 'string' && job.traceId.length > 0) {
+    return job.traceId;
+  }
+  throw new Error(`[${contextTag}] Missing traceId for job ${job.id}`);
 }
 
 /**
@@ -27,7 +44,7 @@ function getStringField(source: JsonRecord, key: string): string | undefined {
  * - Listen for SHOT_RENDER completion.
  * - Aggregate shots and trigger PIPELINE_TIMELINE_COMPOSE.
  * - Listen for TIMELINE_COMPOSE completion and trigger TIMELINE_RENDER.
- * - Ensure PublishedVideo creation.
+ * - Fan out CE09 after TIMELINE_RENDER when publish is requested.
  */
 @Injectable()
 export class ProductionFlowHook {
@@ -45,28 +62,39 @@ export class ProductionFlowHook {
     } else if (evt.type === 'PIPELINE_TIMELINE_COMPOSE') {
       await this.handleTimelineComposeSuccess(evt);
     } else if (evt.type === 'TIMELINE_RENDER') {
-      // CE10 handles asset generation, VIDEO_RENDER handles PublishedVideo usually.
-      // If TIMELINE_RENDER is used, we might need to trigger CE09 or Publish.
-      // But let's focus on the chain: Shot -> Compose -> Render.
-      // Timeline Render Processor logic already touches Asset.
-      // But Runner waits for PublishedVideo. VIDEO_RENDER creates PublishedVideo.
-      // TIMELINE_RENDER does NOT create PublishedVideo.
-
-      // This suggests we should use VIDEO_RENDER instead of TIMELINE_RENDER if we want PublishedVideo.
-      // Or trigger CE09 which triggers Publish.
       await this.handleTimelineRenderSuccess(evt);
     }
   }
 
   private async handleShotRenderSuccess(evt: JobEvent) {
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[ProductionFlow] SHOT_RENDER event for missing job ${evt.id}; skipping.`);
+      return;
+    }
 
     const payload = isRecord(job.payload) ? job.payload : {};
-    const pipelineRunId = getStringField(payload, 'pipelineRunId') || getStringField(payload, 'runId');
-    const sceneId = job.sceneId;
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
+    const payloadSceneId = getStringField(payload, 'sceneId');
+    if (job.sceneId && payloadSceneId && payloadSceneId !== job.sceneId) {
+      this.logger.error(
+        `[ProductionFlow] SHOT_RENDER ${job.id} sceneId mismatch: job.sceneId=${job.sceneId} payload.sceneId=${payloadSceneId}.`
+      );
+      return;
+    }
+    const sceneId = job.sceneId ?? payloadSceneId;
 
-    if (!pipelineRunId || !sceneId) return;
+    if (!pipelineRunId) {
+      this.logger.error(
+        `[ProductionFlow] SHOT_RENDER ${job.id} missing payload.pipelineRunId; refusing compose fanout.`
+      );
+      return;
+    }
+
+    if (!sceneId) {
+      this.logger.error(`[ProductionFlow] SHOT_RENDER ${job.id} missing sceneId; refusing compose fanout.`);
+      return;
+    }
 
     // Check if this is part of a managed pipeline
     // Simple check: do we have other shots?
@@ -98,6 +126,7 @@ export class ProductionFlowHook {
       const dedupeKey = `compose_${pipelineRunId}_${sceneId}`;
 
       try {
+        const traceId = requireJobTraceId(job, 'ProductionFlow.SHOT_RENDER_TO_COMPOSE');
         await this.jobService.createCECoreJob({
           projectId: job.projectId,
           organizationId: job.organizationId,
@@ -107,7 +136,7 @@ export class ProductionFlowHook {
             pipelineRunId,
             projectId: job.projectId,
           },
-          traceId: job.traceId ?? undefined,
+          traceId,
           dedupeKey,
         });
         this.logger.log(`[ProductionFlow] Triggered TIMELINE_COMPOSE for ${dedupeKey}`);
@@ -122,7 +151,10 @@ export class ProductionFlowHook {
 
   private async handleTimelineComposeSuccess(evt: JobEvent) {
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[ProductionFlow] PIPELINE_TIMELINE_COMPOSE event for missing job ${evt.id}; skipping.`);
+      return;
+    }
     const payload = isRecord(job.payload) ? job.payload : {};
     const result = isRecord(job.result) ? job.result : {};
     const resultOutput = isRecord(result.output) ? result.output : undefined;
@@ -130,22 +162,32 @@ export class ProductionFlowHook {
     const sceneId = getStringField(payload, 'sceneId');
     const timelineStorageKey = resultOutput ? getStringField(resultOutput, 'timelineStorageKey') : undefined;
 
-    if (!pipelineRunId || !timelineStorageKey) return;
+    if (!pipelineRunId) {
+      this.logger.error(
+        `[ProductionFlow] PIPELINE_TIMELINE_COMPOSE ${job.id} missing payload.pipelineRunId; refusing render fanout.`
+      );
+      return;
+    }
 
-    // Trigger TIMELINE_RENDER (or VIDEO_RENDER)
-    // To get PublishedVideo, VIDEO_RENDER is preferred if it supports "pipelineRunId" aggregation.
-    // BUT VIDEO_RENDER in Step 9088 logic aggregates based on SHOT_RENDER jobs.
-    // It ignores timeline.json?
-    // Step 9088: `if (pipelineRunId && frameKeys.length === 0) { ... Aggregating frames ... }`
-    // It creates Concat of frames. It does NOT do the complex Timeline Compose logic (fade, ducking) which is in TIMELINE_RENDER.
+    if (!sceneId) {
+      this.logger.error(
+        `[ProductionFlow] PIPELINE_TIMELINE_COMPOSE ${job.id} missing payload.sceneId; refusing render fanout.`
+      );
+      return;
+    }
 
-    // So we want TIMELINE_RENDER for quality, but VIDEO_RENDER for PublishedVideo?
-    // TIMELINE_RENDER creates Asset(VIDEO).
-    // We can add a step to Publish that Asset.
+    if (!timelineStorageKey) {
+      this.logger.error(
+        `[ProductionFlow] PIPELINE_TIMELINE_COMPOSE ${job.id} missing timelineStorageKey; refusing render fanout.`
+      );
+      return;
+    }
 
-    // Let's us TIMELINE_RENDER as it respects the timeline.json produced by Compose.
+    // Use TIMELINE_RENDER as the authoritative renderer for composed timeline output.
+    // Publish is reconciled later through CE09 instead of direct worker-side publication.
     const dedupeKey = `render_${pipelineRunId}_${sceneId}`;
     try {
+      const traceId = requireJobTraceId(job, 'ProductionFlow.TIMELINE_COMPOSE_TO_RENDER');
       await this.jobService.createCECoreJob({
         projectId: job.projectId,
         organizationId: job.organizationId,
@@ -155,81 +197,29 @@ export class ProductionFlowHook {
           pipelineRunId,
           timelineStorageKey,
           projectId: job.projectId,
-          publish: true, // We can add this param to timeline-render logic?
+          publish: true,
         },
-        traceId: job.traceId ?? undefined,
+        traceId,
         dedupeKey,
       });
       this.logger.log(`[ProductionFlow] Triggered TIMELINE_RENDER for ${dedupeKey}`);
     } catch (e: unknown) {
-      // ignore dupes
+      const message = e instanceof Error ? e.message : 'unknown error';
+      if (!message.includes('Unique constraint')) {
+        this.logger.error(`[ProductionFlow] Failed to trigger TIMELINE_RENDER: ${message}`);
+      }
     }
   }
 
   private async handleTimelineRenderSuccess(evt: JobEvent) {
-    // If TIMELINE_RENDER succeeded, we have an Asset(VIDEO).
-    // We need to create specific "PublishedVideo" record for the Runner to pass.
-
     const job = await this.prisma.shotJob.findUnique({ where: { id: evt.id } });
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[ProductionFlow] TIMELINE_RENDER event for missing job ${evt.id}; skipping.`);
+      return;
+    }
 
     const payload = isRecord(job.payload) ? job.payload : {};
     const publish = (payload.publish === true);
-    if (publish) {
-      // Manually create PublishedVideo if not created.
-      // TIMELINE_RENDER processor (Step 9089) does NOT seem to look at `publish` param.
-      // VIDEO_RENDER processor (Step 9088) DOES.
-
-      // We should ideally use a PUBLISH job.
-      // Or we can just insert it here directly as a quick fix for the Hook.
-      // Using raw SQL to ensure bypass of constraints if needed, relying on Asset ID.
-
-      const result = isRecord(job.result) ? job.result : {};
-      const assetId = getStringField(result, 'assetId');
-      const storageKey = getStringField(result, 'storageKey');
-      const sceneId = getStringField(payload, 'sceneId');
-      const pipelineRunId = getStringField(payload, 'pipelineRunId');
-
-      if (assetId && storageKey && sceneId) {
-        const project = await this.prisma.project.findUnique({ where: { id: job.projectId } });
-        // Find episode?
-        const scene = await this.prisma.scene.findUnique({
-          where: { id: sceneId },
-          include: { episode: true },
-        });
-        const episodeId = scene?.episodeId;
-
-        if (episodeId) {
-          const dedupeKey = `pub_${pipelineRunId}`;
-          // Insert PublishedVideo
-          // Use assetId as unique key per schema
-          await this.prisma.publishedVideo.upsert({
-            where: { assetId },
-            create: {
-              projectId: job.projectId,
-              episodeId,
-              assetId,
-              storageKey,
-              checksum: 'auto-generated',
-              status: 'PUBLISHED',
-              metadata: {
-                pipelineRunId: getStringField(payload, 'pipelineRunId'),
-                source: 'ProductionFlowHook',
-                dedupeKey,
-              },
-            },
-            update: {
-              storageKey,
-              status: 'PUBLISHED',
-              updatedAt: new Date(),
-            },
-          });
-            this.logger.log(
-            `[ProductionFlow] Created PublishedVideo for assetId=${assetId}, pipelineRunId=${pipelineRunId}`
-          );
-        }
-      }
-    }
 
     if (!publish) {
       this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=publish_false jobId=${job.id}`);
@@ -237,15 +227,33 @@ export class ProductionFlowHook {
     }
 
     const result = isRecord(job.result) ? job.result : {};
-    const assetId = getStringField(result, 'assetId');
+    const resultOutput = getOutputRecord(result) ?? {};
+    const assetId = getStringField(result, 'assetId') ?? getStringField(resultOutput, 'assetId');
     if (!assetId) {
       this.logger.warn(`[CE09_FANOUT_SKIPPED] reason=missing_asset_id jobId=${job.id}`);
       return true;
     }
 
-    const pipelineRunId = getStringField(payload, 'pipelineRunId') || job.id;
+    const pipelineRunId = getStringField(payload, 'pipelineRunId');
+    if (!pipelineRunId) {
+      this.logger.error(
+        `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} missing payload.pipelineRunId; refusing CE09 fanout.`
+      );
+      return true;
+    }
+
+    let traceId: string;
+    try {
+      traceId = requireJobTraceId(job, 'ProductionFlow.TIMELINE_RENDER_TO_CE09');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`[CE09_FANOUT_BLOCKED] ${message}`);
+      return true;
+    }
+
     const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
-    const videoPath = getStringField(result, 'storageKey');
+    const videoPath =
+      getStringField(result, 'storageKey') ?? getStringField(resultOutput, 'storageKey');
     this.logger.log(
       `[CE09_FANOUT_ELIGIBLE] jobId=${job.id} assetId=${assetId} videoPath=${videoPath} pipelineRunId=${pipelineRunId}`
     );
@@ -255,7 +263,7 @@ export class ProductionFlowHook {
       organizationId: job.organizationId,
       taskId: job.taskId ?? undefined,
       jobType: JobType.CE09_MEDIA_SECURITY,
-      traceId: job.traceId ?? undefined,
+      traceId,
       dedupeKey: ce09DedupeKey,
         payload: {
           projectId: job.projectId,

@@ -326,6 +326,20 @@ export class NovelImportService {
       },
     });
 
+    let episode = await this.prisma.episode.findUnique({
+      where: { projectId_index: { projectId, index: 1 } },
+    });
+    if (!episode) {
+      episode = await this.prisma.episode.create({
+        data: {
+          seasonId: null as any,
+          projectId,
+          index: 1,
+          name: 'Episode 1',
+        },
+      });
+    }
+
     // 2. 创建 Task (类型为 NOVEL_ANALYSIS，符合现有架构)
     const task = await this.prisma.task.create({
       data: {
@@ -333,10 +347,11 @@ export class NovelImportService {
         projectId,
         type: 'NOVEL_ANALYSIS' as any,
         status: 'PENDING',
-        traceId: traceId || `tr_shredder_${randomUUID()}`,
+        traceId: traceId || randomUUID(),
         payload: {
           novelSourceId: novelSource.id,
           projectId,
+          episodeId: episode.id,
           mode: 'SHREDDER', // 标记为分片模式
           isVerification: !!isVerification,
         },
@@ -348,6 +363,7 @@ export class NovelImportService {
       data: {
         organizationId,
         projectId,
+        episodeId: episode.id,
         taskId: task.id,
         type: 'NOVEL_SCAN_TOC' as any,
         status: 'PENDING',
@@ -356,6 +372,7 @@ export class NovelImportService {
         payload: {
           novelSourceId: novelSource.id,
           projectId,
+          episodeId: episode.id,
           organizationId,
           userId,
           fileKey: safeFilePath,

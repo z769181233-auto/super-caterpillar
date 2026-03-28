@@ -32,6 +32,82 @@ export class AuditInsightService {
     return normalized.length > 0 ? normalized : undefined;
   }
 
+  private async getLatestSuccessAuditLog(resourceId: string) {
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        resourceId,
+        action: { contains: 'SUCCESS' },
+      },
+      select: { id: true, details: true, apiKey: { select: { ownerUserId: true } } },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
+    });
+
+    if (logs.length > 1) {
+      this.logger.error(
+        `[AuditInsight] Duplicate SUCCESS audit logs detected for resourceId=${resourceId}: ${logs
+          .map((log) => log.id)
+          .join(', ')}`
+      );
+    }
+
+    return logs[0] ?? null;
+  }
+
+  private async getLatestJobByType(projectId: string, type: string) {
+    const jobs = await this.prisma.shotJob.findMany({
+      where: { projectId, type: type as any },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
+    });
+
+    return jobs[0] ?? null;
+  }
+
+  private async getUniqueQualityMetric(
+    projectId: string,
+    engine: string,
+    jobId?: string,
+    traceId?: string
+  ) {
+    if (!jobId || !traceId) {
+      return null;
+    }
+
+    const metrics = await this.prisma.qualityMetrics.findMany({
+      where: { projectId, engine, jobId, traceId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
+    });
+
+    if (metrics.length > 1) {
+      this.logger.error(
+        `[AuditInsight] Duplicate quality metrics detected for project=${projectId} engine=${engine} jobId=${jobId} traceId=${traceId}: ${metrics
+          .map((metric) => metric.id)
+          .join(', ')}`
+      );
+      return null;
+    }
+
+    return metrics[0] ?? null;
+  }
+
+  private resolveConsistentTraceId(...values: Array<string | null | undefined>): string | null {
+    const normalized = values.filter((value): value is string => typeof value === 'string' && value.length > 0);
+    if (normalized.length === 0) {
+      return null;
+    }
+    const first = normalized[0];
+    const inconsistent = normalized.some((value) => value !== first);
+    if (inconsistent) {
+      this.logger.error(
+        `[AuditInsight] Inconsistent DAG traceIds detected: ${normalized.join(', ')}`
+      );
+      return null;
+    }
+    return first;
+  }
+
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
     // 1. Find Project by Novel
     const novelSource = await this.prisma.novel.findUnique({
@@ -65,14 +141,7 @@ export class AuditInsightService {
     // Enrich CE06 Legacy
     const ce06LegacyArtifacts: NovelAnalysisArtifact[] = await Promise.all(
       ce06LegacyJobs.map(async (job) => {
-        const auditLog = await this.prisma.auditLog.findFirst({
-          where: {
-            resourceId: job.id,
-            action: { contains: 'SUCCESS' },
-          },
-          select: { details: true, apiKey: { select: { ownerUserId: true } } },
-          orderBy: { createdAt: 'desc' },
-        });
+        const auditLog = await this.getLatestSuccessAuditLog(job.id);
 
         const details = (auditLog?.details as Record<string, any>) || {};
 
@@ -80,8 +149,8 @@ export class AuditInsightService {
           jobId: job.id,
           workerId:
             this.asNonEmptyString(details['workerId']) ?? auditLog?.apiKey?.ownerUserId ?? null,
-          engineKey: (details['engineKey'] as string) || 'ce06_novel_parsing',
-          engineVersion: (details['engineVersion'] as string) || '1.0.0',
+          engineKey: this.asNonEmptyString(details['engineKey']) ?? null,
+          engineVersion: this.asNonEmptyString(details['engineVersion']) ?? null,
           createdAt: job.createdAt,
           status: job.status,
           payload: { novelSourceId: job.novelSourceId },
@@ -96,8 +165,8 @@ export class AuditInsightService {
       return {
         jobId: job.id,
         workerId: job.workerId ?? null,
-        engineKey: 'ce06_novel_parsing',
-        engineVersion: '1.0.0',
+        engineKey: this.asNonEmptyString(payload['engineKey']) ?? null,
+        engineVersion: this.asNonEmptyString(payload['engineVersion']) ?? null,
         createdAt: job.createdAt,
         status: job.status,
         payload: { novelSourceId: payload['novelSourceId'] },
@@ -141,8 +210,8 @@ export class AuditInsightService {
         return {
           jobId: jobId,
           workerId: this.asNonEmptyString(details['workerId']) ?? null,
-          engineKey: (details['engineKey'] as string) || 'ce07_memory_update',
-          engineVersion: (details['engineVersion'] as string) || '1.0.0',
+          engineKey: this.asNonEmptyString(details['engineKey']) ?? null,
+          engineVersion: this.asNonEmptyString(details['engineVersion']) ?? null,
           createdAt: log.createdAt,
           status: job?.status ?? null,
           payload: job?.payload || {},
@@ -208,19 +277,12 @@ export class AuditInsightService {
     const projectId = novelSource.projectId;
 
     // 2. Fetch Latest Jobs (orderBy createdAt desc take 1)
-    const fetchLatestJob = async (type: string) => {
-      return this.prisma.shotJob.findFirst({
-        where: { projectId, type: type as any }, // ✅ Type cast for safety
-        orderBy: { createdAt: 'desc' },
-      });
-    };
-
     const [ce06J, ce07J, ce03J, ce04J, videoJ] = await Promise.all([
-      fetchLatestJob('CE06_NOVEL_PARSING'),
-      fetchLatestJob('CE07_MEMORY_UPDATE'),
-      fetchLatestJob('CE03_VISUAL_DENSITY'),
-      fetchLatestJob('CE04_VISUAL_ENRICHMENT'),
-      fetchLatestJob('VIDEO_RENDER'),
+      this.getLatestJobByType(projectId, 'CE06_NOVEL_PARSING'),
+      this.getLatestJobByType(projectId, 'CE07_MEMORY_UPDATE'),
+      this.getLatestJobByType(projectId, 'CE03_VISUAL_DENSITY'),
+      this.getLatestJobByType(projectId, 'CE04_VISUAL_ENRICHMENT'),
+      this.getLatestJobByType(projectId, 'VIDEO_RENDER'),
     ]);
 
     const mapJob = (j: any): AuditJobSummaryDto | null =>
@@ -235,17 +297,9 @@ export class AuditInsightService {
         : null;
 
     // 3. Fetch Metrics (Precise Binding)
-    const fetchMetrics = async (jobId?: string, traceId?: string, engine?: string) => {
-      if (!jobId || !traceId) return null;
-      return this.prisma.qualityMetrics.findFirst({
-        where: { projectId, engine, jobId, traceId },
-        orderBy: { createdAt: 'desc' },
-      });
-    };
-
     const [ce03M, ce04M] = await Promise.all([
-      fetchMetrics(ce03J?.id, ce03J?.traceId || undefined, 'CE03'),
-      fetchMetrics(ce04J?.id, ce04J?.traceId || undefined, 'CE04'),
+      this.getUniqueQualityMetric(projectId, 'CE03', ce03J?.id, ce03J?.traceId ?? undefined),
+      this.getUniqueQualityMetric(projectId, 'CE04', ce04J?.id, ce04J?.traceId ?? undefined),
     ]);
 
     // 4. Director (Real-time with Cap and Timeout)
@@ -322,7 +376,11 @@ export class AuditInsightService {
     };
 
     // 5. DAG Timeline (Trace-based)
-    const dagTraceId = ce04J?.traceId || ce03J?.traceId || ce06J?.traceId || null;
+    const dagTraceId = this.resolveConsistentTraceId(
+      ce04J?.traceId,
+      ce03J?.traceId,
+      ce06J?.traceId
+    );
     let timeline: any[] = [];
     let missingPhases: string[] = [];
 
@@ -384,9 +442,10 @@ export class AuditInsightService {
     if (shotId) {
       videoFromAsset = await this.prisma.asset.findUnique({
         where: {
-          ownerType_ownerId_type: {
+          ownerType_ownerId_type_role: {
             ownerType: 'SHOT',
             ownerId: shotId,
+            role: 'SHOT_SOURCE',
             type: 'VIDEO',
           },
         },

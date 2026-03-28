@@ -936,7 +936,6 @@ model NovelAnalysisJob {
 model ApiKey {
   id            String        @id @default(uuid())
   key           String        @unique
-  secretHash    String?
   name          String?
   ownerUserId   String?
   ownerOrgId    String?
@@ -1213,6 +1212,7 @@ model Asset {
   createdByJobId String?
   ownerId        String
   ownerType      AssetOwnerType
+  role           AssetRole            @default(PRIMARY)
   status         AssetStatus          @default(GENERATED)
   storageKey     String
   type           AssetType
@@ -1227,9 +1227,10 @@ model Asset {
   shot           Shot?                @relation("ShotAssets", fields: [shotId], references: [id], onDelete: Cascade)
   publishedVideo PublishedVideo?      @relation("AssetPublishedVideo")
 
-  @@unique([ownerType, ownerId, type])
+  @@unique([ownerType, ownerId, type, role])
   @@index([projectId])
   @@index([ownerType, ownerId])
+  @@index([projectId, type, role])
   @@index([shotId])
   @@map("assets")
 }
@@ -1761,6 +1762,14 @@ enum AssetOwnerType {
   SHOT
   EPISODE
   CHARACTER
+}
+
+enum AssetRole {
+  PRIMARY
+  SHOT_SOURCE
+  SCENE_MASTER
+  EPISODE_MASTER
+  PREVIEW
 }
 
 model SubscriptionPlan {

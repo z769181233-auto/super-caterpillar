@@ -14,11 +14,9 @@ import {
   buildBillingLedgerStatusWhere,
   normalizeLegacyBillingLedgerRow,
 } from './billing-ledger-compat.util';
+import { env } from '@scu/config';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
-  isPrismaFallbackEligibleError,
-  withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
 
 @Injectable()
@@ -27,10 +25,6 @@ export class BillingService {
   private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
-
-  private isPrismaTimeout(error: unknown): boolean {
-    return isPrismaFallbackEligibleError(error);
-  }
 
   private toCreditsNumber(value: unknown): number {
     if (value == null) {
@@ -43,28 +37,6 @@ export class BillingService {
       return Number(value);
     }
     return Number(value);
-  }
-
-  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    return withRuntimePgClient(
-      {
-        applicationName: 'super-caterpillar-api-billing',
-        queryTimeoutMs: this.prismaQueryTimeoutMs,
-      },
-      fn
-    );
-  }
-
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
-  private shouldAllowBillingPgFallback(): boolean {
-    return (
-      this.isCiOrGateContext() ||
-      process.env.FORCE_BILLING_PG_PATH === '1' ||
-      process.env.FORCE_BILLING_PG_FALLBACK === '1'
-    );
   }
 
   /**
@@ -80,45 +52,10 @@ export class BillingService {
       throw new ForbiddenException('Organization ID is required for billing check');
     }
 
-    let org: { credits: number | null } | null = null;
-    try {
-      org = await this.prisma.organization.findUnique({
-        where: { id: organizationId },
-        select: { credits: true },
-      });
-    } catch (error) {
-      if (!this.isPrismaTimeout(error)) {
-        throw error;
-      }
-      if (!this.shouldAllowBillingPgFallback()) {
-        this.logger.error(
-          `Prisma getCredits degraded for org ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_BILLING_PG_FALLBACK=1`
-        );
-        throw error;
-      }
-
-      this.logger.warn(
-        `Prisma getCredits degraded for org ${organizationId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
-      );
-
-      org = await this.withPgClient(async (client) => {
-        const result = await client.query(
-          'SELECT credits FROM organizations WHERE id = $1 LIMIT 1',
-          [organizationId]
-        );
-        const row = result.rows[0] as { credits: string | number | null } | undefined;
-        return row
-          ? {
-              credits:
-                row.credits == null
-                  ? null
-                  : typeof row.credits === 'string'
-                    ? Number(row.credits)
-                    : row.credits,
-            }
-          : null;
-      });
-    }
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { credits: true },
+    });
 
     if (!org) throw new NotFoundException('Organization not found');
 
@@ -148,109 +85,7 @@ export class BillingService {
       type,
     };
 
-    const runPgFallback = async () =>
-      this.withPgClient(async (client) => {
-        await client.query('BEGIN');
-        try {
-          const orgResult = await client.query(
-            'SELECT credits FROM organizations WHERE id = $1 FOR UPDATE',
-            [organizationId]
-          );
-          const org = orgResult.rows[0] as { credits: number | string | null } | undefined;
-
-          const currentCredits = this.toCreditsNumber(org?.credits);
-          if (!org || currentCredits < amount) {
-            throw new ForbiddenException(
-              `Insufficient credits to start job. Required: ${amount} credits. (Available: ${currentCredits})`
-            );
-          }
-
-          const updateResult = await client.query(
-            'UPDATE organizations SET credits = credits - $2, "updatedAt" = NOW() WHERE id = $1 RETURNING credits',
-            [organizationId, amount]
-          );
-          const updatedRow = updateResult.rows[0] as { credits: number | string | null } | undefined;
-          const newCredits = this.toCreditsNumber(updatedRow?.credits);
-
-          const userResult = await client.query(
-            'SELECT id FROM users WHERE id = $1 LIMIT 1',
-            [userId]
-          );
-          const finalUserRow = userResult.rows[0] as { id: string } | undefined;
-          const finalUserId = finalUserRow?.id ?? null;
-
-          await client.query(
-            `
-              INSERT INTO billing_events
-                (id, project_id, org_id, user_id, type, credits_delta, currency, metadata, created_at)
-              VALUES
-                ($1, $2, $3, $4, $5, $6, 'USD', $7::jsonb, NOW())
-            `,
-            [
-              randomUUID(),
-              projectId,
-              organizationId,
-              finalUserId,
-              'pay_as_you_go',
-              -amount,
-              JSON.stringify({
-                type,
-                traceId,
-                legacyEventType: 'pay_as_you_go',
-                originalUserId: userId,
-              }),
-            ]
-          );
-
-          const detailsWithBalance = {
-            ...details,
-            newCredits,
-          };
-          const payload = {
-            action: 'BILLING_CONSUME',
-            resourceType: 'job',
-            resourceId: traceId,
-            orgId: organizationId,
-            details: detailsWithBalance,
-            timestamp: new Date().toISOString(),
-          };
-
-          await client.query(
-            `
-              INSERT INTO audit_logs
-                (id, "userId", "orgId", action, "resourceType", "resourceId", details, "timestamp", payload, "createdAt")
-              VALUES
-                ($1, $2, $3, $4, $5, $6, $7::jsonb, NOW(), $8::jsonb, NOW())
-            `,
-            [
-              randomUUID(),
-              finalUserId,
-              organizationId,
-              'BILLING_CONSUME',
-              'job',
-              traceId ?? null,
-              JSON.stringify(detailsWithBalance),
-              JSON.stringify(payload),
-            ]
-          );
-
-          await client.query('COMMIT');
-          return true;
-        } catch (pgError) {
-          await client.query('ROLLBACK');
-          throw pgError;
-        }
-      });
-
-    if (this.isCiOrGateContext() || process.env.FORCE_BILLING_PG_PATH === '1') {
-      this.logger.warn(
-        `Using pg consumeCredits path in CI/test/gate-compatible mode for org ${organizationId}`
-      );
-      return runPgFallback();
-    }
-
-    try {
-      return await this.prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       // A5: Atomic Update with Row-Level Lock
       // Use raw SQL to ensure FOR UPDATE skip locked or strict locking
       // although Prisma's transaction with updateMany is decent,
@@ -320,26 +155,8 @@ export class BillingService {
           payload: payload,
         },
       });
-
       return true;
-      });
-    } catch (error) {
-      if (!this.isPrismaTimeout(error)) {
-        throw error;
-      }
-      if (!this.shouldAllowBillingPgFallback()) {
-        this.logger.error(
-          `Prisma consumeCredits degraded for org ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_BILLING_PG_FALLBACK=1`
-        );
-        throw error;
-      }
-
-      this.logger.warn(
-        `Prisma consumeCredits degraded for org ${organizationId}, using pg fallback: ${error instanceof Error ? error.message : String(error)}`
-      );
-
-      return runPgFallback();
-    }
+    });
   }
 
   async checkQuota(userId: string, organizationId: string, required: number = 1): Promise<boolean> {
@@ -375,16 +192,28 @@ export class BillingService {
   }
 
   async getSubscription(userId: string) {
-    return this.prisma.subscription.findFirst({
+    const subscriptions = await this.prisma.subscription.findMany({
       where: { userId, status: 'ACTIVE' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
     });
+    return subscriptions[0] ?? null;
   }
 
   async getPlans() {
     return [
-      { id: 'free', name: 'Free Tier', price: 0, quota: { tokens: 100 } },
-      { id: 'pro', name: 'Pro Tier', price: 29, quota: { tokens: 5000 } },
+      {
+        id: 'free',
+        name: 'Free Tier',
+        price: env.billingPlanFreePriceUsd,
+        quota: { tokens: env.billingPlanFreeTokens },
+      },
+      {
+        id: 'pro',
+        name: 'Pro Tier',
+        price: env.billingPlanProPriceUsd,
+        quota: { tokens: env.billingPlanProTokens },
+      },
     ];
   }
 
@@ -432,7 +261,9 @@ export class BillingService {
   }) {
     const { projectId, status, jobType, from, to, page = 1, pageSize = 20 } = params;
     const where: any = {};
-    if (projectId) where.tenantId = projectId;
+    if (projectId) {
+      where.OR = [{ projectId }, { tenantId: projectId }];
+    }
     if (status) where.status = status;
     if (jobType) where.itemType = jobType;
     if (from || to) {
@@ -554,7 +385,7 @@ export class BillingService {
 
     const completedJobs = await this.prisma.shotJob.count({
       where: {
-        status: { in: ['SUCCEEDED', 'DONE'] as any },
+        status: 'SUCCEEDED',
         updatedAt: { gte: since },
       },
     });
@@ -564,7 +395,7 @@ export class BillingService {
     });
 
     // Derive Metrics from SSOT variables
-    const pricePerImage = 0.024; // Representative unit PRO plan assumed price
+    const pricePerImage = env.gpuRoiPricePerImageUsd;
 
     const throughput_cap_per_worker = 3600 / totalTime;
     const gpu_efficiency = predictTime / totalTime;

@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { JobService } from './job.service';
+import { JobEngineBindingService } from './job-engine-binding.service';
 // import { QualityMetricsWriter } from '../quality/quality-metrics.writer';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType as JobTypeEnum, JobStatus as JobStatusEnum } from 'database';
@@ -22,6 +23,8 @@ export class JobReportFacade {
   constructor(
     @Inject(JobService)
     private readonly jobService: JobService,
+    @Inject(JobEngineBindingService)
+    private readonly jobEngineBindingService: JobEngineBindingService,
     // @Inject(QualityMetricsWriter)
     // private readonly qualityMetricsWriter: QualityMetricsWriter,
     @Inject(PrismaService)
@@ -77,6 +80,54 @@ export class JobReportFacade {
 
     // Already clean (assets/... or videos/...)
     return key;
+  }
+
+  private tryNormalizeStorageKey(key: unknown): string | null {
+    if (typeof key !== 'string') return null;
+    const trimmed = key.trim();
+    if (!trimmed) return null;
+
+    const normalized = this.normalizeStorageKey(trimmed);
+    if (
+      !normalized ||
+      normalized.startsWith('/') ||
+      normalized.startsWith('.') ||
+      normalized.includes('..') ||
+      normalized.includes('\\')
+    ) {
+      return null;
+    }
+
+    return normalized;
+  }
+
+  private collectVideoRenderFrameKeys(result: any): string[] {
+    const explicitFrameKeys = Array.isArray(result?.frameKeys)
+      ? result.frameKeys
+          .map((key: unknown) => this.tryNormalizeStorageKey(key))
+          .filter((key: string | null): key is string => !!key)
+      : [];
+    if (explicitFrameKeys.length > 0) return explicitFrameKeys;
+
+    const explicitStorageKey = this.tryNormalizeStorageKey(
+      result?.output?.storageKey ?? result?.storageKey
+    );
+    if (explicitStorageKey) return [explicitStorageKey];
+
+    if (!Array.isArray(result?.assets) || result.assets.length === 0) return [];
+
+    const legacyAssets = result.assets
+      .map((key: unknown) => this.tryNormalizeStorageKey(key))
+      .filter((key: string | null): key is string => !!key);
+
+    if (legacyAssets.length !== result.assets.length) {
+      this.logger.warn(
+        `[JobReportFacade] Ignoring legacy result.assets for VIDEO_RENDER trigger: invalid storageKey payload detected`
+      );
+      return [];
+    }
+
+    return legacyAssets;
   }
 
   /**
@@ -226,14 +277,39 @@ export class JobReportFacade {
         const fingerprint = (updatedJob.payload as any)?.fingerprint;
 
         if (assetKeys.length > 0) {
-          // 2) SECURITY: 精确定位 binding（禁止 updateMany），并使用 merge 语义更新 metadata
-          const binding = await this.prisma.jobEngineBinding.findUnique({
+          let binding = await this.prisma.jobEngineBinding.findUnique({
             where: { jobId: updatedJob.id },
           });
 
-          if (!binding || binding.engineKey !== 'character_visual') {
+          if (!binding) {
+            const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+              updatedJob.type
+            );
+            if (!engineSelection) {
+              this.logger.warn(
+                `[CE01] No engine selection found for job ${updatedJob.id}, skipping asset binding`
+              );
+            } else {
+              binding = await this.prisma.jobEngineBinding.upsert({
+                where: { jobId: updatedJob.id },
+                update: {},
+                create: {
+                  jobId: updatedJob.id,
+                  engineId: engineSelection.engineId,
+                  engineKey: engineSelection.engineKey,
+                  engineVersionId: engineSelection.engineVersionId,
+                  status: 'BOUND' as any,
+                  metadata: {},
+                },
+              });
+            }
+          }
+
+          if (!binding) {
+            this.logger.warn(`[CE01] Binding still missing for job ${updatedJob.id}, skipping asset binding`);
+          } else if (binding.engineKey !== 'character_visual') {
             this.logger.warn(
-              `[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`
+              `[CE01] Binding ${binding.id} for job ${updatedJob.id} is ${binding.engineKey}, skipping asset binding`
             );
           } else {
             // 3) Merge metadata（保留已有字段，防止覆盖）
@@ -270,10 +346,7 @@ export class JobReportFacade {
       try {
         // Case A: SHOT_RENDER finished -> Trigger VIDEO_RENDER
         if (updatedJob.type === JobTypeEnum.SHOT_RENDER && updatedJob.shotId) {
-          const rawFrameKeys = params.result?.frameKeys || params.result?.assets || [];
-
-          // PLAN-1: Normalize frameKeys to pure storageKeys (remove .runtime/apps/workers pollution)
-          const frameKeys = rawFrameKeys.map((key: string) => this.normalizeStorageKey(key));
+          const frameKeys = this.collectVideoRenderFrameKeys(params.result);
 
           if (frameKeys.length > 0) {
             const project = await this.prisma.project.findUnique({
@@ -284,10 +357,13 @@ export class JobReportFacade {
             if (!billingUserId) {
               throw new Error(`Billing userId is required for job ${updatedJob.id}`);
             }
+            if (!updatedJob.traceId) {
+              throw new Error(`TraceId is required for SHOT_RENDER job ${updatedJob.id}`);
+            }
             await this.jobService.ensureVideoRenderJob(
               updatedJob.shotId,
               frameKeys,
-              updatedJob.traceId || `trace-${updatedJob.id}`,
+              updatedJob.traceId,
               billingUserId,
               updatedJob.organizationId,
               updatedJob.isVerification || false // 继承 SHOT_RENDER 的验证标记
@@ -309,9 +385,10 @@ export class JobReportFacade {
             // Unique Key: @@unique([ownerType, ownerId, type])
             await this.prisma.asset.upsert({
               where: {
-                ownerType_ownerId_type: {
+                ownerType_ownerId_type_role: {
                   ownerType: 'SHOT',
                   ownerId: updatedJob.shotId,
+                  role: 'SHOT_SOURCE',
                   type: 'VIDEO',
                 },
               },
@@ -319,6 +396,7 @@ export class JobReportFacade {
                 projectId: updatedJob.projectId,
                 ownerType: 'SHOT',
                 ownerId: updatedJob.shotId,
+                role: 'SHOT_SOURCE',
                 type: 'VIDEO',
                 status: 'GENERATED',
                 storageKey: videoUrl,
@@ -353,27 +431,34 @@ export class JobReportFacade {
     ) {
       try {
         const metrics = params.result?.metrics || {};
-        const costAmount = metrics.cost || 0.05;
-        const project = await this.prisma.project.findUnique({
-          where: { id: updatedJob.projectId },
-          select: { ownerId: true },
-        });
-        const billingUserId = project?.ownerId || params.userId;
-        if (!billingUserId) {
-          throw new Error(`Billing userId is required for job ${updatedJob.id}`);
-        }
+        const costAmount =
+          typeof metrics.cost === 'number' && Number.isFinite(metrics.cost) ? metrics.cost : null;
+        if (costAmount === null) {
+          this.logger.warn(
+            `[Billing] Skip timeline preview billing for job ${updatedJob.id}: missing explicit metrics.cost`
+          );
+        } else {
+          const project = await this.prisma.project.findUnique({
+            where: { id: updatedJob.projectId },
+            select: { ownerId: true },
+          });
+          const billingUserId = project?.ownerId || params.userId;
+          if (!billingUserId) {
+            throw new Error(`Billing userId is required for job ${updatedJob.id}`);
+          }
 
-        await this.costLedger.recordFromEvent({
-          userId: billingUserId,
-          projectId: updatedJob.projectId,
-          jobId: updatedJob.id,
-          jobType: updatedJob.type,
-          engineKey: 'ce11',
-          costAmount,
-          billingUnit: 'job',
-          quantity: 1,
-          metadata: metrics,
-        });
+          await this.costLedger.recordFromEvent({
+            userId: billingUserId,
+            projectId: updatedJob.projectId,
+            jobId: updatedJob.id,
+            jobType: updatedJob.type,
+            engineKey: 'ce11',
+            costAmount,
+            billingUnit: 'job',
+            quantity: 1,
+            metadata: metrics,
+          });
+        }
       } catch (e: any) {
         this.logger.error(
           `[Billing] Failed to record CE11 cost for job ${updatedJob.id}: ${e.message}`

@@ -1,7 +1,36 @@
 import { PrismaClient } from '../src/generated/prisma';
 import * as util from 'util';
+import { createCipheriv, randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
+
+function encryptApiSecretForSeed(plainSecret: string): {
+  secretEnc: string;
+  secretEncIv: string;
+  secretEncTag: string;
+} {
+  const masterKeyB64 = process.env.API_KEY_MASTER_KEY_B64;
+  if (!masterKeyB64) {
+    throw new Error('SEED_API_KEY_MASTER_KEY_MISSING: set API_KEY_MASTER_KEY_B64 for API key seeding');
+  }
+
+  const masterKey = Buffer.from(masterKeyB64, 'base64');
+  if (masterKey.length !== 32) {
+    throw new Error(`SEED_API_KEY_MASTER_KEY_INVALID: expected 32 bytes, got ${masterKey.length}`);
+  }
+
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', masterKey, iv);
+  let encrypted = cipher.update(plainSecret, 'utf8');
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  const tag = cipher.getAuthTag();
+
+  return {
+    secretEnc: encrypted.toString('base64'),
+    secretEncIv: iv.toString('base64'),
+    secretEncTag: tag.toString('base64'),
+  };
+}
 
 async function main() {
   process.stdout.write(util.format('🌱 Seeding Engine data...') + '\n');
@@ -365,15 +394,23 @@ async function main() {
     throw new Error('SEED_HMAC_SECRET_MISSING: set HMAC_SECRET_KEY for seeding worker secret');
   }
 
+  const encryptedWorkerSecret = encryptApiSecretForSeed(hmacSecret);
+
   await prisma.apiKey.upsert({
     where: { key: workerApiKey },
     update: {
-      secretHash: hmacSecret, // Dev env fallback allows plain secret in secretHash
+      secretEnc: encryptedWorkerSecret.secretEnc,
+      secretEncIv: encryptedWorkerSecret.secretEncIv,
+      secretEncTag: encryptedWorkerSecret.secretEncTag,
+      secretVersion: 1,
       status: 'ACTIVE',
     },
     create: {
       key: workerApiKey,
-      secretHash: hmacSecret,
+      secretEnc: encryptedWorkerSecret.secretEnc,
+      secretEncIv: encryptedWorkerSecret.secretEncIv,
+      secretEncTag: encryptedWorkerSecret.secretEncTag,
+      secretVersion: 1,
       name: 'Dev Worker Key',
       status: 'ACTIVE',
     },

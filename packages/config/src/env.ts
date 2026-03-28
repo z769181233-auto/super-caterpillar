@@ -76,6 +76,15 @@ function getEnvNumber(key: string, defaultValue?: number): number {
   return num;
 }
 
+function getEnvFloat(key: string, defaultValue?: number): number {
+  const value = getEnv(key, defaultValue?.toString());
+  const num = parseFloat(value);
+  if (isNaN(num)) {
+    throw new Error(`Environment variable ${key} must be a float`);
+  }
+  return num;
+}
+
 function requiresWorkerIdentity(): boolean {
   if (isBootstrapContext) {
     return false;
@@ -147,6 +156,11 @@ export interface AppConfig {
   appName: string;
   appVersion: string;
   frontendUrl: string;
+  billingPlanFreePriceUsd: number;
+  billingPlanFreeTokens: number;
+  billingPlanProPriceUsd: number;
+  billingPlanProTokens: number;
+  gpuRoiPricePerImageUsd: number;
   bcryptSaltRounds: number;
   enableInternalJobWorker: boolean;
   jobWorkerInterval: number;
@@ -240,6 +254,13 @@ export const env: AppConfig = {
 
   // Frontend
   frontendUrl: getEnv('FRONTEND_URL', 'http://localhost:3001'),
+
+  // Billing
+  billingPlanFreePriceUsd: getEnvFloat('BILLING_PLAN_FREE_PRICE_USD', 0),
+  billingPlanFreeTokens: getEnvNumber('BILLING_PLAN_FREE_TOKENS', 100),
+  billingPlanProPriceUsd: getEnvFloat('BILLING_PLAN_PRO_PRICE_USD', 29),
+  billingPlanProTokens: getEnvNumber('BILLING_PLAN_PRO_TOKENS', 5000),
+  gpuRoiPricePerImageUsd: getEnvFloat('GPU_ROI_PRICE_PER_IMAGE_USD', 0.024),
 
   // Security
   bcryptSaltRounds: getEnvNumber('BCRYPT_SALT_ROUNDS', 10),

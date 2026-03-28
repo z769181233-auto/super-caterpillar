@@ -6,10 +6,21 @@ export async function runVideoMergeLocal(
   input: VideoMergeInput,
   ctx: any = {}
 ): Promise<VideoMergeOutput> {
-  // Default params
-  const fps = input.fps || 24;
-  const width = input.width || 512;
-  const height = input.height || 512;
+  const requirePositiveNumber = (
+    value: unknown,
+    field: string,
+    { integerOnly = false }: { integerOnly?: boolean } = {}
+  ): number => {
+    if (
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      value <= 0 ||
+      (integerOnly && !Number.isInteger(value))
+    ) {
+      throw new Error(`VIDEO_MERGE_${field.toUpperCase()}_REQUIRED`);
+    }
+    return value;
+  };
 
   if (input.videoPaths && input.videoPaths.length > 0) {
     const result = await localFfmpegProvider.concat(
@@ -55,6 +66,10 @@ export async function runVideoMergeLocal(
       },
     };
   }
+
+  const fps = requirePositiveNumber(input.fps, 'fps');
+  const width = requirePositiveNumber(input.width, 'width', { integerOnly: true });
+  const height = requirePositiveNumber(input.height, 'height', { integerOnly: true });
 
   const result = await localFfmpegProvider.merge(
     {

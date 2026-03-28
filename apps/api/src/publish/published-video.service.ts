@@ -46,13 +46,15 @@ export class PublishedVideoService {
     });
 
     const publishEvidence = asset?.shot?.scene?.id
-      ? await this.prisma.contentGateResult.findFirst({
+      ? (
+          await this.prisma.contentGateResult.findMany({
           where: {
             projectId,
             sceneId: asset.shot.scene.id,
             filmIrId: asset.shot.filmIrId ?? asset.shot.scene.filmIrId ?? undefined,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          take: 1,
           select: {
             id: true,
             gateVersion: true,
@@ -63,6 +65,7 @@ export class PublishedVideoService {
             gateDetails: true,
           },
         })
+        )[0] ?? null
       : null;
 
     const directorPlan =

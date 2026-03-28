@@ -28,6 +28,23 @@ export interface AssetBindings {
 export class ControlNetMapper {
   // private readonly logger = new Logger(ControlNetMapper.name);
 
+  private static getPrimaryReferencePath(character: any): string | null {
+    const candidates = [
+      character?.referenceBindingPath,
+      character?.referenceSheetPath,
+      character?.referenceImagePath,
+      character?.refImagePath,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate.trim();
+      }
+    }
+
+    return null;
+  }
+
   /**
    * Map Graph State Snapshot to ControlNet Settings
    * Heuristic logic to determine which ControlNets are needed based on character state, items, or environment.
@@ -53,20 +70,20 @@ export class ControlNetMapper {
       const char = graphState.characters[0]; // Focus on primary character for MVP
 
       // If we have a reference sheet binding ID, we can assume there's a reference image
-      // ideally we'd know the path, but for now we simulate the intention
-      // In a real flow, we'd lookup the asset path from the refSheetId
+      // Truth policy: do not fabricate `_dynamic/.../unknown_ref.png` placeholder paths.
+      // Only enable reference-only when a real relative asset path is already present in graph state.
       if (refSheetId) {
-        // Heuristic: Use Reference Only for consistency
-        // Note: Actual image path resolution requires DB lookup, here we just set the intention
-        // The renderer will resolve 'binding:character_ref_primary' to the actual path
-        bindings['character_ref_primary'] = `_dynamic/refs/${char.id || 'unknown'}_ref.png`; // Placeholder relative path
+        const primaryReferencePath = this.getPrimaryReferencePath(char);
+        if (primaryReferencePath) {
+          bindings['character_ref_primary'] = primaryReferencePath;
 
-        settings.modules.push({
-          type: 'reference_only',
-          weight: 0.8,
-          inputImage: 'binding:character_ref_primary', // Logical binding reference
-          controlMode: 'Balanced',
-        });
+          settings.modules.push({
+            type: 'reference_only',
+            weight: 0.8,
+            inputImage: 'binding:character_ref_primary', // Logical binding reference
+            controlMode: 'Balanced',
+          });
+        }
       }
     }
 

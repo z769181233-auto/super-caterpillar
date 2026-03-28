@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
@@ -20,10 +20,20 @@ export class MemoryService {
   ) {}
 
   async getShortTermMemory(chapterId: string, userId?: string) {
-    const memory = await this.prisma.memoryShortTerm.findFirst({
+    const memories = await this.prisma.memoryShortTerm.findMany({
       where: { chapterId },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
+    if (memories.length > 1) {
+      this.logger.error(
+        `[MemoryService] Duplicate short-term memories detected for chapterId=${chapterId}: ${memories
+          .map((memory) => memory.id)
+          .join(', ')}`
+      );
+      throw new ConflictException(`Duplicate short-term memories detected for chapter ${chapterId}`);
+    }
+    const memory = memories[0] ?? null;
 
     // 记录审计日志
     await this.auditLogService.record({
@@ -56,10 +66,20 @@ export class MemoryService {
   }
 
   async getLongTermMemory(entityId: string, userId?: string) {
-    const memory = await this.prisma.memoryLongTerm.findFirst({
+    const memories = await this.prisma.memoryLongTerm.findMany({
       where: { entityId },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
+    if (memories.length > 1) {
+      this.logger.error(
+        `[MemoryService] Duplicate long-term memories detected for entityId=${entityId}: ${memories
+          .map((memory) => memory.id)
+          .join(', ')}`
+      );
+      throw new ConflictException(`Duplicate long-term memories detected for entity ${entityId}`);
+    }
+    const memory = memories[0] ?? null;
 
     // 记录审计日志
     await this.auditLogService.record({

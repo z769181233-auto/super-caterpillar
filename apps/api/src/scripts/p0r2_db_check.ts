@@ -27,11 +27,14 @@ async function check() {
 
   // Check Billing
   // We expect some billing records with this traceId
-  const billing = await prisma.billingLedger.findFirst({
+  const billings = await prisma.billingLedger.findMany({
     where: {
       traceId: 'trace-gate-p0r2-1767943887809',
     },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  const billing = billings[0] ?? null;
 
   if (billing) {
     process.stdout.write(util.format('✅ PASS: BillingLedger found') + '\n');

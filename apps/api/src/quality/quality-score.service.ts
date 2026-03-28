@@ -91,44 +91,13 @@ export class QualityScoreService {
       ce23RealShadowEnabled = !!settings.ce23RealShadowEnabled;
     }
 
-    if (ce23RealEnabled || ce23RealShadowEnabled) {
-      try {
-        // 尝试获取 Real Scoring 所需的 anchor/target
-        // 优先从已有的 identityScoreRecord.details 里拿 (P15-0)，没有则 fallback (这里简化处理，直接拿 assets)
-        // 实际 fallback: 从 shot 关联 asset 拿 target，从 identity_anchors 拿 ref
-        // 为降低复杂度，直接复用 IdentityConsistencyService 的逻辑，那里已经封装好了或者我们调用 scoreIdentityReal
-
-        if (identityScoreRecord?.referenceAnchorId && identityScoreRecord?.targetAssetId) {
-          // Resolve Reference Asset ID via Identity Anchor
-          const anchor = await this.prisma.identityAnchor.findUnique({
-            where: { id: identityScoreRecord.referenceAnchorId },
-          });
-          if (anchor) {
-            realScoreResult = await this.identityService.scoreIdentityReal(
-              anchor.referenceAssetId,
-              identityScoreRecord.targetAssetId,
-              identityScoreRecord.characterId
-            );
-          }
-        }
-      } catch (err: any) {
-        this.logger.error(`[P16] REAL Score Calc Failed: ${err.message}`);
-        realError = err.message;
-      }
-    }
-
-    // 这里有一个更简单的路径：直接调用 identityService.scoreIdentityReal，前提是我们知道 targetAssetId
     // P16-HARD: performScoring is purely real-truth based.
     // QualityScoreService aggregates real signals only.
     // Rework trigger depends on REAL identity scoring pass/fail.
     // 这是一个 Resource Heavy 的操作。但根据 PLAN-1: "当 Shadow 或 Real 任一开启 时，计算 REAL 分数并写入 signals"
-    // 是的，这意味着 API 侧要重算一次 (或 Worker 侧双写，但 Worker 逻辑改动大)。
-    // 鉴于 P16-0 容错要求，在 API 侧重算比较安全。
-
-    // 修正逻辑：必须找到 targetAssetId
+    // API 侧保留单次重算，禁止重复调用旧逻辑。
     if (ce23RealEnabled || ce23RealShadowEnabled) {
       try {
-        // 1. 尝试从 shotIdentityScore 记录恢复上下文
         if (identityScoreRecord) {
           const anchor = await this.prisma.identityAnchor.findUnique({
             where: { id: identityScoreRecord.referenceAnchorId },
@@ -140,8 +109,6 @@ export class QualityScoreService {
               identityScoreRecord.characterId
             );
           }
-        } else {
-          // 如果连前序评分记录都没有，无法计算
         }
       } catch (e: any) {
         realError = e.message;
@@ -160,9 +127,10 @@ export class QualityScoreService {
     // 2. 物理审计 (Render Physical)
     const renderAsset = await this.prisma.asset.findUnique({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
           ownerType: 'SHOT',
           ownerId: shotId,
+          role: 'SHOT_SOURCE',
           type: 'VIDEO',
         },
       },

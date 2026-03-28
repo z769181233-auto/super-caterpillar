@@ -10,6 +10,10 @@ import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class VG01BackgroundRenderAdapter extends VgBaseEngine {
+  private isStubEnabled(): boolean {
+    return process.env.ALLOW_VG_STUBS === '1';
+  }
+
   constructor(
     @Inject(RedisService) redis: RedisService,
     @Inject(AuditService) audit: AuditService,
@@ -27,6 +31,12 @@ export class VG01BackgroundRenderAdapter extends VgBaseEngine {
    * 使用 FFmpeg 生成纯色测试图
    */
   protected async processLogic(payload: any): Promise<any> {
+    if (!this.isStubEnabled()) {
+      throw new Error(
+        'VG01_BACKGROUND_RENDER_NOT_IMPLEMENTED: stub output disabled unless ALLOW_VG_STUBS=1'
+      );
+    }
+
     const prompt = payload.prompt || 'default_view';
     const style = payload.style || 'flat';
 

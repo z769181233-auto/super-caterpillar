@@ -7,19 +7,32 @@ const prisma = new PrismaClient({});
 async function main() {
   try {
     process.stdout.write(util.format('Finding organization...') + '\n');
-    let org = await prisma.organization.findFirst();
+    const orgs = await prisma.organization.findMany({
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
+    });
+    let org = orgs[0] ?? null;
     if (!org) {
       throw new Error('No organization found in database. Please seed or create one first.');
     }
 
     process.stdout.write(util.format('Finding user...') + '\n');
-    const user = await prisma.user.findFirst();
+    const users = await prisma.user.findMany({
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
+    });
+    const user = users[0] ?? null;
     if (!user) {
       throw new Error('No user found in database.');
     }
 
     process.stdout.write(util.format('Creating/Finding test project for CE06...') + '\n');
-    let project = await prisma.project.findFirst({ where: { name: 'CE06 Gate Test' } });
+    const projects = await prisma.project.findMany({
+      where: { name: 'CE06 Gate Test' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
+    });
+    let project = projects[0] ?? null;
     if (!project) {
       project = await prisma.project.create({
         data: {
@@ -41,9 +54,12 @@ async function main() {
     });
 
     process.stdout.write(util.format('Finding anchor shot for foreign keys...') + '\n');
-    const anchorShot = await prisma.shot.findFirst({
+    const anchorShots = await prisma.shot.findMany({
       include: { scene: { include: { episode: true } } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const anchorShot = anchorShots[0] ?? null;
     if (!anchorShot) {
       throw new Error('No shots found in database to use as anchor.');
     }

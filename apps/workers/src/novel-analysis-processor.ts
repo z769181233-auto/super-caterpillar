@@ -8,8 +8,7 @@ import {
   WorkerJobBase,
   CE06NovelParsingOutput,
 } from '@scu/shared-types';
-import { CE06EngineSelector } from '@scu/engines-ce06';
-import { CE06Input, CE06Output } from '@scu/engines-ce06';
+import { CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
 import * as fs from 'fs';
 import { Readable } from 'stream';
@@ -313,6 +312,15 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
   };
 }
 
+export function getPersistedSceneIndex(
+  sceneLike: { sceneIndex?: number | null; index?: number | null } | null | undefined
+): number | undefined {
+  if (!sceneLike) return undefined;
+  if (typeof sceneLike.sceneIndex === 'number') return sceneLike.sceneIndex;
+  if (typeof sceneLike.index === 'number') return sceneLike.index;
+  return undefined;
+}
+
 /**
  * S3-B Fine-Tune: 增强后的结构树构造器
  * - 增量更新：严格基于 projectId + index 查找现有节点
@@ -379,21 +387,19 @@ export async function applyAnalyzedStructureToDatabase(
       for (const epData of episodes) {
         const existingEp = await tx.episode.findUnique({
           where: { projectId_index: { projectId, index: epData.index } },
+          select: { id: true },
         });
-        let currentEp = existingEp
-          ? await tx.episode.update({
-              where: { id: existingEp.id },
-              data: { name: epData.title, summary: epData.summary || undefined },
-            })
-          : await tx.episode.create({
-              data: {
-                projectId,
-                seasonId: null as any,
-                index: epData.index,
-                name: epData.title,
-                summary: epData.summary || undefined,
-              },
-            });
+        const currentEp = await tx.episode.upsert({
+          where: { projectId_index: { projectId, index: epData.index } },
+          update: { name: epData.title, summary: epData.summary || undefined },
+          create: {
+            projectId,
+            seasonId: null as any,
+            index: epData.index,
+            name: epData.title,
+            summary: epData.summary || undefined,
+          },
+        });
 
         if (existingEp) stats.updated.episodes++;
         else stats.created.episodes++;
@@ -403,21 +409,21 @@ export async function applyAnalyzedStructureToDatabase(
             where: {
               episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
             },
+            select: { id: true },
           });
-          let currentScene = existingScene
-            ? await tx.scene.update({
-                where: { id: existingScene.id },
-                data: { title: sceneData.title, summary: sceneData.summary || undefined },
-              })
-            : await tx.scene.create({
-                data: {
-                  projectId,
-                  episodeId: currentEp.id,
-                  sceneIndex: sceneData.index,
-                  title: sceneData.title,
-                  summary: sceneData.summary || undefined,
-                },
-              });
+          const currentScene = await tx.scene.upsert({
+            where: {
+              episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
+            },
+            update: { title: sceneData.title, summary: sceneData.summary || undefined },
+            create: {
+              projectId,
+              episodeId: currentEp.id,
+              sceneIndex: sceneData.index,
+              title: sceneData.title,
+              summary: sceneData.summary || undefined,
+            },
+          });
 
           if (existingScene) stats.updated.scenes++;
           else stats.created.scenes++;
@@ -672,7 +678,10 @@ export async function applyAnalyzedStructureToDatabase(
         const existingSceneMap = new Map<number, any>();
         if (existingEpisode) {
           for (const scene of existingEpisode.scenes) {
-            existingSceneMap.set(scene.index, scene);
+            const persistedSceneIndex = getPersistedSceneIndex(scene);
+            if (persistedSceneIndex !== undefined) {
+              existingSceneMap.set(persistedSceneIndex, scene);
+            }
           }
         }
 
@@ -796,7 +805,14 @@ export async function applyAnalyzedStructureToDatabase(
         if (existingEpisode && existingEpisode.scenes.length > episode.scenes.length) {
           const newSceneIndexes = new Set(episode.scenes.map((s: AnalyzedScene) => s.index));
           const scenesToDelete = existingEpisode.scenes.filter(
-            (s: any) => !newSceneIndexes.has(s.index) && s.index < 9000
+            (s: any) => {
+              const persistedSceneIndex = getPersistedSceneIndex(s);
+              return (
+                persistedSceneIndex !== undefined &&
+                !newSceneIndexes.has(persistedSceneIndex) &&
+                persistedSceneIndex < 9000
+              );
+            }
           );
           for (const sceneToDelete of scenesToDelete) {
             await tx.shotJob.deleteMany({ where: { sceneId: sceneToDelete.id } });
@@ -944,12 +960,7 @@ export async function applyAnalyzedStructureToDatabase(
   // - NOVEL_ANALYSIS 可能需要创建/更新数万条 Shot 记录，默认 5s 事务超时会导致
   //   "Transaction already closed / Transaction not found" 错误。
   // - 这里显式将 interactive transaction timeout 调高（例如 5 分钟），避免长事务被过早关闭。
-  const result =
-    prisma instanceof PrismaClient
-      ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
-      : await executeInTransaction(prisma);
+  const result = await executeInTransaction(prisma);
 
   return result;
 }
@@ -1028,29 +1039,7 @@ export function mapCE06OutputToProjectStructure(
       vol.chapters.push({
         title: chunk.chapter_title,
         summary: '', // Scan phase doesn't have summary
-        scenes: [
-          {
-            // Create placeholder scene to hold content if needed, but SCAN has no content?
-            // ScanChunk has start/end offset.
-            // We need to create a placeholder scene OR fetch content?
-            // Wait, SCAN phase output doesn't have CONTENT?
-            // ce06RealEngine (SCAN) returns only metadata.
-            // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."
-            // If we populate episodes but NO SCENES, validation warnings?
-            // Warnings are OK. Errors are not.
-            // Error: "AnalyzedProjectStructure must have at least one season"
-            // Warning: "Episode X has no scenes"
-            // So we just need structure.
-            // BUT we need SHOTS if we want valid pipeline?
-            // basicTextSegmentation makes shots.
-            // Here we are mapping mapCE06Output...
-            // If we just mapped Volumes/Chapters, we get empty episodes.
-            // Validation passes (valid: true).
-            // So we proceed.
-            content: 'Placeholder content for Scan Chunk',
-            title: 'Scene 1',
-          },
-        ],
+        scenes: [],
       });
     }
     // Reassign volumes to grouped list
@@ -1398,6 +1387,12 @@ export async function processNovelAnalysisJob(
 ): Promise<any> {
   const startTime = Date.now();
   const jobId = job.id;
+  const traceId =
+    typeof (job as any).traceId === 'string' && (job as any).traceId.length > 0
+      ? (job as any).traceId
+      : (() => {
+          throw new Error(`[NOVEL_ANALYSIS] Missing traceId for job ${jobId}`);
+        })();
 
   try {
     // 根据你的 Job 模型调整类型
@@ -1434,13 +1429,7 @@ export async function processNovelAnalysisJob(
           action: 'CHUNK_MODE_ERROR',
           error: err.message,
         });
-        // Fallback to stream mode
-        logStructured('warn', {
-          action: 'CHUNK_MODE_FALLBACK_TO_STREAM',
-          jobId,
-        });
-        const contentStream = await getNovelContentStream(payload, prisma, projectId);
-        structure = await parseNovelStream(contentStream, projectId);
+        throw err;
       }
     } else {
       // S3-B Refactor: Stream-based Parsing (传统模式)
@@ -1460,11 +1449,8 @@ export async function processNovelAnalysisJob(
 
         structure = await parseNovelStream(contentStream, projectId);
       } catch (err: any) {
-        // Fallback or rethrow?
-        // If stream fails, checking if it was a "Missing source" error
         if (err.blockingReason === 'NO_SOURCE_TEXT') throw err;
 
-        // If it's a real error, rethrow
         logStructured('error', { action: 'STREAM_PARSE_ERROR', error: err.message });
         throw err;
       }
@@ -1500,9 +1486,7 @@ export async function processNovelAnalysisJob(
       data: { currentStep: 'SCENE_PERSIST' },
     });
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await applyAnalyzedStructureToDatabase(tx as unknown as PrismaClient, structure);
-    });
+    await applyAnalyzedStructureToDatabase(prisma, structure);
 
     const writeDuration = Date.now() - writeStartTime;
     const totalDuration = Date.now() - startTime;
@@ -1534,7 +1518,7 @@ export async function processNovelAnalysisJob(
         await costLedger.recordEngineBilling({
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
-          traceId: (job as any).traceId || `trace-${jobId}`,
+          traceId,
           projectId,
           userId: (job as any).userId || 'system',
           orgId,
@@ -1544,7 +1528,7 @@ export async function processNovelAnalysisJob(
         });
       } else {
       }
-    } catch (billingError: any) {
+    } catch {
       // 计费失败不阻塞主流程
     }
 
@@ -1621,7 +1605,7 @@ async function getNovelContentStream(
     }
   }
 
-  // Fallback: Check project's latest novel
+  // Deterministic stored source: project-scoped novel is unique by schema.
   const latestNovel = await prisma.novel.findUnique({
     where: { projectId },
   });

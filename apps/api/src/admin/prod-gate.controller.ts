@@ -7,6 +7,7 @@ import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobType } from 'database';
 import * as path from 'node:path';
+import { randomUUID } from 'node:crypto';
 
 /**
  * Prod Gate Controller (Phase 0-R)
@@ -26,6 +27,13 @@ export class ProdGateController {
     private readonly jobService: JobService,
     private readonly db: PrismaService
   ) { }
+
+  private resolveTraceId(value?: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    return randomUUID();
+  }
 
   /**
    * Assert artifactDir is within allowed evidence directory
@@ -140,7 +148,7 @@ export class ProdGateController {
       artifactDir: string;
       prompt?: string;
       seed?: number;
-      jobId?: string;
+      traceId?: string;
     }
   ) {
     if (process.env.GATE_MODE !== '1') {
@@ -151,7 +159,7 @@ export class ProdGateController {
     if (!body.artifactDir) throw new BadRequestException('artifactDir required');
 
     const absArtifactDir = this.resolveArtifactDir(body.artifactDir);
-    const traceId = body.jobId || `w3_1_${Date.now()}`;
+    const traceId = this.resolveTraceId(body.traceId);
 
     // Lookup real hierarchy to satisfy JobService.create requirements
     // Note: Shot -> Scene -> Episode -> Season -> Project -> Organization
@@ -184,11 +192,13 @@ export class ProdGateController {
     const organizationId = project.organizationId;
 
     // Find a valid user in this organization to satisfy ownership/billing checks in JobService
-    const member = await this.db.organizationMember.findFirst({
+    const members = await this.db.organizationMember.findMany({
       where: { organizationId: organizationId },
       select: { userId: true },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const member = members[0] ?? null;
 
     if (!member?.userId) {
       throw new BadRequestException('organization must have at least one member');
@@ -280,7 +290,14 @@ export class ProdGateController {
    */
   @Post('novel-analysis')
   async triggerNovelAnalysis(
-    @Body() body: { projectId: string; organizationId?: string; filePath?: string; rawText?: string; jobId?: string }
+    @Body()
+    body: {
+      projectId: string;
+      organizationId?: string;
+      filePath?: string;
+      rawText?: string;
+      traceId?: string;
+    }
   ) {
     if (process.env.GATE_MODE !== '1') {
       throw new BadRequestException('Endpoint only available in GATE_MODE=1');
@@ -291,7 +308,7 @@ export class ProdGateController {
     if (!body.filePath && !body.rawText)
       throw new BadRequestException('filePath or rawText required');
 
-    const traceId = body.jobId || `w3_1_na_${Date.now()}`;
+    const traceId = this.resolveTraceId(body.traceId);
     const organizationId = body.organizationId;
 
     this.logger.log(

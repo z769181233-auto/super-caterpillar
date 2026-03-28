@@ -36,7 +36,7 @@ export async function buildContext(params: {
   // 2. Short-term memory: 上一章摘要
   const shortTermContext = await buildShortTermMemory({
     prisma,
-    projectId,
+    chapterId,
     chapterIndex,
   });
 
@@ -86,21 +86,30 @@ async function buildLongTermMemory(params: {
 
 async function buildShortTermMemory(params: {
   prisma: PrismaClient;
-  projectId: string;
+  chapterId: string;
   chapterIndex: number;
 }): Promise<string> {
-  const { prisma, projectId, chapterIndex } = params;
+  const { prisma, chapterId, chapterIndex } = params;
+
+  const currentChapter = await prisma.novelChapter.findUnique({
+    where: { id: chapterId },
+    select: { volumeId: true },
+  });
+
+  if (!currentChapter?.volumeId) {
+    return '# Short-term Memory\n\n无上一章摘要。';
+  }
 
   // 查找上一章
-  const prevChapter = await prisma.novelChapter.findFirst({
+  const prevChapters = await prisma.novelChapter.findMany({
     where: {
-      volume: {
-        projectId,
-      },
+      volumeId: currentChapter.volumeId,
       index: chapterIndex - 1,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 2,
   });
+  const prevChapter = prevChapters[0] ?? null;
 
   if (!prevChapter?.summary) {
     return '# Short-term Memory\n\n无上一章摘要。';

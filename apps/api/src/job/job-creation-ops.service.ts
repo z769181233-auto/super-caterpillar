@@ -14,7 +14,7 @@ import { PublishedVideoService } from '../publish/published-video.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JobAuthOpsService } from './job-auth-ops.service';
 import { CreateJobDto } from './dto/create-job.dto';
-import { JobEngineBindingStatus, ShotReviewStatus } from 'database';
+import { Prisma, JobEngineBindingStatus, ShotReviewStatus } from 'database';
 import { TaskService } from '../task/task.service';
 import { ProjectResolver } from '../common/project-resolver';
 import { PRODUCTION_MODE } from '@scu/config';
@@ -94,7 +94,32 @@ export class JobCreationOpsService {
                 const existing = await this.prisma.shotJob.findUnique({
                     where: { dedupeKey: createJobDto.dedupeKey },
                 });
-                if (existing) return existing;
+                if (existing) {
+                    const binding = await this.prisma.jobEngineBinding.findUnique({
+                        where: { jobId: existing.id },
+                        select: { id: true },
+                    });
+                    if (!binding) {
+                        const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+                            createJobDto.type as any
+                        );
+                        if (!engineSelection) {
+                            throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
+                        }
+                        await this.prisma.jobEngineBinding.upsert({
+                            where: { jobId: existing.id },
+                            update: {},
+                            create: {
+                                jobId: existing.id,
+                                engineId: engineSelection.engineId,
+                                engineKey: engineSelection.engineKey,
+                                engineVersionId: engineSelection.engineVersionId,
+                                status: JobEngineBindingStatus.BOUND,
+                            },
+                        });
+                    }
+                    return existing;
+                }
             }
 
             // 文本安全审查
@@ -104,7 +129,10 @@ export class JobCreationOpsService {
                     payload.enrichedText ?? payload.promptText ?? payload.rawText ?? payload.text ?? null;
 
                 if (textToCheck) {
-                    const traceId = payload.traceId || randomUUID();
+                    const traceId = createJobDto.traceId || payload.traceId;
+                    if (!traceId) {
+                        throw new BadRequestException('traceId is required for text safety guarded job creation');
+                    }
                     const tempJobId = randomUUID();
 
                     const safetyResult = await this.textSafetyService.sanitize(textToCheck, {
@@ -319,25 +347,46 @@ export class JobCreationOpsService {
 
             // 事务创建
             return await this.prisma.$transaction(async (tx) => {
-                const createdJob = await tx.shotJob.create({
-                    data: {
-                        organizationId,
-                        projectId: project.id,
-                        episodeId: episode.id,
-                        sceneId: scene.id,
-                        shotId,
-                        taskId: finalTaskId,
-                        type: createJobDto.type as any,
-                        status: 'PENDING' as any,
-                        priority: 0,
-                        maxRetry: 3,
-                        payload: enrichedPayload,
-                        engineConfig: createJobDto.engineConfig ?? {},
-                        traceId: createJobDto.traceId,
-                        isVerification: createJobDto.isVerification || false,
-                        dedupeKey: createJobDto.dedupeKey,
-                    },
-                });
+                let createdJob;
+                try {
+                    createdJob = await tx.shotJob.create({
+                        data: {
+                            organizationId,
+                            projectId: project.id,
+                            episodeId: episode.id,
+                            sceneId: scene.id,
+                            shotId,
+                            taskId: finalTaskId,
+                            type: createJobDto.type as any,
+                            status: 'PENDING' as any,
+                            priority: 0,
+                            maxRetry: 3,
+                            payload: enrichedPayload,
+                            engineConfig: createJobDto.engineConfig ?? {},
+                            traceId: createJobDto.traceId,
+                            isVerification: createJobDto.isVerification || false,
+                            dedupeKey: createJobDto.dedupeKey,
+                        },
+                    });
+                } catch (err) {
+                    const duplicateDedupe =
+                        createJobDto.dedupeKey &&
+                        err instanceof Prisma.PrismaClientKnownRequestError &&
+                        err.code === 'P2002';
+
+                    if (!duplicateDedupe) {
+                        throw err;
+                    }
+
+                    const existing = await tx.shotJob.findUnique({
+                        where: { dedupeKey: createJobDto.dedupeKey },
+                    });
+                    if (existing) {
+                        return existing;
+                    }
+
+                    throw err;
+                }
 
                 const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
                     createJobDto.type as any
@@ -346,8 +395,10 @@ export class JobCreationOpsService {
                     throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
                 }
 
-                await tx.jobEngineBinding.create({
-                    data: {
+                await tx.jobEngineBinding.upsert({
+                    where: { jobId: createdJob.id },
+                    update: {},
+                    create: {
                         jobId: createdJob.id,
                         engineId: engineSelection.engineId,
                         engineKey: engineSelection.engineKey,

@@ -20,6 +20,8 @@ export class VisualMetricArtifact {
 export class NovelAnalysisArtifact {
   jobId: string;
   workerId?: string | null;
+  engineKey?: string | null;
+  engineVersion?: string | null;
   createdAt: Date;
   status: string | null;
   payload: any;
@@ -29,6 +31,8 @@ export class NovelAnalysisArtifact {
 export class MemoryUpdateArtifact {
   jobId: string;
   workerId?: string | null;
+  engineKey?: string | null;
+  engineVersion?: string | null;
   createdAt: Date;
   status: string | null;
   payload: any;

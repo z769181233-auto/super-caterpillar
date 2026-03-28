@@ -28,9 +28,27 @@ export class CE23IdentityLocalAdapter implements EngineAdapter {
     return engineKey === 'ce23_identity_consistency';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[CE23IdentityLocalAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { anchorImageKey, targetImageKey, characterId } = input.payload as any;
-    const traceId = input.context?.traceId || 'unknown';
+    let traceId: string;
+    try {
+      traceId = this.requireTraceId(input.context?.traceId);
+    } catch (error: any) {
+      return {
+        status: EngineInvokeStatus.FAILED,
+        error: {
+          code: 'CE23_TRACE_ID_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
     const t0 = performance.now();
 
     this.logger.log(`[CE23_ADAPTER] Scoring ${characterId} for traceId=${traceId}`);

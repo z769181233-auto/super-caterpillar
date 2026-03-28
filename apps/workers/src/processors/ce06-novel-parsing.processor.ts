@@ -37,6 +37,13 @@ function asStringArray(value: unknown): string[] {
     .filter((item) => item.length > 0);
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * CE06 Novel Parsing Processor (V1.3.1: 母引擎收口 + 管线串联)
  * 严格通过 EngineHubClient 调用引擎，确保审计链路完整
@@ -90,7 +97,7 @@ async function executeScanJob(
   const logger = context.logger || console;
   const payload = job.payload || {};
   let rawText = payload.raw_text || payload.sourceText || payload.rawText;
-  const traceId = payload.traceId || job.id;
+  const traceId = requireNonEmptyString(payload.traceId ?? job.traceId, 'CE06_SCAN', 'traceId');
 
   // [P6-0 Fix] Support novelRef (Storage Reference)
   if (payload.novelRef && payload.novelRef.storageKey) {
@@ -253,8 +260,8 @@ async function executeChunkParseJob(
   const payload = job.payload || {};
   const chapterId = payload.chapterId;
   const chapterText = payload.raw_text || payload.rawText;
-  const traceId = payload.traceId || job.id;
-  const pipelineRunId = job.payload?.pipelineRunId || payload.pipelineRunId;
+  const traceId = requireNonEmptyString(payload.traceId ?? job.traceId, 'CE06_CHUNK', 'traceId');
+  const pipelineRunId = requireNonEmptyString(payload.pipelineRunId, 'CE06_CHUNK', 'pipelineRunId');
   logger.log(
     `[CE06_DEBUG_CHUNK] JobID=${job.id} TraceId=${traceId} PLRunId=${pipelineRunId} Payload=${JSON.stringify(payload)}`
   );
@@ -382,9 +389,12 @@ async function executeChunkParseJob(
         metadata: { traceId, sceneId: scene.id },
       });
 
-      let densityScore = 0.5; // 默认值
+      let densityScore: number | null = null;
       if (ce03Result.success) {
-        densityScore = (ce03Result.output as any)?.density_score || 0.5;
+        const parsedDensity = (ce03Result.output as any)?.density_score;
+        if (typeof parsedDensity === 'number') {
+          densityScore = parsedDensity;
+        }
       }
 
       // Step 4: 调用 CE04 生成增强文本
@@ -417,7 +427,7 @@ async function executeChunkParseJob(
         where: { id: scene.id },
         data: {
           enrichedText,
-          visualDensityScore: densityScore,
+          ...(typeof densityScore === 'number' ? { visualDensityScore: densityScore } : {}),
         },
       });
 

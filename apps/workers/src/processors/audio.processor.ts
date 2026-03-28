@@ -1,4 +1,4 @@
-import { AssetOwnerType, AssetType, PrismaClient } from 'database';
+import { AssetOwnerType, AssetRole, AssetType, PrismaClient } from 'database';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from '../api-client';
 
@@ -26,16 +26,20 @@ export async function processAudioJob(
 ): Promise<any> {
   const payload = isRecord(job.payload) ? job.payload : {};
   const context = isRecord(job.context) ? job.context : {};
-  const text = getStringField(payload, 'text') || '';
+  const rawText = getStringField(payload, 'text') || getStringField(payload, 'audioText');
+  const text = typeof rawText === 'string' ? rawText.trim() : '';
   const voice = getStringField(payload, 'voice');
   const projectId = getStringField(payload, 'projectId');
-  const sceneId = getStringField(payload, 'sceneId') || getStringField(payload, 'shotId');
+  const sceneId = getStringField(payload, 'sceneId');
 
   if (!projectId) {
     throw new Error('[AUDIO] Missing projectId');
   }
   if (!sceneId) {
     throw new Error('[AUDIO] Missing sceneId');
+  }
+  if (!text) {
+    throw new Error('[AUDIO] Missing authoritative text');
   }
 
   try {
@@ -59,9 +63,10 @@ export async function processAudioJob(
     // 2. Register Asset in DB
     const asset = await prisma.asset.upsert({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
           ownerType: AssetOwnerType.SCENE,
           ownerId: sceneId,
+          role: AssetRole.PRIMARY,
           type: AssetType.AUDIO_TTS,
         },
       },
@@ -75,6 +80,7 @@ export async function processAudioJob(
         projectId,
         ownerType: AssetOwnerType.SCENE,
         ownerId: sceneId,
+        role: AssetRole.PRIMARY,
         type: AssetType.AUDIO_TTS,
         status: 'GENERATED',
         storageKey,

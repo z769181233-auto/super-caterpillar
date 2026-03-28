@@ -30,6 +30,7 @@ export async function processNovelChunk(context: ProcessorContext) {
   const { prisma, job } = context;
   const {
     projectId,
+    episodeId,
     chunkId: dbChunkId,
     startByte,
     endByte,
@@ -41,6 +42,23 @@ export async function processNovelChunk(context: ProcessorContext) {
   try {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
+
+    const existingChunk = await prisma.novelChunk.findUnique({
+      where: { id: dbChunkId },
+      select: { status: true, artifactUrl: true },
+    });
+
+    if (existingChunk?.status === 'COMPLETED' && existingChunk.artifactUrl) {
+      const durationSec = (Date.now() - t0) / 1000;
+      stage4DurationSeconds.observe({ type: job.type }, durationSec);
+      stage4PeakRssMb.set({ type: job.type }, peakRssMb);
+      stage4JobsTotal.inc({ type: job.type, status: 'SUCCEEDED' }, 1);
+      return {
+        status: 'SUCCEEDED',
+        message: `MAP already completed for chunk ${dbChunkId}. Reusing existing artifact.`,
+        artifactUrl: existingChunk.artifactUrl,
+      };
+    }
 
     // 1. Update Chunk Status to PROCESSING
     await prisma.novelChunk.update({
@@ -158,14 +176,20 @@ export async function processNovelChunk(context: ProcessorContext) {
         });
 
         // Trigger NOVEL_REDUCE_AGGREGATE
-        await prisma.shotJob.create({
-          data: {
+        const dedupeKey = `novel_reduce_${ingestRunId}_${episodeId}`;
+        await prisma.shotJob.upsert({
+          where: { dedupeKey },
+          update: {},
+          create: {
+            dedupeKey,
             organizationId: job.organizationId as string,
             projectId,
+            episodeId,
             type: JobType.NOVEL_REDUCE_AGGREGATE,
             status: 'PENDING',
             payload: {
               projectId,
+              episodeId,
               ingestRunId,
               novelSourceId: nsId,
               isVerification,

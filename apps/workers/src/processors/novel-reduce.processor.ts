@@ -1,7 +1,6 @@
-import { PrismaClient, JobType, JobStatus } from 'database';
+import { JobType, JobStatus } from 'database';
 import { config } from '@scu/config';
 import * as path from 'path';
-import * as fs from 'fs';
 import * as fsp from 'fs/promises';
 import { ProcessorContext } from '../types/processor-context';
 import { fileExists } from '../../../../packages/shared/fs_async';
@@ -26,7 +25,7 @@ export async function processNovelReduce(context: ProcessorContext) {
   }
 
   const { prisma, job } = context;
-  const { projectId, ingestRunId, isVerification, novelSourceId } = job.payload;
+  const { projectId, ingestRunId, isVerification, novelSourceId, episodeId } = job.payload;
   const organizationId = job.organizationId;
 
   if (!projectId) {
@@ -38,33 +37,46 @@ export async function processNovelReduce(context: ProcessorContext) {
   if (!organizationId) {
     throw new Error('[NovelReduce] Missing organizationId on job');
   }
+  if (!episodeId || typeof episodeId !== 'string') {
+    throw new Error('[NovelReduce] Missing episodeId on job');
+  }
 
   try {
     stage4JobsTotal.inc({ type: job.type, status: 'RUNNING' }, 1);
     sampleRss();
 
-    // 1. Fetch all completed chunks for this run
+    // 1. Fetch only completed chunks for this run
     const chunks = await prisma.novelChunk.findMany({
-      where: { ingestRunId },
+      where: { ingestRunId, status: 'COMPLETED' },
       orderBy: { chNo: 'asc' },
     });
+    if (chunks.length === 0) {
+      throw new Error(`[NovelReduce] No completed chunks found for ingestRunId=${ingestRunId}`);
+    }
 
     // 2. Aggregate Artifacts
     const allScenes: any[] = [];
     const storageRoot = workerConfig.storageRoot || '/tmp/storage';
 
     for (const chunk of chunks) {
-      if (!chunk.artifactUrl) continue;
+      if (!chunk.artifactUrl) {
+        throw new Error(`[NovelReduce] Completed chunk ${chunk.id} is missing artifactUrl`);
+      }
 
       const artifactPath = path.resolve(storageRoot, chunk.artifactUrl);
-      if (await fileExists(artifactPath)) {
-        try {
-          const content = await fsp.readFile(artifactPath, 'utf8');
-          const data = JSON.parse(content);
-          // Adjust scene indices/IDs to be globally unique or sequential
-          allScenes.push(...(data.scenes || []));
-        } catch (err: any) {
-        }
+      if (!(await fileExists(artifactPath))) {
+        throw new Error(`[NovelReduce] Chunk artifact missing on disk: ${artifactPath}`);
+      }
+
+      try {
+        const content = await fsp.readFile(artifactPath, 'utf8');
+        const data = JSON.parse(content);
+        // Adjust scene indices/IDs to be globally unique or sequential
+        allScenes.push(...(data.scenes || []));
+      } catch (err: any) {
+        throw new Error(
+          `[NovelReduce] Failed to parse chunk artifact ${artifactPath}: ${err?.message || String(err)}`
+        );
       }
     }
 
@@ -73,31 +85,24 @@ export async function processNovelReduce(context: ProcessorContext) {
     }
 
     // 3. Final Persistence (Heavy Transaction)
-    // We group multiple chunks into one "Episode" for simplicity or follow original logic.
-    // For now, let's treat the whole run as a unified set of scenes for the Project.
+    // The ingest run already resolved its episode upstream; reduce must persist strictly into that episode.
 
     const createdSceneIds: string[] = [];
 
     await prisma.$transaction(
       async (tx) => {
-        // CLEAR existing project structure (Fresh deployment of this run)
-        // Note: In a real production system, we might want versioned Seasons/Episodes.
-        // Here we follow the existing pattern of project-level flattening if no specific episodeId is passed.
-
-        // Look for a default episode for this project or create one
-        let episode = await tx.episode.findUnique({
-          where: { projectId_index: { projectId, index: 1 } },
+        const episode = await tx.episode.findUnique({
+          where: { id: episodeId },
+          select: { id: true, projectId: true },
         });
         if (!episode) {
-          episode = await tx.episode.create({
-            data: {
-              projectId,
-              index: 1,
-              name: `Imported Episode ${ingestRunId.slice(0, 8)}`,
-            },
-          });
+          throw new Error(`[NovelReduce] Episode ${episodeId} not found`);
         }
-        const episodeId = episode.id;
+        if (episode.projectId !== projectId) {
+          throw new Error(
+            `[NovelReduce] Episode ownership mismatch: episode=${episode.projectId} job=${projectId}`
+          );
+        }
 
         // Clean up old matches
         const oldScenes = await tx.scene.findMany({ where: { episodeId }, select: { id: true } });
@@ -176,10 +181,13 @@ export async function processNovelReduce(context: ProcessorContext) {
         status: JobStatus.PENDING,
         projectId,
         organizationId,
+        episodeId,
+        sceneId,
         taskId: job.taskId,
         traceId: job.traceId,
         isVerification,
         priority: 5 + (idx % 10),
+        dedupeKey: `novel_reduce_ce11_${sceneId}`,
         payload: {
           novelSceneId: sceneId,
           projectId,
@@ -195,8 +203,10 @@ export async function processNovelReduce(context: ProcessorContext) {
         const batchJobs = cascadeJobs.slice(i, i + BATCH);
         await Promise.all(
           batchJobs.map((jobData) =>
-            prisma.shotJob.create({
-              data: {
+            prisma.shotJob.upsert({
+              where: { dedupeKey: jobData.dedupeKey },
+              update: {},
+              create: {
                 ...jobData,
                 engineBinding: {
                   create: {
@@ -225,13 +235,4 @@ export async function processNovelReduce(context: ProcessorContext) {
     stage4JobsTotal.inc({ type: job.type, status: 'FAILED' }, 1);
     throw error;
   }
-}
-
-async function readChunk(filePath: string, start: number, end: number): Promise<string> {
-  const readStream = fs.createReadStream(filePath, { start: start, end: end - 1 });
-  let result = '';
-  for await (const chunk of readStream) {
-    result += chunk.toString('utf8');
-  }
-  return result;
 }

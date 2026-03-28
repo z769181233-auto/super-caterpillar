@@ -308,30 +308,6 @@ export async function startGateWorkerApp() {
       else if (job.type === 'CE_FILM_IR_PLAN') result = await processFilmIRPlanJob(ctx);
       else if (job.type === 'CE_CONTENT_JUDGE') result = await processContentJudgeJob(ctx);
       else if (job.type === 'VIDEO_RENDER') {
-        const pl = (job.payload || {}) as {
-          sceneId?: string;
-          shotId?: string;
-          traceId?: string;
-          artifactDir?: string;
-          isVerification?: boolean;
-        };
-        const sId =
-          pl.sceneId ||
-          (pl.shotId
-            ? (
-              await prisma.shot.findUnique({
-                where: { id: pl.shotId },
-                select: { sceneId: true },
-              })
-            )?.sceneId
-            : 'sc-placeholder');
-
-        // Robust Repo Root Detection
-        let repoRoot = process.cwd();
-        while (repoRoot.length > 1 && !fs.existsSync(path.join(repoRoot, 'pnpm-workspace.yaml'))) {
-          repoRoot = path.dirname(repoRoot);
-        }
-
         // P1-HARD: Mock video generation logic REMOVED.
         // Truth-based rendering required. If real renderer (ShotRenderRouter) fails, it remains failed.
         throw new Error('VIDEO_RENDER_NON_TRUTH_FALLBACK: Absolute truth required. GateWorker must not fallback to non-truth configuration.');
@@ -343,7 +319,9 @@ export async function startGateWorkerApp() {
         if (job.payload?.pipelineRunId || job.payload?.traceId) {
           result = await processShotRenderJob(prisma, job, engineHubClient, apiClient);
         } else {
-          result = await gateNoopShotRender(job);
+          throw new Error(
+            `SHOT_RENDER_GATE_MISSING_TRACE_CONTEXT: job ${job.id} missing pipelineRunId/traceId`
+          );
         }
       } else if (job.type === 'PIPELINE_STAGE1_NOVEL_TO_VIDEO')
         result = await processStage1OrchestratorJob(ctx);
@@ -412,14 +390,16 @@ export async function startGateWorkerApp() {
 
         const isVerification = job.isVerification === true || job.payload?.isVerification === true;
 
-        const fallbackOutputMp4 = path.join(artDir, 'output.mp4');
-        if (fs.existsSync(fallbackOutputMp4) && !fs.existsSync(mp4Path)) {
-          fs.copyFileSync(fallbackOutputMp4, mp4Path);
-        }
+        const legacyOutputMp4 = path.join(artDir, 'output.mp4');
 
         if (!isVerification) {
           const contractMp4 = path.join(artDir, 'shot_render_output.mp4');
-          if (!fs.existsSync(contractMp4) && !fs.existsSync(fallbackOutputMp4)) {
+          if (!fs.existsSync(contractMp4)) {
+            if (fs.existsSync(legacyOutputMp4)) {
+              throw new Error(
+                'ARTIFACT_CONTRACT_MISMATCH: Legacy output.mp4 exists, but truth delivery requires shot_render_output.mp4.'
+              );
+            }
             throw new Error(
               "ARTIFACT_DELIVERY_FAILED: Truth-based delivery required. Non-verification job missing real artifacts."
             );

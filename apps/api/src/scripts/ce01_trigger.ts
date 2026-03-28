@@ -58,7 +58,11 @@ async function main() {
     // =====================================
 
     // 1. Find a valid context (Project -> Season -> Episode -> Scene -> Shot)
-    let project = await prisma.project.findFirst();
+    const projects = await prisma.project.findMany({
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
+    });
+    let project = projects[0] ?? null;
     if (!project) {
       // Create dummy
       project = await prisma.project.create({
@@ -71,9 +75,12 @@ async function main() {
       });
     }
 
-    const shot = await prisma.shot.findFirst({
+    const shots = await prisma.shot.findMany({
       include: { scene: { include: { episode: true } } },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const shot = shots[0] ?? null;
 
     let shotId = shot?.id;
     let sceneId = shot?.sceneId;

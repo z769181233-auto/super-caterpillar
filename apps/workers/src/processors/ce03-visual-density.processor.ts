@@ -10,6 +10,13 @@ export interface ProcessorResult {
   error?: string;
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 export async function processCE03VisualDensityJob(
   context: ProcessorContext
 ): Promise<ProcessorResult> {
@@ -77,8 +84,8 @@ export async function processCE03VisualDensityJob(
     }
 
     // 4. Trace Propagation & Audit
-    const traceId = job.payload?.traceId;
-    const pipelineRunId = job.payload?.pipelineRunId;
+    const traceId = requireNonEmptyString(fullJob.traceId ?? job.traceId ?? job.payload?.traceId, 'CE03', 'traceId');
+    const pipelineRunId = requireNonEmptyString(job.payload?.pipelineRunId, 'CE03', 'pipelineRunId');
 
     await prisma.auditLog.create({
       data: {
@@ -114,32 +121,10 @@ export async function processCE03VisualDensityJob(
       },
     });
 
-    // 4.6 Billing (P0 Hotfix: 0-cost Audit Record)
-    // Even if cost is 0, we must record it for commercial audit trails.
-    const costService = new CostLedgerService(apiClient, prisma);
-    await costService.recordEngineBilling({
-      jobId: job.id,
-      jobType: 'CE03_VISUAL_DENSITY',
-      traceId: traceId || job.id,
-      projectId,
-      userId: project.ownerId,
-      orgId: jobOrgId,
-      engineKey: 'ce03_visual_density',
-      runId: pipelineRunId as string,
-      billingUsage: {
-        totalTokens: 0,
-        completionTokens: 0,
-        promptTokens: 0,
-        model: 'heuristic-v1',
-      },
-      cost: 0, // Explicit 0 cost for pure router-based heuristic
-    });
-
     // 5. Orchestration (Trigger CE04)
     // S4-2 Requirement: CE03 -> CE04
     if (job.shotId && projectId && jobOrgId) {
-      const ce04RunKey = pipelineRunId || traceId || fullJob.traceId || job.id;
-      const ce04DedupeKey = `ce04_visual_enrichment_${job.shotId}_${ce04RunKey}`;
+      const ce04DedupeKey = `ce04_visual_enrichment_${job.shotId}_${pipelineRunId}`;
 
       const ce04Job = await prisma.shotJob.upsert({
         where: { dedupeKey: ce04DedupeKey },
@@ -170,7 +155,6 @@ export async function processCE03VisualDensityJob(
       output: {
         densityScore,
         metrics: { score: densityScore },
-        billing_usage: { totalTokens: 0, model: 'heuristic-v1', cost: 0 }, // Standardize Output
       },
     };
   } catch (error: any) {

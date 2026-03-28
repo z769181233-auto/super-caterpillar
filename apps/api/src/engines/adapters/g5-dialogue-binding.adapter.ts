@@ -44,7 +44,11 @@ export class G5DialogueBindingAdapter implements EngineAdapter {
         throw new Error('G5_DIALOGUE_BINDING: Missing story or renderPlan in payload');
       }
 
-      this.logger.log(`[G5-DIALOGUE] Processing ${renderPlan.episodeId || 'unknown'}...`);
+      const episodeLabel =
+        typeof renderPlan.episodeId === 'string' && renderPlan.episodeId.trim().length > 0
+          ? renderPlan.episodeId
+          : 'EPISODE_ID_MISSING';
+      this.logger.log(`[G5-DIALOGUE] Processing ${episodeLabel}...`);
 
       const dialogues: DialogueEntry[] = [];
       const beats = story.beats || [];

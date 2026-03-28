@@ -26,7 +26,7 @@ import { ApiSecurityModule } from '../security/api-security/api-security.module'
     PrismaModule,
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.JWT_SECRET || env.jwtSecret,
+        secret: env.jwtSecret,
         signOptions: {
           expiresIn: env.jwtExpiresIn as any,
         },

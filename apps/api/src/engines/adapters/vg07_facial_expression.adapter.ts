@@ -24,6 +24,10 @@ import { execAsync } from '../../../../../packages/shared/os_exec';
  */
 @Injectable()
 export class VG07FacialExpressionAdapter extends VgBaseEngine {
+  private isStubEnabled(): boolean {
+    return process.env.ALLOW_VG_STUBS === '1';
+  }
+
   constructor(
     @Inject(RedisService) redis: RedisService,
     @Inject(AuditService) audit: AuditService,
@@ -50,6 +54,12 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
    * }
    */
   protected async processLogic(payload: any): Promise<any> {
+    if (!this.isStubEnabled()) {
+      throw new Error(
+        'VG07_FACIAL_EXPRESSION_NOT_IMPLEMENTED: stub output disabled unless ALLOW_VG_STUBS=1'
+      );
+    }
+
     const characterId = payload.characterId || 'char_default';
     const emotion = payload.emotion || 'neutral';
     const intensity = Math.min(Math.max(payload.intensity || 1.0, 0), 1);
@@ -80,8 +90,7 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
     await this.generateExpressionPreview(expressionData, previewPath, emotion);
 
     return {
-      expressionDataUrl: `file://${dataPath}`,
-      previewImageUrl: `file://${previewPath}`,
+      assetUrl: `file://${dataPath}`,
       meta: {
         characterId,
         emotion,
@@ -91,6 +100,8 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
         frameCount: expressionData.frames.length,
         keypointCount: expressionData.keypoints.length,
         transition,
+        expressionDataUrl: `file://${dataPath}`,
+        previewImageUrl: `file://${previewPath}`,
       },
     };
   }
@@ -259,24 +270,18 @@ export class VG07FacialExpressionAdapter extends VgBaseEngine {
 
     const color = colors[emotion] || 'gray';
 
-    // 使用FFmpeg生成纯色占位图
-    try {
-      const res = await execAsync('ffmpeg', [
-        '-y',
-        '-f',
-        'lavfi',
-        '-i',
-        `color=c=${color}:s=256x256`,
-        '-frames:v',
-        '1',
-        outputPath,
-      ]);
-      if (res.code !== 0) {
-        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
-      }
-    } catch (error) {
-      // Fallback: 创建空文件
-      writeFileSync(outputPath, '');
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      `color=c=${color}:s=256x256`,
+      '-frames:v',
+      '1',
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
     }
   }
 }

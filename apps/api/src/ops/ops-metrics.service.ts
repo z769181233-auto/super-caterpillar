@@ -47,22 +47,23 @@ export class OpsMetricsService {
       where: { status: { in: ['PENDING', 'DISPATCHED'] } },
     });
 
-    const oldestPendingJob = await this.prisma.shotJob.findFirst({
+    const oldestPendingJob = await this.prisma.shotJob.aggregate({
       where: { status: 'PENDING' },
-      orderBy: { createdAt: 'asc' },
+      _min: { createdAt: true },
     });
-    const oldest_pending_age_ms = oldestPendingJob
-      ? now.getTime() - oldestPendingJob.createdAt.getTime()
+    const oldestPendingCreatedAt = oldestPendingJob._min.createdAt;
+    const oldest_pending_age_ms = oldestPendingCreatedAt
+      ? now.getTime() - oldestPendingCreatedAt.getTime()
       : 0;
 
-    // 4. Cost and Published (Simplified proxy)
-    const costByEngine = await this.prisma.jobEngineBinding.groupBy({
+    // 4. Engine activity and published assets (count proxy, not monetary cost)
+    const engineActivityByKey = await this.prisma.jobEngineBinding.groupBy({
       by: ['engineKey'],
       where: {
         status: 'COMPLETED',
         completedAt: { gte: twentyFourHoursAgo },
       },
-      _count: true, // Placeholder for real credits if not in schema
+      _count: true,
     });
 
     const publishedCount = await this.prisma.publishedVideo.count({
@@ -120,8 +121,8 @@ export class OpsMetricsService {
       ce23Stats.scored_total > 0 ? ce23Stats.fail_total / ce23Stats.scored_total : 0;
 
     // P16-1.4: Use SQL aggregation for Guardrail/Marginal stats to ensure 0-drift and high performance
-    let guardrailBlockedCount = 0;
-    let marginalFailCount = 0;
+    let guardrailBlockedCount: number | null = 0;
+    let marginalFailCount: number | null = 0;
 
     try {
       // Guardrail blocked (1h)
@@ -151,9 +152,8 @@ export class OpsMetricsService {
       );
     } catch (err) {
       this.logger.error(`Failed to aggregate P16-1.4 metrics via SQL: ${err}`);
-      // Fallback to 0 (0 risk)
-      guardrailBlockedCount = 0;
-      marginalFailCount = 0;
+      guardrailBlockedCount = null;
+      marginalFailCount = null;
     }
 
     // P20-0: Audio Runtime Metrics
@@ -177,13 +177,20 @@ export class OpsMetricsService {
       ce23_real_fail_rate_1h: Number(ce23_real_fail_rate_1h.toFixed(2)),
       rework_stats_1h: {
         ...reworkStats,
-        avg_rework_cost_estimate: 0, // Placeholder for P14-1
+        avg_rework_cost_estimate: null,
         ce23_guardrail_blocked_1h: guardrailBlockedCount,
         ce23_real_marginal_fail_1h: marginalFailCount,
       },
-      cost_by_engineKey_24h: costByEngine.reduce(
+      engine_activity_by_key_24h: engineActivityByKey.reduce(
         (acc, curr) => {
-          acc[curr.engineKey] = curr._count; // Assuming 1 job = 1 unit for now
+          acc[curr.engineKey] = curr._count;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+      cost_by_engineKey_24h: engineActivityByKey.reduce(
+        (acc, curr) => {
+          acc[curr.engineKey] = curr._count;
           return acc;
         },
         {} as Record<string, number>

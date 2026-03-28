@@ -15,7 +15,6 @@ import { assertTransition } from '../job/job.rules';
 import { randomUUID } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -59,6 +58,13 @@ function getStringArrayField(value: unknown, key: string): string[] {
   return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function requireTraceId(value: unknown, contextTag: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing traceId`);
+}
+
 /**
  * Worker 管理服务
  * 负责 Worker 注册、心跳、状态管理
@@ -82,16 +88,12 @@ export class WorkerService {
   private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
   private readonly CASCADE_WINDOW = 10000;
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowDirectPgDispatchFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
+    return process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
   }
 
   private shouldAllowWorkerLifecyclePgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
+    return process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
   }
 
   private async getSingleDispatchedJobForWorker(
@@ -191,7 +193,7 @@ export class WorkerService {
       }
       if (!this.shouldAllowWorkerLifecyclePgFallback()) {
         this.logger.error(
-          `[WorkerService] Prisma registerWorker degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+          `[WorkerService] Prisma registerWorker degraded for ${workerId}, but lifecycle pg fallback is disabled unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -320,7 +322,7 @@ export class WorkerService {
       }
       if (!this.shouldAllowWorkerLifecyclePgFallback()) {
         this.logger.error(
-          `[WorkerService] Prisma heartbeat degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+          `[WorkerService] Prisma heartbeat degraded for ${workerId}, but lifecycle pg fallback is disabled unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -1124,15 +1126,16 @@ export class WorkerService {
           return null; // Wait for concurrent jobs to finish
         }
 
-        const candidate = await tx.shotJob.findFirst({
+        const candidates = await tx.shotJob.findMany({
           where: {
             organizationId: selectedOrgId,
             status: JobStatus.PENDING,
             type: { in: supportedJobTypes },
           },
-          orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+          orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
           take: 1,
         });
+        const candidate = candidates[0] ?? null;
 
         if (!candidate) {
           return null;
@@ -1156,10 +1159,21 @@ export class WorkerService {
 
         // P3-A: Dual State Machine Physical Binding - RESERVED
         try {
+          let traceId = candidate.traceId;
+          if (typeof traceId !== 'string' || traceId.length === 0) {
+            // Historical or ad-hoc jobs may be missing a traceId. Backfill a stable one
+            // before reserving billing state so worker dispatch can continue safely.
+            traceId = candidate.id;
+            await tx.shotJob.update({
+              where: { id: candidate.id },
+              data: { traceId },
+            });
+          }
+          const resolvedTraceId = requireTraceId(traceId, `WorkerService.RESERVE.${candidate.id}`);
           await tx.billingLedger.create({
             data: buildBillingLedgerCreateData({
               tenantId: candidate.organizationId || candidate.projectId,
-              traceId: candidate.traceId || candidate.id,
+              traceId: resolvedTraceId,
               itemType: 'JOB',
               itemId: candidate.id,
               chargeCode: 'JOB_RESERVED',
@@ -1273,7 +1287,7 @@ export class WorkerService {
       if (this.shouldFallbackToPg(error)) {
         if (!this.shouldAllowDirectPgDispatchFallback()) {
           this.logger.error(
-            `[WorkerService] Prisma dispatch degraded for ${workerId}, but direct pg dispatch fallback is disabled outside CI/test/gate unless FORCE_WORKER_PG_DISPATCH_FALLBACK=1`
+            `[WorkerService] Prisma dispatch degraded for ${workerId}, but direct pg dispatch fallback is disabled unless FORCE_WORKER_PG_DISPATCH_FALLBACK=1`
           );
           throw error;
         }
@@ -1376,6 +1390,7 @@ export class WorkerService {
       const workerNode = workerResult.rows[0];
       if (!workerNode) {
         this.logger.warn(`[WorkerService] PG fallback: worker not found for dispatch: ${workerId}`);
+        await client.query('ROLLBACK');
         return null;
       }
 
@@ -1386,6 +1401,7 @@ export class WorkerService {
         this.logger.warn(
           `[WorkerService] PG fallback throttling worker ${workerId} (${history.length}/${this.CASCADE_LIMIT})`
         );
+        await client.query('ROLLBACK');
         return null;
       }
       this.dispatchHistory.set(workerId, history);
@@ -1397,6 +1413,7 @@ export class WorkerService {
         this.logger.warn(
           `[WorkerService] PG fallback: worker ${workerId} has no supportedJobTypes defined.`
         );
+        await client.query('ROLLBACK');
         return null;
       }
 

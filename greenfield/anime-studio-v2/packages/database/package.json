@@ -1,0 +1,18 @@
+{
+  "name": "@anime-studio-v2/database",
+  "private": true,
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "validate": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/anime_studio_v2?schema=public} prisma validate --schema prisma/schema.prisma",
+    "generate": "DATABASE_URL=${DATABASE_URL:-postgresql://postgres:postgres@localhost:5432/anime_studio_v2?schema=public} prisma generate --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0"
+  },
+  "devDependencies": {
+    "prisma": "5.22.0",
+    "typescript": "^5.9.3"
+  }
+}

@@ -8,8 +8,27 @@
  */
 
 import { randomUUID } from 'crypto';
+import * as path from 'path';
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
 import * as util from 'util';
 import { createRuntimePgClient, getRuntimeDbTimeoutMs } from '../prisma/pg-runtime.util';
+import { SecretEncryptionService } from '../security/api-security/secret-encryption.service';
+
+const root = path.resolve(__dirname, '../../../..');
+const envPath = path.join(root, '.env');
+const envLocalPath = path.join(root, '.env.local');
+
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath, override: true });
+}
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath, override: false });
+}
+
+if (!process.env.API_KEY_MASTER_KEY_B64 && process.env.NODE_ENV !== 'production') {
+  process.env.API_KEY_MASTER_KEY_B64 = Buffer.alloc(32, 7).toString('base64');
+}
 
 const WORKER_API_KEY = process.env.WORKER_API_KEY;
 const WORKER_API_SECRET = process.env.WORKER_API_SECRET;
@@ -19,6 +38,9 @@ if (!WORKER_API_KEY || !WORKER_API_SECRET) {
   process.stderr.write(errMsg + '\n');
   process.exit(1);
 }
+
+const workerApiKey = WORKER_API_KEY;
+const workerApiSecret = WORKER_API_SECRET;
 
 async function main() {
   process.stdout.write(util.format('========================================') + '\n');
@@ -36,6 +58,7 @@ async function main() {
     connectionString: databaseUrl,
     queryTimeoutMs: getRuntimeDbTimeoutMs('query'),
   });
+  const secretEncryptionService = new SecretEncryptionService();
 
   try {
     await client.connect();
@@ -47,39 +70,54 @@ async function main() {
         WHERE key = $1
         LIMIT 1
       `,
-      [WORKER_API_KEY]
+      [workerApiKey]
     );
 
     if (existing.rows[0]) {
-      process.stdout.write(util.format(`✅ API Key 已存在: ${WORKER_API_KEY}`) + '\n');
+      process.stdout.write(util.format(`✅ API Key 已存在: ${workerApiKey}`) + '\n');
       process.stdout.write(util.format('   如需重新创建，请先删除数据库中的记录。\n') + '\n');
       return;
     }
+
+    if (!secretEncryptionService.isMasterKeyConfigured()) {
+      throw new Error('FATAL: API_KEY_MASTER_KEY_B64 must be provided via environment variables');
+    }
+
+    const encrypted = secretEncryptionService.encryptSecret(workerApiSecret);
 
     const apiKey = await client.query(
       `
         INSERT INTO api_keys (
           id,
           key,
-          "secretHash",
+          "secretEnc",
+          "secretEncIv",
+          "secretEncTag",
           name,
           status,
           "createdAt",
           "updatedAt",
           "secretVersion"
         )
-        VALUES ($1, $2, $3, $4, 'ACTIVE'::api_key_status, NOW(), NOW(), 1)
+        VALUES ($1, $2, $3, $4, $5, $6, 'ACTIVE'::api_key_status, NOW(), NOW(), 1)
         RETURNING id, key
       `,
-      [randomUUID(), WORKER_API_KEY, WORKER_API_SECRET, 'Worker Dev API Key']
+      [
+        randomUUID(),
+        workerApiKey,
+        encrypted.enc,
+        encrypted.iv,
+        encrypted.tag,
+        'Worker Dev API Key',
+      ]
     );
 
     process.stdout.write(util.format('✅ Worker API Key 创建成功！') + '\n');
     process.stdout.write(util.format(`   Key: ${apiKey.rows[0].key}`) + '\n');
     process.stdout.write(util.format(`   Secret: ${WORKER_API_SECRET}`) + '\n');
     process.stdout.write(util.format('\n请将以下配置添加到 .env 文件：') + '\n');
-    process.stdout.write(util.format(`WORKER_API_KEY=${WORKER_API_KEY}`) + '\n');
-    process.stdout.write(util.format(`WORKER_API_SECRET=${WORKER_API_SECRET}`) + '\n');
+    process.stdout.write(util.format(`WORKER_API_KEY=${workerApiKey}`) + '\n');
+    process.stdout.write(util.format(`WORKER_API_SECRET=${workerApiSecret}`) + '\n');
     process.stdout.write(util.format('========================================\n') + '\n');
   } catch (error: any) {
     process.stderr.write(util.format('❌ 创建 API Key 失败:', error.message) + '\n');

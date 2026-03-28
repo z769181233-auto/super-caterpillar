@@ -4,7 +4,6 @@ import { ProjectResolver } from '../common/project-resolver';
 import { SHOT_WITH_HIERARCHY } from './job.service.queries';
 import {
     getRuntimeDbTimeoutMs,
-    isCiOrGateContextEnv,
     isPrismaFallbackEligibleError,
     withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -23,12 +22,8 @@ export class JobAuthOpsService {
         return isPrismaFallbackEligibleError(error);
     }
 
-    private isCiOrGateContext(): boolean {
-        return isCiOrGateContextEnv();
-    }
-
     private shouldAllowJobAuthPgFallback(): boolean {
-        return this.isCiOrGateContext() || process.env.FORCE_JOB_AUTH_PG_FALLBACK === '1';
+        return process.env.FORCE_JOB_AUTH_PG_FALLBACK === '1';
     }
 
     private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {

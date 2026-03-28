@@ -27,9 +27,16 @@ export class AudioBGMLocalAdapter implements EngineAdapter {
     return engineKey === 'audio_bgm';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    throw new Error('[AudioBGMLocal] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { sourceKey, targetDuration } = input.payload as any;
-    const traceId = input.context?.traceId || `bgm_${Date.now()}`;
+    const traceId = this.requireTraceId(input.context?.traceId);
     const t0 = performance.now();
 
     try {

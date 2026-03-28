@@ -183,13 +183,15 @@ export class PipelineService {
     if (type === 'SCENE') where.sceneId = refId;
     if (type === 'SHOT') where.shotId = refId;
 
-    const job = await (this.prisma as any).job
-      .findFirst({
+    const jobs = await (this.prisma as any).job
+      .findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: { id: true, status: true } as any,
+        take: 1,
       })
-      .catch(() => null);
+      .catch(() => []);
+    const job = jobs[0] ?? null;
 
     if (!job) {
       throw new Error('No job found for this node');
@@ -239,13 +241,17 @@ export class PipelineService {
     // 若你们已有 AuditLog 表：按实际字段名调整
     // 最安全：存在则写；不存在不阻断（但会 console.error），避免上线被 schema 卡死
     try {
+      const traceId =
+        typeof payload?.traceId === 'string' && payload.traceId.length > 0
+          ? payload.traceId
+          : undefined;
       await (this.prisma as any).auditLog.create({
         data: {
           projectId,
           actorId,
           action,
           payload,
-          traceId: payload?.traceId || null,
+          traceId,
           createdAt: new Date(),
         },
       });

@@ -15,7 +15,6 @@ import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -35,12 +34,8 @@ export class JobEngineBindingService {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowEngineBindingPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_ENGINE_BINDING_PG_FALLBACK === '1';
+    return process.env.FORCE_ENGINE_BINDING_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -80,7 +75,7 @@ export class JobEngineBindingService {
       }
       if (!this.shouldAllowEngineBindingPgFallback()) {
         this.logger.error(
-          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}, but pg fallback is disabled unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -154,7 +149,7 @@ export class JobEngineBindingService {
         }
         if (!this.shouldAllowEngineBindingPgFallback()) {
           this.logger.error(
-            `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+            `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}, but pg fallback is disabled unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
           );
           throw error;
         }
@@ -201,8 +196,16 @@ export class JobEngineBindingService {
     engineVersionId?: string,
     metadata?: any
   ) {
-    const binding = await this.prisma.jobEngineBinding.create({
-      data: {
+    const binding = await this.prisma.jobEngineBinding.upsert({
+      where: { jobId },
+      update: {
+        engineId,
+        engineKey,
+        engineVersionId,
+        status: JobEngineBindingStatus.BOUND,
+        metadata: metadata || {},
+      },
+      create: {
         jobId,
         engineId,
         engineKey,

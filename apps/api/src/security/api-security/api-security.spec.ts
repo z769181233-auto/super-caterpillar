@@ -105,6 +105,21 @@ describe('ApiSecurityService', () => {
     return hmac.digest('hex');
   }
 
+  function buildEncryptedKeyRecord(partial: Record<string, unknown> = {}) {
+    const encrypted = secretEncryptionService.encryptSecret(mockSecret);
+    return {
+      id: 'key_id_123',
+      key: mockApiKey,
+      secretEnc: encrypted.enc,
+      secretEncIv: encrypted.iv,
+      secretEncTag: encrypted.tag,
+      secretVersion: 1,
+      status: 'ACTIVE',
+      expiresAt: null,
+      ...partial,
+    };
+  }
+
   describe('verifySignature', () => {
     it('应该通过正常签名验证（v2，加密存储）', async () => {
       const method = 'POST';
@@ -325,13 +340,9 @@ describe('ApiSecurityService', () => {
       const contentSha256 = service.sha256Hex(body);
       const wrongSignature = 'wrong_signature_123';
 
-      prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
-        id: 'key_id_123',
-        key: mockApiKey,
-        secretHash: mockSecret,
-        status: 'ACTIVE',
-        expiresAt: null,
-      });
+      prismaService.apiKey.findUnique = jest
+        .fn()
+        .mockResolvedValue(buildEncryptedKeyRecord());
 
       redisService.get = jest.fn().mockResolvedValue(null);
       redisService.set = jest.fn().mockResolvedValue(true);
@@ -371,13 +382,9 @@ describe('ApiSecurityService', () => {
     });
 
     it('应该拒绝被禁用的 API Key', async () => {
-      prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
-        id: 'key_id_123',
-        key: mockApiKey,
-        secretHash: mockSecret,
-        status: 'DISABLED',
-        expiresAt: null,
-      });
+      prismaService.apiKey.findUnique = jest
+        .fn()
+        .mockResolvedValue(buildEncryptedKeyRecord({ status: 'DISABLED' }));
 
       const result = await service.verifySignature({
         apiKey: mockApiKey,
@@ -394,56 +401,61 @@ describe('ApiSecurityService', () => {
       expect(result.errorMessage).toContain('API Key 已被禁用');
     });
 
-    it('应该在非 CI/test/gate 上下文拒绝 secretHash fallback', async () => {
-      const originalNodeEnv = process.env.NODE_ENV;
-      const originalCi = process.env.CI;
-      const originalJestWorkerId = process.env.JEST_WORKER_ID;
-      const originalGateEnvMode = process.env.GATE_ENV_MODE;
-      const originalAllowLegacy = process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+    it('应该拒绝缺失加密 secret 的 API Key', async () => {
+      prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
+        id: 'key_id_123',
+        key: mockApiKey,
+        status: 'ACTIVE',
+        expiresAt: null,
+      });
 
-      try {
-        process.env.NODE_ENV = 'production';
-        delete process.env.CI;
-        delete process.env.JEST_WORKER_ID;
-        delete process.env.GATE_ENV_MODE;
-        delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
+      redisService.get = jest.fn().mockResolvedValue(null);
+      redisService.set = jest.fn().mockResolvedValue(true);
 
-        prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
-          id: 'key_id_123',
-          key: mockApiKey,
-          secretHash: mockSecret,
-          status: 'ACTIVE',
-          expiresAt: null,
-        });
+      const result = await service.verifySignature({
+        apiKey: mockApiKey,
+        nonce: mockNonce,
+        timestamp: mockTimestamp,
+        signature: 'aa'.repeat(32),
+        method: 'POST',
+        path: '/api/test',
+        contentSha256: '',
+        body: '',
+      });
 
-        redisService.get = jest.fn().mockResolvedValue(null);
-        redisService.set = jest.fn().mockResolvedValue(true);
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('500');
+      expect(result.errorMessage).toContain('no encrypted secret stored');
+    });
 
-        const result = await service.verifySignature({
-          apiKey: mockApiKey,
-          nonce: mockNonce,
-          timestamp: mockTimestamp,
-          signature: 'aa'.repeat(32),
-          method: 'POST',
-          path: '/api/test',
-          contentSha256: '',
-          body: '',
-        });
+    it('应该拒绝加密 secret triplet 不完整的 API Key', async () => {
+      prismaService.apiKey.findUnique = jest.fn().mockResolvedValue({
+        id: 'key_id_123',
+        key: mockApiKey,
+        secretEnc: mockSecret,
+        secretEncIv: 'only-iv',
+        secretEncTag: null,
+        status: 'ACTIVE',
+        expiresAt: null,
+      });
 
-        expect(result.success).toBe(false);
-        expect(result.errorCode).toBe('500');
-        expect(result.errorMessage).toContain('insecure secret storage');
-      } finally {
-        process.env.NODE_ENV = originalNodeEnv;
-        if (originalCi === undefined) delete process.env.CI;
-        else process.env.CI = originalCi;
-        if (originalJestWorkerId === undefined) delete process.env.JEST_WORKER_ID;
-        else process.env.JEST_WORKER_ID = originalJestWorkerId;
-        if (originalGateEnvMode === undefined) delete process.env.GATE_ENV_MODE;
-        else process.env.GATE_ENV_MODE = originalGateEnvMode;
-        if (originalAllowLegacy === undefined) delete process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK;
-        else process.env.ALLOW_LEGACY_SECRET_HASH_FALLBACK = originalAllowLegacy;
-      }
+      redisService.get = jest.fn().mockResolvedValue(null);
+      redisService.set = jest.fn().mockResolvedValue(true);
+
+      const result = await service.verifySignature({
+        apiKey: mockApiKey,
+        nonce: mockNonce,
+        timestamp: mockTimestamp,
+        signature: 'aa'.repeat(32),
+        method: 'POST',
+        path: '/api/test',
+        contentSha256: '',
+        body: '',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.errorCode).toBe('500');
+      expect(result.errorMessage).toContain('incomplete encrypted secret storage');
     });
   });
 

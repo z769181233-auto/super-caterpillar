@@ -34,6 +34,9 @@ import { PublishedVideoService } from '../publish/published-video.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Prisma,
+  AssetOwnerType,
+  AssetRole,
+  AssetType,
   JobStatus,
   JobType,
   TaskStatus,
@@ -67,7 +70,6 @@ import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY, SHOT_WITH_HIERARCHY } from './job.service.queries';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -136,6 +138,227 @@ export class JobService {
     }
 
     return jobs[0] ?? null;
+  }
+
+  private async resolveUniqueVideoAssetByStorageKey(
+    projectId: string,
+    storageKey: string,
+    contextTag: string,
+    roles?: AssetRole[]
+  ) {
+    const assets = await this.prisma.asset.findMany({
+      where: {
+        projectId,
+        type: AssetType.VIDEO,
+        storageKey,
+        ...(roles && roles.length > 0 ? { role: { in: roles } } : {}),
+      },
+      select: {
+        id: true,
+        projectId: true,
+        shotId: true,
+        storageKey: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 2,
+    });
+
+    if (assets.length > 1) {
+      this.logger.error(
+        `[${contextTag}] storageKey ${storageKey} resolved multiple VIDEO assets in project ${projectId}; refusing ambiguous asset resolution.`
+      );
+      return null;
+    }
+
+    return assets[0] ?? null;
+  }
+
+  private requireJobTraceId(
+    job: Pick<ShotJobWithShotHierarchy, 'id' | 'traceId'>,
+    contextTag: string
+  ): string {
+    if (typeof job.traceId === 'string' && job.traceId.length > 0) {
+      return job.traceId;
+    }
+    throw new Error(`[${contextTag}] Missing traceId for job ${job.id}`);
+  }
+
+  private requirePayloadPipelineRunId(
+    job: Pick<ShotJobWithShotHierarchy, 'id' | 'payload'>,
+    contextTag: string
+  ): string {
+    const payload =
+      job.payload && typeof job.payload === 'object' && !Array.isArray(job.payload)
+        ? (job.payload as Record<string, any>)
+        : {};
+    const pipelineRunId = payload.pipelineRunId;
+    if (typeof pipelineRunId === 'string' && pipelineRunId.length > 0) {
+      return pipelineRunId;
+    }
+    throw new Error(`[${contextTag}] Missing pipelineRunId for job ${job.id}`);
+  }
+
+  private async resolveTimelineRenderCe09Target(
+    job: Pick<ShotJobWithShotHierarchy, 'id' | 'projectId'>,
+    timelineResult: Record<string, any>,
+    timelineOutput: Record<string, any>
+  ): Promise<{ assetId: string; videoAssetStorageKey?: string } | null> {
+    const requestedAssetId =
+      typeof timelineOutput.assetId === 'string'
+        ? timelineOutput.assetId
+        : typeof timelineResult.assetId === 'string'
+          ? timelineResult.assetId
+          : undefined;
+    const requestedStorageKey =
+      typeof timelineOutput.storageKey === 'string'
+        ? timelineOutput.storageKey
+        : typeof timelineOutput.videoAssetStorageKey === 'string'
+          ? timelineOutput.videoAssetStorageKey
+          : typeof timelineResult.storageKey === 'string'
+            ? timelineResult.storageKey
+            : typeof timelineResult.videoAssetStorageKey === 'string'
+              ? timelineResult.videoAssetStorageKey
+              : undefined;
+
+    if (!job.projectId) {
+      this.logger.error(
+        `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} missing projectId; refusing CE09 fanout.`
+      );
+      return null;
+    }
+
+    if (requestedAssetId) {
+      const asset = await this.prisma.asset.findUnique({
+        where: { id: requestedAssetId },
+        select: {
+          id: true,
+          projectId: true,
+          storageKey: true,
+        },
+      });
+
+      if (!asset) {
+        this.logger.error(
+          `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} referenced missing asset ${requestedAssetId}.`
+        );
+        return null;
+      }
+
+      if (asset.projectId !== job.projectId) {
+        this.logger.error(
+          `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} referenced asset ${requestedAssetId} from another project ${asset.projectId}.`
+        );
+        return null;
+      }
+
+      return {
+        assetId: asset.id,
+        videoAssetStorageKey: requestedStorageKey ?? asset.storageKey ?? undefined,
+      };
+    }
+
+    if (requestedStorageKey) {
+      const asset = await this.resolveUniqueVideoAssetByStorageKey(
+        job.projectId,
+        requestedStorageKey,
+        'CE09_FANOUT_BLOCKED',
+        [AssetRole.SCENE_MASTER]
+      );
+
+      if (asset) {
+        return {
+          assetId: asset.id,
+          videoAssetStorageKey: asset.storageKey ?? requestedStorageKey,
+        };
+      }
+    }
+
+    const createdAssets = await this.prisma.asset.findMany({
+      where: {
+        createdByJobId: job.id,
+        projectId: job.projectId,
+        role: AssetRole.SCENE_MASTER,
+        type: AssetType.VIDEO,
+      },
+      select: { id: true, storageKey: true },
+      orderBy: { createdAt: 'desc' },
+      take: 2,
+    });
+
+    if (createdAssets.length > 1) {
+      this.logger.error(
+        `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} resolved multiple VIDEO assets by createdByJobId; refusing ambiguous CE09 fanout.`
+      );
+      return null;
+    }
+
+    if (createdAssets.length === 1) {
+      return {
+        assetId: createdAssets[0].id,
+        videoAssetStorageKey: createdAssets[0].storageKey ?? requestedStorageKey,
+      };
+    }
+
+    this.logger.error(
+      `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} missing assetId and no deterministic asset fallback found.`
+    );
+    return null;
+  }
+
+  private async resolveCe09PipelineAsset(
+    job: Pick<ShotJobWithShotHierarchy, 'id' | 'projectId' | 'shotId'>,
+    payload: Record<string, any>
+  ) {
+    const requestedAssetId = typeof payload.assetId === 'string' ? payload.assetId : undefined;
+    const requestedStorageKey =
+      typeof payload.videoAssetStorageKey === 'string' ? payload.videoAssetStorageKey : undefined;
+
+    if (requestedAssetId) {
+      const asset = await this.prisma.asset.findUnique({
+        where: { id: requestedAssetId },
+        select: { id: true, projectId: true, shotId: true, storageKey: true, checksum: true },
+      });
+
+      if (!asset) {
+        throw new Error(
+          `[CE09] Requested asset ${requestedAssetId} not found for security pipeline job ${job.id}`
+        );
+      }
+
+      if (job.projectId && asset.projectId !== job.projectId) {
+        throw new Error(`[CE09] Asset ${asset.id} does not belong to project ${job.projectId}`);
+      }
+
+      return asset;
+    }
+
+    if (requestedStorageKey && job.projectId) {
+      const asset = await this.resolveUniqueVideoAssetByStorageKey(
+        job.projectId,
+        requestedStorageKey,
+        'CE09'
+      );
+
+      if (asset) {
+        return asset;
+      }
+    }
+
+    if (job.shotId) {
+      return this.prisma.asset.findUnique({
+        where: {
+          ownerType_ownerId_type_role: {
+            ownerType: AssetOwnerType.SHOT,
+            ownerId: job.shotId,
+            role: AssetRole.SHOT_SOURCE,
+            type: AssetType.VIDEO,
+          },
+        },
+        select: { id: true, projectId: true, shotId: true, storageKey: true, checksum: true },
+      });
+    }
+
+    return null;
   }
 
   /**
@@ -255,8 +478,10 @@ export class JobService {
     const payload = (createJobDto.payload || {}) as Record<string, any>;
 
     // P1-3: Inject TraceId from context if not provided
-    const traceId =
-      createJobDto.traceId || getTraceId() || createJobDto.payload?.traceId || randomUUID();
+    const traceId = createJobDto.traceId || getTraceId() || createJobDto.payload?.traceId;
+    if (!traceId) {
+      throw new BadRequestException('traceId is required for novel analysis job');
+    }
     let shotId = payload.shotId as string | undefined;
     let episodeId = payload.episodeId as string | undefined;
     let sceneId = payload.sceneId as string | undefined;
@@ -267,58 +492,127 @@ export class JobService {
       throw new BadRequestException('projectId is required for novel analysis job');
     }
 
-    // 如果没有提供 shot/scene/episode，则为小说分析创建最小占位结构
+    // 缺少明确 shotId 时，优先绑定真实 chapter/scene；禁止再创建 Placeholder Scene/Shot
     if (!shotId) {
-      // Episode（按 chapterId 去重，避免重复创建）
-      let episode: any = null;
-      if (chapterId) {
-        episode = await this.prisma.episode.findUnique({
-          where: { chapterId },
+      let anchorScene =
+        sceneId
+          ? await this.prisma.scene.findUnique({
+              where: { id: sceneId },
+              select: { id: true, episodeId: true, chapterId: true, projectId: true },
+            })
+          : null;
+
+      if (!anchorScene && episodeId) {
+        const episodeScenes = await this.prisma.scene.findMany({
+          where: { episodeId },
+          orderBy: [{ sceneIndex: 'asc' }, { createdAt: 'asc' }],
+          take: 1,
+          select: { id: true, episodeId: true, chapterId: true, projectId: true },
         });
+        anchorScene = episodeScenes[0] ?? null;
       }
 
-      if (!episode) {
-        const episodeIndex = (await this.prisma.episode.count({ where: { projectId } })) + 1;
-        episode = await this.prisma.episode.create({
-          data: {
+      if (!anchorScene) {
+        const projectScenes = await this.prisma.scene.findMany({
+          where: {
             projectId,
-            seasonId: null as any, // [Audit] Removed Season layer, bypass strict TS
-            chapterId: chapterId,
-            index: episodeIndex,
-            name: `Episode ${episodeIndex}`,
-            summary: 'Auto generated for novel analysis',
+            ...(chapterId ? { chapterId } : {}),
           },
+          orderBy: [{ createdAt: 'asc' }, { sceneIndex: 'asc' }],
+          take: 1,
+          select: { id: true, episodeId: true, chapterId: true, projectId: true },
+        });
+        anchorScene = projectScenes[0] ?? null;
+      }
+
+      if (!anchorScene) {
+        throw new BadRequestException(
+          chapterId
+            ? `NOVEL_ANALYSIS_ANCHOR_SCENE_MISSING: chapterId=${chapterId}`
+            : `NOVEL_ANALYSIS_ANCHOR_SCENE_MISSING: projectId=${projectId}`
+        );
+      }
+
+      sceneId = anchorScene.id;
+
+      let resolvedEpisodeId = anchorScene.episodeId ?? episodeId;
+      const resolvedChapterId = chapterId ?? anchorScene.chapterId ?? undefined;
+
+      if (!resolvedEpisodeId && resolvedChapterId) {
+        let chapterEpisode = await this.prisma.episode.findUnique({
+          where: { chapterId: resolvedChapterId },
+          select: { id: true },
+        });
+
+        if (!chapterEpisode) {
+          const chapter = await this.prisma.novelChapter.findUnique({
+            where: { id: resolvedChapterId },
+            select: { id: true, title: true },
+          });
+          if (!chapter) {
+            throw new BadRequestException(
+              `NOVEL_ANALYSIS_ANCHOR_CHAPTER_MISSING: chapterId=${resolvedChapterId}`
+            );
+          }
+
+          const nextEpisodeIndex =
+            ((await this.prisma.episode.aggregate({
+              where: { projectId },
+              _max: { index: true },
+            }))._max.index ?? 0) + 1;
+
+          chapterEpisode = await this.prisma.episode.create({
+            data: {
+              projectId,
+              seasonId: null as any,
+              chapterId: chapter.id,
+              index: nextEpisodeIndex,
+              name: chapter.title?.trim() || `Episode ${nextEpisodeIndex}`,
+              summary: `Auto linked to chapter ${chapter.id} for novel analysis`,
+            },
+            select: { id: true },
+          });
+        }
+
+        resolvedEpisodeId = chapterEpisode.id;
+
+        if (anchorScene.episodeId !== resolvedEpisodeId) {
+          await this.prisma.scene.update({
+            where: { id: anchorScene.id },
+            data: { episodeId: resolvedEpisodeId },
+          });
+        }
+      }
+
+      if (!resolvedEpisodeId) {
+        throw new BadRequestException(
+          `NOVEL_ANALYSIS_ANCHOR_EPISODE_MISSING: sceneId=${anchorScene.id}`
+        );
+      }
+
+      episodeId = resolvedEpisodeId;
+
+      let anchorShot = await this.prisma.shot.findUnique({
+        where: { sceneId_index: { sceneId: anchorScene.id, index: 1 } },
+        select: { id: true },
+      });
+
+      if (!anchorShot) {
+        anchorShot = await this.prisma.shot.create({
+          data: {
+            sceneId: anchorScene.id,
+            index: 1,
+            title: 'Novel Analysis Anchor',
+            description: 'Deterministic anchor shot for NOVEL_ANALYSIS job binding',
+            type: 'novel_analysis',
+            params: {},
+            organizationId,
+          },
+          select: { id: true },
         });
       }
-      episodeId = episode.id;
 
-      // Scene
-      const sceneIndex = (await this.prisma.scene.count({ where: { episodeId: episode.id } })) + 1;
-      const scene = await this.prisma.scene.create({
-        data: {
-          episodeId: episode.id,
-          projectId,
-          sceneIndex,
-          title: `Job Placeholder Scene`,
-          summary: 'Auto generated for novel analysis',
-        },
-      });
-      sceneId = scene.id;
-
-      // Shot
-      const shotIndex = (await this.prisma.shot.count({ where: { sceneId: scene.id } })) + 1;
-      const shot = await this.prisma.shot.create({
-        data: {
-          sceneId: scene.id,
-          index: shotIndex,
-          title: `Job Placeholder Shot`,
-          description: 'Auto generated for novel analysis',
-          type: 'novel_analysis',
-          params: {},
-          organizationId,
-        },
-      });
-      shotId = shot.id;
+      shotId = anchorShot.id;
     }
 
     const shot = await this.prisma.shot.findUnique({
@@ -346,27 +640,48 @@ export class JobService {
     // Stage3-A: 在事务中创建 Job 并绑定 Engine
     const job = await this.prisma.$transaction(async (tx) => {
       // 1. 创建 Job
-      const createdJob = await tx.shotJob.create({
-        data: {
-          organizationId,
-          projectId: project.id,
-          episodeId: episode.id ?? episodeId,
-          sceneId: scene.id ?? sceneId,
-          shotId,
-          taskId,
-          type: JobTypeEnum.NOVEL_ANALYSIS,
-          status: JobStatusEnum.PENDING,
-          priority: 0,
-          maxRetry: 3,
-          retryCount: 0,
-          attempts: 0,
-          payload: createJobDto.payload ?? {},
-          engineConfig: createJobDto.engineConfig ?? {},
-          isVerification: createJobDto.isVerification || false,
-          traceId,
-          dedupeKey: createJobDto.dedupeKey,
-        },
-      });
+      let createdJob;
+      try {
+        createdJob = await tx.shotJob.create({
+          data: {
+            organizationId,
+            projectId: project.id,
+            episodeId: episode.id ?? episodeId,
+            sceneId: scene.id ?? sceneId,
+            shotId,
+            taskId,
+            type: JobTypeEnum.NOVEL_ANALYSIS,
+            status: JobStatusEnum.PENDING,
+            priority: 0,
+            maxRetry: 3,
+            retryCount: 0,
+            attempts: 0,
+            payload: createJobDto.payload ?? {},
+            engineConfig: createJobDto.engineConfig ?? {},
+            isVerification: createJobDto.isVerification || false,
+            traceId,
+            dedupeKey: createJobDto.dedupeKey,
+          },
+        });
+      } catch (error) {
+        const duplicateDedupe =
+          createJobDto.dedupeKey &&
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+
+        if (!duplicateDedupe) {
+          throw error;
+        }
+
+        const existing = await tx.shotJob.findUnique({
+          where: { dedupeKey: createJobDto.dedupeKey },
+        });
+        if (existing) {
+          return existing;
+        }
+
+        throw error;
+      }
 
       // 2. 绑定 Engine
       const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
@@ -379,8 +694,10 @@ export class JobService {
       }
 
       // 3. 创建 Engine Binding
-      await tx.jobEngineBinding.create({
-        data: {
+      await tx.jobEngineBinding.upsert({
+        where: { jobId: createdJob.id },
+        update: {},
+        create: {
           jobId: createdJob.id,
           engineId: engineSelection.engineId,
           engineKey: engineSelection.engineKey,
@@ -445,6 +762,27 @@ export class JobService {
         where: { dedupeKey },
       });
       if (existing) {
+        const binding = await this.prisma.jobEngineBinding.findUnique({
+          where: { jobId: existing.id },
+          select: { id: true },
+        });
+        if (!binding) {
+          const engineSelection = await this.jobEngineBindingService.selectEngineForJob(jobType);
+          if (!engineSelection) {
+            throw new BadRequestException(`No engine available for job type: ${jobType}`);
+          }
+          await this.prisma.jobEngineBinding.upsert({
+            where: { jobId: existing.id },
+            update: {},
+            create: {
+              jobId: existing.id,
+              engineId: engineSelection.engineId,
+              engineKey: engineSelection.engineKey,
+              engineVersionId: engineSelection.engineVersionId,
+              status: JobEngineBindingStatus.BOUND,
+            },
+          });
+        }
         return existing;
       }
     }
@@ -485,81 +823,137 @@ export class JobService {
         if (task) traceId = task.traceId ?? undefined;
       }
 
-      if (!traceId) traceId = `tr_ce01_${randomUUID()}`;
+      if (!traceId) {
+        throw new BadRequestException('traceId is required for CE01 job creation');
+      }
+      const requestedShotId =
+        payload && typeof payload === 'object' && typeof payload.shotId === 'string'
+          ? payload.shotId
+          : undefined;
+      const requestedSceneId =
+        payload && typeof payload === 'object' && typeof payload.sceneId === 'string'
+          ? payload.sceneId
+          : undefined;
+      const requestedEpisodeId =
+        payload && typeof payload === 'object' && typeof payload.episodeId === 'string'
+          ? payload.episodeId
+          : undefined;
 
-      let episode = await this.prisma.episode.findUnique({
-        where: { projectId_index: { projectId, index: 1 } },
-      });
+      let resolvedEpisodeId: string | undefined;
+      let resolvedSceneId: string | undefined;
+      let resolvedShotId: string | undefined;
 
-      if (!episode) {
-        episode = await this.prisma.episode.create({
-          data: {
-            projectId,
-            seasonId: null as any, // [Audit] Removed Season layer
-            index: 1,
-            name: 'Episode 1',
-            summary: 'Auto generated for CE Core Layer',
+      if (requestedShotId) {
+        const shot = await this.prisma.shot.findUnique({
+          where: { id: requestedShotId },
+          select: {
+            id: true,
+            sceneId: true,
+            scene: {
+              select: {
+                id: true,
+                episodeId: true,
+                projectId: true,
+              },
+            },
           },
         });
-      }
 
-      let scene = await this.prisma.scene.findUnique({
-        where: { episodeId_sceneIndex: { episodeId: episode.id, sceneIndex: 1 } },
-      });
+        if (!shot?.scene || shot.scene.projectId !== projectId) {
+          throw new BadRequestException(`SHOT_CONTEXT_INVALID: shotId=${requestedShotId}`);
+        }
+        if (requestedSceneId && requestedSceneId !== shot.sceneId) {
+          throw new BadRequestException(
+            `SHOT_SCENE_MISMATCH: shotId=${requestedShotId} sceneId=${requestedSceneId}`
+          );
+        }
+        if (requestedEpisodeId && requestedEpisodeId !== shot.scene.episodeId) {
+          throw new BadRequestException(
+            `SHOT_EPISODE_MISMATCH: shotId=${requestedShotId} episodeId=${requestedEpisodeId}`
+          );
+        }
 
-      if (!scene) {
-        scene = await this.prisma.scene.create({
-          data: {
-            episodeId: episode.id,
-            projectId,
-            sceneIndex: payload.sceneIndex || 1,
-            title: payload.sceneTitle || 'Auto Scene',
-            summary: payload.sceneDescription || 'Auto generated for CE Core Layer',
+        resolvedShotId = shot.id;
+        resolvedSceneId = shot.sceneId;
+        resolvedEpisodeId = shot.scene.episodeId ?? undefined;
+      } else if (requestedSceneId) {
+        const scene = await this.prisma.scene.findUnique({
+          where: { id: requestedSceneId },
+          select: {
+            id: true,
+            episodeId: true,
+            projectId: true,
           },
         });
+
+        if (!scene || scene.projectId !== projectId) {
+          throw new BadRequestException(`SCENE_CONTEXT_INVALID: sceneId=${requestedSceneId}`);
+        }
+        if (requestedEpisodeId && requestedEpisodeId !== scene.episodeId) {
+          throw new BadRequestException(
+            `SCENE_EPISODE_MISMATCH: sceneId=${requestedSceneId} episodeId=${requestedEpisodeId}`
+          );
+        }
+
+        resolvedSceneId = scene.id;
+        resolvedEpisodeId = scene.episodeId ?? undefined;
+      } else if (requestedEpisodeId) {
+        const episode = await this.prisma.episode.findUnique({
+          where: { id: requestedEpisodeId },
+          select: { id: true, projectId: true },
+        });
+
+        if (!episode || episode.projectId !== projectId) {
+          throw new BadRequestException(
+            `EPISODE_CONTEXT_INVALID: episodeId=${requestedEpisodeId}`
+          );
+        }
+
+        resolvedEpisodeId = episode.id;
       }
 
-      let shot = await this.prisma.shot.findUnique({
-        where: { sceneId_index: { sceneId: scene.id, index: 1 } },
-      });
-
-      if (!shot) {
-        shot = await this.prisma.shot.create({
+      let job: ShotJob;
+      try {
+        job = await this.prisma.shotJob.create({
           data: {
-            sceneId: scene.id,
-            index: 1,
-            title: 'Shot 1',
-            description: 'Auto generated for CE Core Layer',
-            type: 'ce_core',
-            params: {},
             organizationId,
+            projectId,
+            episodeId: resolvedEpisodeId,
+            sceneId: resolvedSceneId,
+            shotId: resolvedShotId,
+            taskId,
+            type: jobType,
+            status: JobStatusEnum.PENDING,
+            priority: priority ?? 0,
+            maxRetry: 3,
+            retryCount: 0,
+            attempts: 0,
+            payload: payload ?? {},
+            engineConfig: payload.engineConfig ?? {},
+            traceId,
+            isVerification: isVerification || false,
+            dedupeKey: dedupeKey,
           },
         });
+      } catch (error) {
+        const duplicateDedupe =
+          dedupeKey &&
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+
+        if (!duplicateDedupe) {
+          throw error;
+        }
+
+        const existing = await this.prisma.shotJob.findUnique({
+          where: { dedupeKey },
+        });
+        if (existing) {
+          return existing;
+        }
+
+        throw error;
       }
-
-      const actualSceneId = payload.sceneId || scene.id;
-
-      const job = await this.prisma.shotJob.create({
-        data: {
-          organizationId,
-          projectId,
-          episodeId: episode.id,
-          sceneId: actualSceneId,
-          shotId: shot.id,
-          taskId,
-          type: jobType,
-          status: JobStatusEnum.PENDING,
-          priority: priority ?? 0,
-          maxRetry: 3,
-          retryCount: 0,
-          attempts: 0,
-          payload: payload ?? {},
-          engineConfig: payload.engineConfig ?? {},
-          traceId,
-          isVerification: isVerification || false,
-          dedupeKey: dedupeKey,
-        },
-      });
 
       await this.auditLogService.record({
         action: AuditActions.JOB_CREATED,
@@ -700,10 +1094,45 @@ export class JobService {
     const jobType = JobTypeEnum.VIDEO_RENDER;
     const verificationMode = isVerification ? 'verification' : 'standard';
     const dedupeKey = `video_render_shot_${shotId}_${traceId}_${verificationMode}`;
+    const taskDedupeKey = `task_${dedupeKey}`;
 
     // P1 修复：容量门禁检查移入事务，防止竞态条件
     // 在事务内检查容量，确保检查与创建 job 的原子性
     return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.shotJob.findUnique({
+        where: { dedupeKey },
+      });
+
+      if (existing) {
+        if (!existing.taskId) {
+          const task = await tx.task.upsert({
+            where: { dedupeKey: taskDedupeKey },
+            update: {},
+            create: {
+              organizationId,
+              projectId: existing.projectId,
+              type: TaskTypeEnum.VIDEO_RENDER,
+              status: TaskStatusEnum.PENDING,
+              payload: { shotId, jobType, isVerification },
+              traceId,
+              dedupeKey: taskDedupeKey,
+            },
+          });
+
+          await tx.shotJob.updateMany({
+            where: { id: existing.id, taskId: null },
+            data: { taskId: task.id },
+          });
+
+          return (await tx.shotJob.findUnique({ where: { id: existing.id } })) ?? existing;
+        }
+
+        this.logger.log(
+          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), dedupeKey=${dedupeKey}, skipping.`
+        );
+        return existing;
+      }
+
       // 容量门禁检查（在事务内进行，传入 tx 确保使用同一事务）
       const capacityCheck = await this.capacityGateService.checkVideoRenderCapacity(
         organizationId,
@@ -720,18 +1149,6 @@ export class JobService {
         );
       }
 
-      // 双重检查：在创建 job 前使用 dedupeKey 做幂等保护
-      const existing = await tx.shotJob.findUnique({
-        where: { dedupeKey },
-      });
-
-      if (existing) {
-        this.logger.log(
-          `[JobService] ensureVideoRenderJob: Job already exists (${existing.id}), dedupeKey=${dedupeKey}, skipping.`
-        );
-        return existing;
-      }
-
       // 2. Resolve hierarchy for ShotJob requirement
       const shotHierarchy = await tx.shot.findUnique({
         where: { id: shotId },
@@ -745,25 +1162,38 @@ export class JobService {
 
       if (!projectId) throw new BadRequestException('Project ID not found for scene');
 
-      const task = await this.taskService.create({
-        organizationId,
-        projectId: projectId,
-        type: TaskTypeEnum.VIDEO_RENDER,
-        status: TaskStatusEnum.PENDING,
-        payload: { shotId, jobType, isVerification },
-        traceId, // Propagate traceId
+      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(jobType);
+
+      if (!engineSelection) {
+        throw new BadRequestException(`No engine available for job type: ${jobType}`);
+      }
+
+      const task = await tx.task.upsert({
+        where: { dedupeKey: taskDedupeKey },
+        update: {},
+        create: {
+          organizationId,
+          projectId: projectId,
+          type: TaskTypeEnum.VIDEO_RENDER,
+          status: TaskStatusEnum.PENDING,
+          payload: { shotId, jobType, isVerification },
+          traceId,
+          dedupeKey: taskDedupeKey,
+        },
       });
 
-      // 4. Create Job
-      const job = await tx.shotJob.create({
-        data: {
+      // 4. Create Job atomically with Task wrapper
+      const job = await tx.shotJob.upsert({
+        where: { dedupeKey },
+        update: {},
+        create: {
           organizationId,
           projectId: projectId,
           episodeId: shotHierarchy.scene.episodeId,
           sceneId: shotHierarchy.scene.id,
           shotId,
-          taskId: task.id,
           type: jobType,
+          taskId: task.id,
           status: JobStatusEnum.PENDING,
           dedupeKey,
           isVerification: isVerification ?? false, // ✅ 关键修复：写入 isVerification
@@ -773,7 +1203,9 @@ export class JobService {
             sceneId: shotHierarchy.scene.id,
             frameKeys,
             pipelineRunId: traceId, // EXECUTE-3 Fix: Ensure pipelineRunId is present
-            fps: 24, // Default FPS
+            ...(process.env.VIDEO_RENDER_DEFAULT_FPS
+              ? { fps: Number(process.env.VIDEO_RENDER_DEFAULT_FPS) }
+              : {}),
             isVerification, // 便于 Worker 识别
           },
           traceId,
@@ -782,15 +1214,10 @@ export class JobService {
 
       // 5. Select & Bind Engine (P0-R2 Fix)
       // Must happen in the same transaction to prevent "headless" jobs
-      const engineSelection = await this.jobEngineBindingService.selectEngineForJob(jobType);
-
-      if (!engineSelection) {
-        // Hard failure if no engine is mapped (config error)
-        throw new BadRequestException(`No engine available for job type: ${jobType}`);
-      }
-
-      await tx.jobEngineBinding.create({
-        data: {
+      await tx.jobEngineBinding.upsert({
+        where: { jobId: job.id },
+        update: {},
+        create: {
           jobId: job.id,
           engineId: engineSelection.engineId,
           engineKey: engineSelection.engineKey,
@@ -1062,7 +1489,10 @@ export class JobService {
       },
     });
 
-    if (!job) return;
+    if (!job) {
+      this.logger.warn(`[JobService] processJob called for missing job ${jobId}; skipping.`);
+      return;
+    }
 
     // 如果状态是 PENDING，先转为 RUNNING（虽通常由 Worker 做了，但防个别手动调用）
     if (job.status === JobStatusEnum.PENDING) {
@@ -1077,6 +1507,9 @@ export class JobService {
       });
     } else if (job.status !== JobStatusEnum.RUNNING) {
       // 非 RUNNING/PENDING 状态（如已被取消或已完成），忽略
+      this.logger.warn(
+        `[JobService] processJob skip for ${jobId}: expected PENDING/RUNNING but got ${job.status}.`
+      );
       return;
     }
 
@@ -1201,7 +1634,7 @@ export class JobService {
       }
       if (!this.shouldAllowJobQueryPgFallback()) {
         this.logger.error(
-          `[JobService.findJobById] Prisma degraded for ${id}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_QUERY_PG_FALLBACK=1`
+          `[JobService.findJobById] Prisma degraded for ${id}, but pg fallback is disabled unless FORCE_JOB_QUERY_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -1261,7 +1694,7 @@ export class JobService {
         }
         if (!this.shouldAllowJobQueryPgFallback()) {
           this.logger.error(
-            `[JobService.findJobById] Prisma project auth lookup degraded for ${job.projectId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_QUERY_PG_FALLBACK=1`
+            `[JobService.findJobById] Prisma project auth lookup degraded for ${job.projectId}, but pg fallback is disabled unless FORCE_JOB_QUERY_PG_FALLBACK=1`
           );
           throw error;
         }
@@ -1294,12 +1727,8 @@ export class JobService {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowJobQueryPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_JOB_QUERY_PG_FALLBACK === '1';
+    return process.env.FORCE_JOB_QUERY_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -2144,9 +2573,11 @@ export class JobService {
     job: ShotJobWithShotHierarchy,
     result?: unknown
   ): Promise<void> {
-    const task = await this.prisma.task.findUnique({
-      where: { id: job.taskId || '' },
-    });
+    const task = job.taskId
+      ? await this.prisma.task.findUnique({
+          where: { id: job.taskId },
+        })
+      : null;
 
     // P5-4: Pipeline Continuity Patch
     // Allow CE11_SHOT_GENERATOR to proceed even if parent Link (taskId) is missing
@@ -2219,12 +2650,17 @@ export class JobService {
         pipeline.includes('TIMELINE_RENDER') ||
         pipeline.includes('PIPELINE_TIMELINE_COMPOSE')
       ) {
+        const traceId = this.requireJobTraceId(job, 'CE04_TO_TIMELINE_COMPOSE');
+        const pipelineRunId = this.requirePayloadPipelineRunId(
+          job,
+          'CE04_TO_TIMELINE_COMPOSE'
+        );
         // [Stage 4.1] Transition CE04 -> PIPELINE_TIMELINE_COMPOSE
         await this.auditLogService.record({
           action: 'CE_DAG_TRANSITION',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || task?.traceId || undefined,
+          traceId,
           details: {
             from: 'CE04_VISUAL_ENRICHMENT',
             to: 'PIPELINE_TIMELINE_COMPOSE',
@@ -2243,8 +2679,9 @@ export class JobService {
             engineKey: 'timeline_compose',
             previousJobId: job.id,
             previousJobResult: result,
-            pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
+            pipelineRunId,
           },
+          traceId,
         });
         this.logger.log(
           `CE04 completed, triggered PIPELINE_TIMELINE_COMPOSE for project ${job.projectId}`
@@ -2256,13 +2693,13 @@ export class JobService {
       if (pipeline.includes('VIDEO_RENDER') || pipeline.includes('VIDEO_EXPORT')) {
         const resultData = (result as any)?.output || {};
         const createdShots = resultData.shots || [];
+        const pipelineRunId = this.requirePayloadPipelineRunId(job, 'CE11_TO_VIDEO_RENDER');
 
         this.logger.log(
           `CE11 completed for job ${job.id}. Triggering VIDEO_RENDER for ${createdShots.length} shots.`
         );
 
         for (const shot of createdShots) {
-          const pipelineRunId = (job.payload as any)?.pipelineRunId || job.id;
           const renderDedupeKey = `video_render_shot_${shot.id}_${pipelineRunId}_standard`;
 
           // Create VIDEO_RENDER job for each shot
@@ -2277,8 +2714,6 @@ export class JobService {
               projectId: job.projectId,
               sceneId: job.sceneId,
               shotId: shot.id,
-              engineKey: 'kling_video_gen_v1', // Default to Kling/Video Gen? Or retrieve from config?
-              // For now using a generic key or relying on worker routing defaults
               prompt: shot.visual_prompt || shot.prompt, // Pass prompt clearly
               duration: shot.duration || 5,
               originalJobId: job.id,
@@ -2290,6 +2725,14 @@ export class JobService {
     } else if (job.type === JobTypeEnum.PIPELINE_TIMELINE_COMPOSE) {
       // 编排完成，进入正式渲染环节
       if (pipeline.includes('VIDEO_EXPORT') || pipeline.includes('TIMELINE_RENDER')) {
+        const traceId = this.requireJobTraceId(
+          job,
+          'PIPELINE_TIMELINE_COMPOSE_TO_TIMELINE_RENDER'
+        );
+        const pipelineRunId = this.requirePayloadPipelineRunId(
+          job,
+          'PIPELINE_TIMELINE_COMPOSE_TO_TIMELINE_RENDER'
+        );
         const timelineStorageKey = (result as any)?.timelineStorageKey;
         if (!timelineStorageKey) {
           this.logger.error(
@@ -2302,7 +2745,7 @@ export class JobService {
           action: 'CE_DAG_TRANSITION',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || task?.traceId || undefined,
+          traceId,
           details: {
             from: 'PIPELINE_TIMELINE_COMPOSE',
             to: 'TIMELINE_RENDER',
@@ -2322,8 +2765,9 @@ export class JobService {
             previousJobId: job.id,
             previousJobResult: result,
             timelineStorageKey: timelineStorageKey,
-            pipelineRunId: (job.payload as any)?.pipelineRunId || job.id,
+            pipelineRunId,
           },
+          traceId,
         });
         this.logger.log(
           `PIPELINE_TIMELINE_COMPOSE completed, triggered TIMELINE_RENDER for project ${job.projectId}`
@@ -2334,12 +2778,13 @@ export class JobService {
       await this.handleStage1ShotCompletion(job);
     } else if (job.type === JobTypeEnum.TIMELINE_RENDER) {
       if (pipeline.includes("CE09_MEDIA_SECURITY")) {
+        const traceId = this.requireJobTraceId(job, 'TIMELINE_RENDER_TO_CE09');
         this.logger.log(`[CE09_FANOUT_ELIGIBLE] TIMELINE_RENDER finished, triggering CE09 for project ${job.projectId}`);
         await this.auditLogService.record({
           action: "CE_DAG_TRANSITION",
           resourceType: "job",
           resourceId: job.id,
-          traceId: job.traceId || task?.traceId || undefined,
+          traceId,
           details: {
             from: "TIMELINE_RENDER",
             to: "CE09_MEDIA_SECURITY",
@@ -2354,61 +2799,42 @@ export class JobService {
           !Array.isArray(timelineResult.output)
             ? (timelineResult.output as Record<string, any>)
             : timelineResult;
-        let assetId =
-          typeof timelineOutput.assetId === 'string'
-            ? timelineOutput.assetId
-            : typeof timelineResult.assetId === 'string'
-              ? timelineResult.assetId
-              : undefined;
+        const ce09Target = await this.resolveTimelineRenderCe09Target(
+          job,
+          timelineResult,
+          timelineOutput
+        );
 
-        if (!assetId) {
-          const createdAssets = await this.prisma.asset.findMany({
-            where: { createdByJobId: job.id },
-            select: { id: true },
-            orderBy: { createdAt: 'desc' },
-            take: 2,
-          });
-
-          if (createdAssets.length === 1) {
-            assetId = createdAssets[0].id;
-          } else if (createdAssets.length > 1) {
-            this.logger.error(
-              `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} resolved multiple assets; refusing ambiguous CE09 fanout.`
-            );
-            return;
-          }
-        }
-
-        if (!assetId) {
-          this.logger.error(
-            `[CE09_FANOUT_BLOCKED] TIMELINE_RENDER ${job.id} missing assetId and no deterministic asset fallback found.`
-          );
+        if (!ce09Target) {
           return;
         }
 
-        const pipelineRunId =
-          typeof (job.payload as any)?.pipelineRunId === 'string'
-            ? (job.payload as any).pipelineRunId
-            : job.id;
-        const ce09DedupeKey = `ce09_${pipelineRunId}_${assetId}`;
-        this.logger.log(`[CE09_FANOUT_ENQUEUED] Enqueuing CE09 with assetId: ${assetId}`);
+        const pipelineRunId = this.requirePayloadPipelineRunId(job, 'TIMELINE_RENDER_TO_CE09');
+        const ce09DedupeKey = `ce09_${pipelineRunId}_${ce09Target.assetId}`;
+        this.logger.log(`[CE09_FANOUT_ENQUEUED] Enqueuing CE09 with assetId: ${ce09Target.assetId}`);
+
+        if (!job.projectId) {
+          throw new Error(`[TIMELINE_RENDER_TO_CE09] Missing projectId for job ${job.id}`);
+        }
+        if (!job.organizationId) {
+          throw new Error(`[TIMELINE_RENDER_TO_CE09] Missing organizationId for job ${job.id}`);
+        }
 
         await this.createCECoreJob({
-          projectId: job.projectId!,
-          organizationId: job.organizationId!,
-          taskId: job.taskId!,
+          projectId: job.projectId,
+          organizationId: job.organizationId,
+          taskId: job.taskId ?? undefined,
           jobType: JobTypeEnum.CE09_MEDIA_SECURITY,
           dedupeKey: ce09DedupeKey,
           payload: {
-            assetId,
+            assetId: ce09Target.assetId,
             originJobId: job.id,
             pipelineRunId,
             projectId: job.projectId,
             shotId: job.shotId || undefined,
-            videoAssetStorageKey:
-              typeof timelineOutput.storageKey === 'string' ? timelineOutput.storageKey : undefined,
+            videoAssetStorageKey: ce09Target.videoAssetStorageKey,
           },
-          traceId: job.traceId || task?.traceId || undefined,
+          traceId,
         });
       }
     } else if (job.type === JobTypeEnum.CE09_MEDIA_SECURITY) {
@@ -2426,27 +2852,9 @@ export class JobService {
     result?: unknown
   ): Promise<void> {
     try {
+      const traceId = this.requireJobTraceId(job, 'CE09_SECURITY_PIPELINE');
       const payload = (job.payload as Record<string, any>) || {};
-      const requestedAssetId = typeof payload.assetId === 'string' ? payload.assetId : undefined;
-      let asset = requestedAssetId
-        ? await this.prisma.asset.findUnique({
-            where: { id: requestedAssetId },
-            select: { id: true, projectId: true, shotId: true },
-          })
-        : null;
-
-      if (!asset && job.shotId) {
-        asset = await this.prisma.asset.findUnique({
-          where: {
-            ownerType_ownerId_type: {
-              ownerType: 'SHOT',
-              ownerId: job.shotId,
-              type: 'VIDEO',
-            },
-          },
-          select: { id: true, projectId: true, shotId: true },
-        });
-      }
+      const asset = await this.resolveCe09PipelineAsset(job, payload);
 
       if (!asset) {
         throw new Error(`[CE09] Missing target asset for security pipeline job ${job.id}`);
@@ -2506,11 +2914,67 @@ export class JobService {
         });
       });
 
+      const payloadEpisodeId =
+        typeof payload.episodeId === 'string' && payload.episodeId.length > 0
+          ? payload.episodeId
+          : undefined;
+      const payloadSceneId =
+        typeof payload.sceneId === 'string' && payload.sceneId.length > 0 ? payload.sceneId : undefined;
+      const resolvedEpisodeId =
+        job.episodeId ??
+        payloadEpisodeId ??
+        (payloadSceneId
+          ? (
+              await this.prisma.scene.findUnique({
+                where: { id: payloadSceneId },
+                select: { episodeId: true },
+              })
+            )?.episodeId ??
+            undefined
+          : undefined);
+      const finalStorageKey =
+        typeof securityRecord.storageKey === 'string' && securityRecord.storageKey.length > 0
+          ? securityRecord.storageKey
+          : asset.storageKey;
+      const finalChecksum =
+        typeof securityRecord.sha256 === 'string' && securityRecord.sha256.length > 0
+          ? securityRecord.sha256
+          : ('checksum' in asset && typeof asset.checksum === 'string' && asset.checksum.length > 0
+              ? asset.checksum
+              : undefined);
+
+      if (!resolvedEpisodeId) {
+        this.logger.error(
+          `[CE09] PublishedVideo skipped for job ${job.id}: missing episodeId after security reconciliation.`
+        );
+      } else if (!finalStorageKey) {
+        this.logger.error(
+          `[CE09] PublishedVideo skipped for job ${job.id}: missing authoritative storageKey after security reconciliation.`
+        );
+      } else if (!finalChecksum) {
+        this.logger.error(
+          `[CE09] PublishedVideo skipped for job ${job.id}: missing authoritative checksum after security reconciliation.`
+        );
+      } else {
+        const pipelineRunId =
+          typeof payload.pipelineRunId === 'string' && payload.pipelineRunId.length > 0
+            ? payload.pipelineRunId
+            : undefined;
+        await this.publishedVideoService.recordPublishedVideo({
+          projectId: job.projectId,
+          episodeId: resolvedEpisodeId,
+          assetId: asset.id,
+          storageKey: finalStorageKey,
+          checksum: finalChecksum,
+          pipelineRunId,
+        });
+      }
+
       await this.auditLogService.record({
         action: 'CE09_SECURITY_COMPLETED',
         resourceType: 'asset',
         resourceId: asset.id,
-        traceId: job.traceId || undefined,
+        traceId,
         details: {
           jobId: job.id,
           securityProcessed: true,
@@ -2529,7 +2993,7 @@ export class JobService {
           action: 'CE09_SECURITY_PIPELINE_FAIL',
           resourceType: 'job',
           resourceId: job.id,
-          traceId: job.traceId || undefined, // Ensure trace propagation
+          traceId: this.requireJobTraceId(job, 'CE09_SECURITY_PIPELINE_FAIL'),
           details: {
             reason: 'CE09 security pipeline failed',
             error: error?.message || 'Unknown error',
@@ -2558,8 +3022,12 @@ export class JobService {
    * 如果任一 CE Job 失败，标记后续未执行的 Job 为 FAILED
    */
   private async handleCECoreJobFailure(job: any): Promise<void> {
+    if (!job.taskId) {
+      return;
+    }
+
     const task = await this.prisma.task.findUnique({
-      where: { id: job.taskId || '' },
+      where: { id: job.taskId },
       include: { jobs: true },
     });
 
@@ -2601,6 +3069,12 @@ export class JobService {
           if (nextJobType === JobTypeEnum.CE04_VISUAL_ENRICHMENT) {
             const engineKey = 'ce04_visual_enrichment';
             const traceId = pendingJob.traceId || task.traceId;
+            if (!traceId) {
+              this.logger.error(
+                `CE Pipeline: missing traceId for skipped CE04 job ${pendingJob.id}; audit record sealed.`
+              );
+              continue;
+            }
 
             await this.auditLogService.record({
               action: `CE_${engineKey.toUpperCase()} _SKIPPED`,
@@ -2651,6 +3125,36 @@ export class JobService {
     };
   }
 
+  private async resolveStage1PipelineJob(pipelineRunId: string) {
+    const byDedupe = await this.prisma.shotJob.findUnique({
+      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
+    });
+
+    if (byDedupe) {
+      return byDedupe;
+    }
+
+    const candidates = await this.prisma.shotJob.findMany({
+      where: {
+        type: JobTypeEnum.PIPELINE_STAGE1_NOVEL_TO_VIDEO,
+        payload: {
+          path: ['pipelineRunId'],
+          equals: pipelineRunId,
+        },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
+    });
+
+    if (candidates.length > 1) {
+      this.logger.warn(
+        `[Stage-1] Multiple pipeline jobs matched pipelineRunId=${pipelineRunId}; using latest job ${candidates[0].id} and refusing random selection.`
+      );
+    }
+
+    return candidates[0] ?? null;
+  }
+
   /**
    * Stage-1: 处理镜头渲染成功后的流水线推进
    * 规则：如果发现所有相关 SHOT_RENDER 均已成功，则自动触发合成
@@ -2659,14 +3163,20 @@ export class JobService {
     const payload = (job.payload as any) || {};
     const pipelineRunId = payload.pipelineRunId;
 
-    if (!pipelineRunId) return;
+    if (!pipelineRunId) {
+      this.logger.warn(`[Stage-1] SHOT_RENDER ${job.id} missing pipelineRunId; skipping assemble gate.`);
+      return;
+    }
 
     // 检查是否存在对应的 Stage-1 Pipeline Job
-    const pipelineJob = await this.prisma.shotJob.findUnique({
-      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
-    });
+    const pipelineJob = await this.resolveStage1PipelineJob(pipelineRunId);
 
-    if (!pipelineJob) return;
+    if (!pipelineJob) {
+      this.logger.warn(
+        `[Stage-1] No pipeline root found for pipelineRunId=${pipelineRunId}; skipping assemble gate for job ${job.id}.`
+      );
+      return;
+    }
 
     // 统计该流水线跑批中尚未成功的 SHOT_RENDER 数量
     const remainingCount = await this.prisma.shotJob.count({
@@ -2698,6 +3208,7 @@ export class JobService {
   ): Promise<void> {
     const succeededShots = await this.prisma.shotJob.findMany({
       where: {
+        type: JobTypeEnum.SHOT_RENDER,
         status: JobStatusEnum.SUCCEEDED,
         payload: {
           path: ['pipelineRunId'],
@@ -2718,7 +3229,29 @@ export class JobService {
 
     // 收集所有已成功的帧存储路径
     const frames = succeededShots
-      .map((sj: any) => sj.payload?.result?.output?.storageKey || sj.payload?.result?.storageKey)
+      .map((sj: any) => {
+        const resultRecord = sj?.result && typeof sj.result === 'object' ? (sj.result as Record<string, any>) : {};
+        const outputRecord =
+          resultRecord.output && typeof resultRecord.output === 'object'
+            ? (resultRecord.output as Record<string, any>)
+            : {};
+        const payloadRecord = sj?.payload && typeof sj.payload === 'object' ? (sj.payload as Record<string, any>) : {};
+        const payloadResult =
+          payloadRecord.result && typeof payloadRecord.result === 'object'
+            ? (payloadRecord.result as Record<string, any>)
+            : {};
+        const payloadOutput =
+          payloadResult.output && typeof payloadResult.output === 'object'
+            ? (payloadResult.output as Record<string, any>)
+            : {};
+
+        return (
+          outputRecord.storageKey ||
+          resultRecord.storageKey ||
+          payloadOutput.storageKey ||
+          payloadResult.storageKey
+        );
+      })
       .filter(Boolean);
 
     if (frames.length === 0) {
@@ -2726,10 +3259,7 @@ export class JobService {
       return;
     }
 
-    const pipelineJob = await this.prisma.shotJob.findUnique({
-      where: { dedupeKey: `stage1_pipeline_${pipelineRunId}` },
-      select: { shotId: true },
-    });
+    const pipelineJob = await this.resolveStage1PipelineJob(pipelineRunId);
 
     const targetShotId = pipelineJob?.shotId || succeededShots[0].shotId;
 
@@ -2796,7 +3326,10 @@ export class JobService {
       if (!enabled) return;
 
       // 3. 触发评分
-      await this.qualityScoreService.performScoring(shotId, traceId || '', 1);
+      if (!traceId) {
+        throw new Error(`[QUALITY_HOOK] Missing traceId for SHOT_RENDER job ${jobId}`);
+      }
+      await this.qualityScoreService.performScoring(shotId, traceId, 1);
     };
 
     const safeRun = async () => {

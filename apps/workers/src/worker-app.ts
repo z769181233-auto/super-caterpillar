@@ -158,11 +158,11 @@ const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE ==
 
 const rawApiBaseUrl = process.env.API_BASE_URL;
 const rawApiUrl = process.env.API_URL;
-const baseUrl = rawApiBaseUrl || rawApiUrl;
+const baseUrl = rawApiBaseUrl || rawApiUrl || env.apiUrl;
 
 if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
-  throw new Error('API_BASE_URL or API_URL is required in production');
+  throw new Error('API_BASE_URL or API_URL is required');
 }
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 

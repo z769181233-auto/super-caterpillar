@@ -20,7 +20,27 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
     return engineKey === 'dialogue_optimization';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[DialogueOptimizationAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    let traceId: string;
+    try {
+      traceId = this.requireTraceId(input.context?.traceId);
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'DIALOGUE_TRACE_ID_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
+
     const payload = input.payload || {};
     const dialogue = payload.dialogue || '';
     const persona = payload.persona || 'neutral';
@@ -41,8 +61,8 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
     try {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
-        await this.auditHelper(input, 'HIT', cacheKey);
-        await this.recordCost(input, 0, { status: 'CACHE_HIT' });
+        await this.auditHelper(input, traceId, 'HIT', cacheKey);
+        await this.recordCost(input, traceId, 0, { status: 'CACHE_HIT' });
         return {
           status: 'SUCCESS' as any,
           output: { ...cached, source: 'cache', meta: { cached: true } },
@@ -87,8 +107,8 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
     await this.redisService.setJson(cacheKey, output, 60 * 60 * 24 * 7);
 
     // 4. Audit & Cost (MISS = 1)
-    await this.auditHelper(input, 'MISS', 'generated');
-    await this.recordCost(input, 1);
+    await this.auditHelper(input, traceId, 'MISS', 'generated');
+    await this.recordCost(input, traceId, 1);
 
     return {
       status: 'SUCCESS' as any,
@@ -96,7 +116,12 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
     };
   }
 
-  private async auditHelper(input: EngineInvokeInput, type: 'HIT' | 'MISS', resourceId: string) {
+  private async auditHelper(
+    input: EngineInvokeInput,
+    traceId: string,
+    type: 'HIT' | 'MISS',
+    resourceId: string
+  ) {
     await this.auditService.log({
       action: 'DIALOGUE_OPTIMIZATION',
       resourceId: resourceId,
@@ -105,12 +130,17 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
         projectId: input.context.projectId,
         userId: input.context.userId || 'system',
         cache: type,
-        traceId: input.context.traceId,
+        traceId,
       },
     });
   }
 
-  private async recordCost(input: EngineInvokeInput, amount: number, extra: any = {}) {
+  private async recordCost(
+    input: EngineInvokeInput,
+    traceId: string,
+    amount: number,
+    extra: any = {}
+  ) {
     await this.costLedgerService.recordFromEvent({
       userId: input.context.userId || 'system',
       projectId: input.context.projectId || '',
@@ -123,7 +153,7 @@ export class DialogueOptimizationAdapter implements EngineAdapter {
       attempt: (input.context as any).attempt || 1,
       metadata: {
         type: 'dialogue_optimization',
-        traceId: input.context.traceId || 'unknown',
+        traceId,
         ...extra,
       },
     });

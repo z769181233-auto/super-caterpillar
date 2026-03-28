@@ -1,10 +1,10 @@
-import { PrismaClient, AssetOwnerType, AssetType } from 'database';
+import { PrismaClient, AssetOwnerType, AssetRole, AssetType } from 'database';
 import * as path from 'path';
 import { promises as fsp } from 'fs';
 import { randomUUID } from 'crypto';
 import { ApiClient } from '../api-client';
 import { ProcessorContext } from '../types/processor-context';
-const { Client } = require('pg');
+import sharp from 'sharp';
 
 export interface VideoRenderProcessorResult {
   status: 'SUCCEEDED' | 'FAILED';
@@ -13,6 +13,13 @@ export interface VideoRenderProcessorResult {
   assetId?: string;
   error?: string;
   [key: string]: any;
+}
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
 }
 
 /**
@@ -28,55 +35,17 @@ export async function processVideoRenderJob(
   const logger = context.logger || console;
 
   const payload = (job.payload || {}) as any;
-  const { pipelineRunId, projectId, frames, frameKeys } = payload;
+  const pipelineRunId = requireNonEmptyString(payload.pipelineRunId, 'VideoRender_HUB', 'pipelineRunId');
+  const projectId = requireNonEmptyString(payload.projectId || job.projectId, 'VideoRender_HUB', 'projectId');
+  const traceId = requireNonEmptyString(payload.traceId || job.traceId, 'VideoRender_HUB', 'traceId');
+  const { frames, frameKeys } = payload;
   let sceneId = payload.sceneId;
   const organizationId = job.organizationId;
-
-  if (!projectId) {
-    throw new Error('[VideoRender_HUB] Missing projectId');
-  }
   if (!organizationId) {
     throw new Error('[VideoRender_HUB] Missing organizationId');
   }
 
   logger.log(`[VideoRender_HUB] Processing job ${job.id} for run ${pipelineRunId}`);
-  const queryTimeoutMs = Number(process.env.PRISMA_QUERY_TIMEOUT_MS || '5000');
-
-  const isPrismaTimeout = (error: any) => String(error?.message || '').includes('PRISMA_QUERY_TIMEOUT');
-  const withPgClient = async <T>(fn: (client: any) => Promise<T>): Promise<T> => {
-    const client = new Client({
-      connectionString: process.env.DATABASE_URL,
-      connectionTimeoutMillis: queryTimeoutMs,
-      query_timeout: queryTimeoutMs,
-    });
-    await client.connect();
-    try {
-      return await fn(client);
-    } finally {
-      await client.end().catch(() => undefined);
-    }
-  };
-
-  const upsertAssetViaPg = async (storageKey: string, sha256?: string) =>
-    withPgClient(async (client) => {
-      const assetId = randomUUID();
-      const result = await client.query(
-        `INSERT INTO assets (
-           id, "projectId", "createdAt", checksum, "createdByJobId",
-           "ownerId", "ownerType", status, "storageKey", type
-         ) VALUES ($1, $2, NOW(), $3, $4, $5, $6, 'GENERATED', $7, $8)
-         ON CONFLICT ("ownerType", "ownerId", type)
-         DO UPDATE SET
-           "storageKey" = EXCLUDED."storageKey",
-           checksum = EXCLUDED.checksum,
-           "createdByJobId" = EXCLUDED."createdByJobId",
-           status = 'GENERATED'
-         RETURNING id`,
-        [assetId, projectId, sha256, job.id, sceneId, AssetOwnerType.SCENE, storageKey, AssetType.VIDEO]
-      );
-      return { id: result.rows[0].id };
-    });
-
   const normalizeStorageKey = async (rawStorageKey: string): Promise<string> => {
     if (!rawStorageKey) {
       throw new Error('VIDEO_MERGE_MISSING_STORAGE_KEY');
@@ -101,6 +70,35 @@ export async function processVideoRenderJob(
     return targetRelative;
   };
 
+  const parsePositiveNumber = (
+    rawValue: unknown,
+    field: string,
+    { integerOnly = false }: { integerOnly?: boolean } = {}
+  ): number => {
+    const value =
+      typeof rawValue === 'number'
+        ? rawValue
+        : typeof rawValue === 'string' && rawValue.trim().length > 0
+          ? Number(rawValue)
+          : NaN;
+
+    if (!Number.isFinite(value) || value <= 0 || (integerOnly && !Number.isInteger(value))) {
+      throw new Error(`[VideoRender_HUB] Invalid ${field}: explicit positive ${integerOnly ? 'integer ' : ''}value required`);
+    }
+
+    return value;
+  };
+
+  const resolveFrameDimensions = async (
+    framePath: string
+  ): Promise<{ width: number; height: number }> => {
+    const metadata = await sharp(framePath).metadata();
+    if (!metadata.width || !metadata.height) {
+      throw new Error(`[VideoRender_HUB] Unable to detect frame dimensions from ${framePath}`);
+    }
+    return { width: metadata.width, height: metadata.height };
+  };
+
   try {
     // 1. Resolve sceneId if missing (P4 Fix)
     if (!sceneId && payload.shotId) {
@@ -112,11 +110,47 @@ export async function processVideoRenderJob(
     }
     if (!sceneId) throw new Error('MISSING_SCENE_ID');
 
+    const scene = await prisma.scene.findUnique({
+      where: { id: sceneId },
+      select: {
+        id: true,
+        projectId: true,
+      },
+    });
+    if (!scene) {
+      throw new Error(`[VideoRender_HUB] Scene ${sceneId} not found`);
+    }
+    if (scene.projectId && scene.projectId !== projectId) {
+      throw new Error(
+        `[VideoRender_HUB] Scene ${sceneId} belongs to project ${scene.projectId}, not ${projectId}`
+      );
+    }
+
     const cleanFramePaths = (frames || frameKeys || []).map((raw: string) => {
       const normalized = raw.replace(/^file:\/\//, '').replace(/^.*\.runtime\//, '');
       if (path.isAbsolute(normalized) || !localStorage) return normalized;
       return localStorage.getAbsolutePath(normalized);
     });
+    if (cleanFramePaths.length === 0) {
+      throw new Error('[VideoRender_HUB] No frame paths resolved');
+    }
+
+    const fps = parsePositiveNumber(
+      payload.fps ?? process.env.VIDEO_RENDER_DEFAULT_FPS,
+      'fps',
+      { integerOnly: false }
+    );
+    const payloadWidth =
+      payload.width == null ? null : parsePositiveNumber(payload.width, 'width', { integerOnly: true });
+    const payloadHeight =
+      payload.height == null ? null : parsePositiveNumber(payload.height, 'height', { integerOnly: true });
+    const inferredDimensions =
+      payloadWidth && payloadHeight ? null : await resolveFrameDimensions(cleanFramePaths[0]);
+    const width = payloadWidth ?? inferredDimensions?.width;
+    const height = payloadHeight ?? inferredDimensions?.height;
+    if (!width || !height) {
+      throw new Error('[VideoRender_HUB] Missing width/height and unable to infer from first frame');
+    }
 
     // 2. Invoke EngineHub
     const mergeResult = await apiClient.invokeEngine({
@@ -124,11 +158,11 @@ export async function processVideoRenderJob(
       payload: {
         jobId: job.id,
         framePaths: cleanFramePaths,
-        fps: payload.fps || 24,
-        width: payload.width || 512,
-        height: payload.height || 512,
+        fps,
+        width,
+        height,
       },
-      context: { ...job.context, jobId: job.id, traceId: payload.traceId },
+      context: { ...job.context, jobId: job.id, traceId },
     });
     logger.log(`[VideoRender_HUB DEBUG] mergeResult=${JSON.stringify(mergeResult)}`);
 
@@ -150,44 +184,39 @@ export async function processVideoRenderJob(
     const duration = output.duration || output.asset?.durationSeconds;
 
     // 3. Upsert Asset
-    let asset;
-    try {
-      asset = await prisma.asset.upsert({
-        where: {
-          ownerType_ownerId_type: {
-            ownerType: AssetOwnerType.SCENE,
-            ownerId: sceneId,
-            type: AssetType.VIDEO,
-          },
-        },
-        update: {
-          storageKey,
-          checksum: sha256,
-          createdByJobId: job.id,
-          status: 'GENERATED',
-        },
-        create: {
-          projectId,
-          ownerId: sceneId,
+    const asset = await prisma.asset.upsert({
+      where: {
+        ownerType_ownerId_type_role: {
+          role: AssetRole.SCENE_MASTER,
           ownerType: AssetOwnerType.SCENE,
+          ownerId: sceneId,
           type: AssetType.VIDEO,
-          storageKey,
-          checksum: sha256,
-          status: 'GENERATED',
-          createdByJobId: job.id,
         },
-      });
-    } catch (error: any) {
-      if (!isPrismaTimeout(error)) throw error;
-      logger.warn(`[VideoRender_HUB] Prisma asset upsert degraded, using pg fallback: ${error.message}`);
-      asset = await upsertAssetViaPg(storageKey, sha256);
-    }
+      },
+      update: {
+        storageKey,
+        checksum: sha256,
+        createdByJobId: job.id,
+        status: 'GENERATED',
+      },
+      create: {
+        projectId,
+        ownerId: sceneId,
+        ownerType: AssetOwnerType.SCENE,
+        role: AssetRole.SCENE_MASTER,
+        type: AssetType.VIDEO,
+        storageKey,
+        checksum: sha256,
+        status: 'GENERATED',
+        createdByJobId: job.id,
+      },
+    });
 
     // 4. Audit Trail
     try {
       await prisma.auditLog.create({
         data: {
-          id: `audit-vr-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          id: randomUUID(),
           resourceType: 'scene',
           resourceId: sceneId,
           action: 'ce08.video_render.hub_success',

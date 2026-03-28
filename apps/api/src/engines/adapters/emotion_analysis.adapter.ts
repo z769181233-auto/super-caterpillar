@@ -10,6 +10,10 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
   public readonly name = 'emotion_analysis';
   private readonly logger = new Logger(EmotionAnalysisAdapter.name);
 
+  private isStubEnabled(): boolean {
+    return process.env.ALLOW_ANALYSIS_STUBS === '1';
+  }
+
   constructor(
     private readonly redisService: RedisService,
     private readonly auditService: AuditService,
@@ -20,7 +24,37 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
     return engineKey === 'emotion_analysis';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[EmotionAnalysisAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
+    let traceId: string;
+    try {
+      traceId = this.requireTraceId(input.context?.traceId);
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'EMOTION_TRACE_ID_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
+
+    if (!this.isStubEnabled()) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'EMOTION_ANALYSIS_NOT_IMPLEMENTED',
+          message: 'EMOTION_ANALYSIS_NOT_IMPLEMENTED: regex stub disabled unless ALLOW_ANALYSIS_STUBS=1',
+        },
+      };
+    }
+
     const payload = input.payload || {};
     const text = payload.text || '';
     if (!text) {
@@ -37,8 +71,8 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
     try {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
-        await this.auditHelper(input, 'HIT', cacheKey);
-        await this.recordCost(input, 0, { status: 'CACHE_HIT' });
+        await this.auditHelper(input, traceId, 'HIT', cacheKey);
+        await this.recordCost(input, traceId, 0, { status: 'CACHE_HIT' });
         return {
           status: 'SUCCESS' as any,
           output: { ...cached, source: 'cache', meta: { cached: true } },
@@ -54,7 +88,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
     let primary = 'neutral';
     const labels = ['neutral'];
     let intensity = 0.5;
-    let reasons = ['default fallback'];
+    let reasons = ['no_signal_detected'];
 
     if (lower.match(/(happy|joy|glad|smile)/)) {
       primary = 'joy';
@@ -84,9 +118,9 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
     // 3. Save Cache (7 days)
     await this.redisService.setJson(cacheKey, output, 60 * 60 * 24 * 7);
 
-    // 4. Audit & Cost (MISS = 1)
-    await this.auditHelper(input, 'MISS', 'generated');
-    await this.recordCost(input, 1);
+    // 4. Audit & Cost
+    await this.auditHelper(input, traceId, 'MISS', 'generated');
+    await this.recordCost(input, traceId, 0, { status: 'STUB_GENERATED' });
 
     return {
       status: 'SUCCESS' as any,
@@ -94,7 +128,12 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
     };
   }
 
-  private async auditHelper(input: EngineInvokeInput, type: 'HIT' | 'MISS', resourceId: string) {
+  private async auditHelper(
+    input: EngineInvokeInput,
+    traceId: string,
+    type: 'HIT' | 'MISS',
+    resourceId: string
+  ) {
     await this.auditService.log({
       action: 'EMOTION_ANALYSIS',
       resourceId: resourceId,
@@ -103,12 +142,17 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
         projectId: input.context.projectId,
         userId: input.context.userId || 'system',
         cache: type,
-        traceId: input.context.traceId,
+        traceId,
       },
     });
   }
 
-  private async recordCost(input: EngineInvokeInput, amount: number, extra: any = {}) {
+  private async recordCost(
+    input: EngineInvokeInput,
+    traceId: string,
+    amount: number,
+    extra: any = {}
+  ) {
     await this.costLedgerService.recordFromEvent({
       userId: input.context.userId || 'system',
       projectId: input.context.projectId || '',
@@ -119,7 +163,7 @@ export class EmotionAnalysisAdapter implements EngineAdapter {
       billingUnit: 'job',
       quantity: 1,
       attempt: (input.context as any).attempt || 1,
-      metadata: { type: 'emotion_analysis', traceId: input.context.traceId || 'unknown', ...extra },
+      metadata: { type: 'emotion_analysis', traceId, ...extra },
     });
   }
 }

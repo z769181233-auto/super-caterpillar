@@ -41,6 +41,13 @@ export interface E2EVideoPipelineOutput {
   };
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * 处理 PIPELINE_E2E_VIDEO Job
  * 策略: Fire-and-forget (Spawn CE06 and exit)
@@ -57,11 +64,18 @@ export async function processE2EVideoPipelineJob(
   }
 
   // 1. 确定 pipelineRunId
-  // 如果 payload 里传了 pipelineRunId，就用传的；否则用当前 job.id 作为 runId
-  const pipelineRunId = payload.pipelineRunId || jobId;
+  const pipelineRunId = requireNonEmptyString(
+    payload.pipelineRunId,
+    'PIPELINE_E2E_VIDEO',
+    'pipelineRunId'
+  );
 
   // TraceId 透传
-  const traceId = job.traceId || payload.traceId || `trace-${jobId}`;
+  const traceId = requireNonEmptyString(
+    job.traceId ?? payload.traceId,
+    'PIPELINE_E2E_VIDEO',
+    'traceId'
+  );
   const ce06DedupeKey = `e2e_ce06_${projectId}_${pipelineRunId}`;
 
   // 审计: Pipeline Start
@@ -196,8 +210,10 @@ export async function processE2EVideoPipelineJob(
     }
 
     // 3. Spawn CE06 Job (Fire-and-forget)
-    const ce06Job = await prisma.shotJob.create({
-      data: {
+    const ce06Job = await prisma.shotJob.upsert({
+      where: { dedupeKey: ce06DedupeKey },
+      update: {},
+      create: {
         projectId,
         organizationId: orgId!,
         type: JobType.CE06_NOVEL_PARSING,

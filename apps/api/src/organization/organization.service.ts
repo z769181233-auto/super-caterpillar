@@ -113,10 +113,12 @@ export class OrganizationService {
     }
 
     // 2. 使用用户第一个 OrganizationMember
-    const firstMembership = await this.prisma.organizationMember.findFirst({
+    const firstMemberships = await this.prisma.organizationMember.findMany({
       where: { userId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const firstMembership = firstMemberships[0] ?? null;
 
     if (firstMembership) {
       return firstMembership.organizationId;

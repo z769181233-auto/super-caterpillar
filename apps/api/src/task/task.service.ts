@@ -5,7 +5,6 @@ import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from '
 import { randomUUID } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -30,12 +29,8 @@ export class TaskService {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowTaskPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_TASK_PG_FALLBACK === '1';
+    return process.env.FORCE_TASK_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {

@@ -49,10 +49,18 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
     );
   }
 
+  private requireTraceId(input: EngineInvokeInput): string {
+    const traceId = input.context?.traceId || input.payload?.traceId;
+    if (typeof traceId === 'string' && traceId.length > 0) {
+      return traceId;
+    }
+    throw new Error('[ShotRenderReplicate] Missing traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const prompt = input.payload.enrichedPrompt || input.payload.prompt;
     const seed = input.payload.seed || Math.floor(Math.random() * 1000000);
-    const traceId = input.context?.traceId || input.context?.jobId || `trace_${Date.now()}`;
+    const traceId = this.requireTraceId(input);
 
     if (!prompt) {
       throw new Error('Missing enrichedPrompt or prompt in payload');

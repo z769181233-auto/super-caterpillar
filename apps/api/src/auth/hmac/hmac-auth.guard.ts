@@ -44,6 +44,24 @@ export class HmacAuthGuard implements CanActivate {
     private readonly nonceService: NonceService
   ) {}
 
+  private buildRequestUser(ownerUser: {
+    id: string;
+    email?: string | null;
+    userType?: string | null;
+    role?: string | null;
+    tier?: string | null;
+  }, organizationId?: string | null) {
+    return {
+      userId: ownerUser.id,
+      id: ownerUser.id,
+      email: ownerUser.email ?? null,
+      userType: ownerUser.userType ?? null,
+      role: ownerUser.role ?? null,
+      tier: ownerUser.tier ?? null,
+      organizationId: organizationId ?? null,
+    };
+  }
+
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithApiSecurity>();
 
@@ -60,15 +78,10 @@ export class HmacAuthGuard implements CanActivate {
       // P0-FIX: Hydrate User Context from Upstream Record
       const upstreamRecord = (request as any).apiKeyRecord;
       if (upstreamRecord?.ownerUser) {
-        (request as any).user = {
-          userId: upstreamRecord.ownerUser.id,
-          id: upstreamRecord.ownerUser.id,
-          email: upstreamRecord.ownerUser.email,
-          userType: upstreamRecord.ownerUser.userType || 'USER',
-          role: upstreamRecord.ownerUser.role || 'USER',
-          tier: upstreamRecord.ownerUser.tier || 'FREE',
-          organizationId: upstreamRecord.ownerOrgId,
-        };
+        (request as any).user = this.buildRequestUser(
+          upstreamRecord.ownerUser,
+          upstreamRecord.ownerOrgId
+        );
         (request as any).authType = 'hmac';
       }
       return true;
@@ -242,15 +255,7 @@ export class HmacAuthGuard implements CanActivate {
       (request as any).authType = 'hmac'; // Identity marker for audit/logic
 
       if (keyRecord.ownerUser) {
-        (request as any).user = {
-          userId: keyRecord.ownerUser.id,
-          id: keyRecord.ownerUser.id, // Keep Passport-style request.user shape aligned
-          email: keyRecord.ownerUser.email,
-          userType: keyRecord.ownerUser.userType || 'USER', // Fallback
-          role: keyRecord.ownerUser.role || 'USER', // Fallback
-          tier: keyRecord.ownerUser.tier || 'FREE', // Fallback
-          organizationId: keyRecord.ownerOrgId, // Implicit context
-        };
+        (request as any).user = this.buildRequestUser(keyRecord.ownerUser, keyRecord.ownerOrgId);
         this.logger.log(
           `[HMAC_AUTH] Resolved user: ${keyRecord.ownerUser.id}, org: ${keyRecord.ownerOrgId}`
         );

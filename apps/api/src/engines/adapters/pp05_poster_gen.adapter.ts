@@ -25,22 +25,43 @@ export class PP05PosterGenAdapter implements EngineAdapter {
     return engineKey === this.name;
   }
 
+  private requireContextId(value: unknown, field: 'projectId' | 'jobId'): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error(`[PP05PosterGenAdapter] Missing context.${field}`);
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { payload, context } = input;
+    let projectId: string;
+    let jobId: string;
+    try {
+      projectId = this.requireContextId(context.projectId, 'projectId');
+      jobId = this.requireContextId(context.jobId, 'jobId');
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'PP05_CONTEXT_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
 
     await this.audit.log({
       userId: context.userId,
       traceId: context.traceId,
       resourceType: 'project',
-      resourceId: context.projectId,
+      resourceId: projectId,
       action: 'PP05_INVOKE',
       details: payload,
     });
 
     const outputDir = join(process.cwd(), 'storage/pp/posters');
     mkdirSync(outputDir, { recursive: true });
-    const posterPath = join(outputDir, `${context.jobId}_poster.jpg`);
-    const titlePath = join(outputDir, `${context.jobId}_poster_title.txt`);
+    const posterPath = join(outputDir, `${jobId}_poster.jpg`);
+    const titlePath = join(outputDir, `${jobId}_poster_title.txt`);
 
     // 使用 FFmpeg 生成一个带文字的真值海报
     const title = payload.title || 'Super Caterpillar';
@@ -69,8 +90,8 @@ export class PP05PosterGenAdapter implements EngineAdapter {
 
     await this.cost.recordFromEvent({
       userId: context.userId || 'system',
-      projectId: context.projectId || 'unknown',
-      jobId: context.jobId || 'unknown',
+      projectId,
+      jobId,
       jobType: 'PP_RENDER',
       engineKey: this.name,
       costAmount: 0.1,

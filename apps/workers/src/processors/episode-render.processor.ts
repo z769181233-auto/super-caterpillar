@@ -1,4 +1,4 @@
-import { AssetOwnerType, AssetStatus, AssetType, JobType } from 'database';
+import { AssetOwnerType, AssetRole, AssetStatus, AssetType, JobType } from 'database';
 import { config } from '@scu/config';
 import * as path from 'path';
 import { createHash } from 'crypto';
@@ -15,11 +15,18 @@ export interface EpisodeRenderPayload {
   traceId?: string;
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   const { prisma, job, apiClient } = ctx;
   const payload = job.payload as EpisodeRenderPayload;
   const { episodeId, projectId } = payload;
-  const traceId = job.traceId || payload.traceId || `trace-${job.id}`;
+  const traceId = requireNonEmptyString(job.traceId ?? payload.traceId, 'EpisodeRender', 'traceId');
 
   if (!episodeId) {
     throw new Error(`[EpisodeRender] Missing episodeId in payload`);
@@ -46,6 +53,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
     where: {
       ownerId: { in: sceneIds },
       ownerType: AssetOwnerType.SCENE,
+      role: AssetRole.SCENE_MASTER,
       type: AssetType.VIDEO,
       status: { in: [AssetStatus.GENERATED, AssetStatus.PUBLISHED] },
     },
@@ -119,7 +127,8 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
 
   const asset = await prisma.asset.upsert({
     where: {
-      ownerType_ownerId_type: {
+      ownerType_ownerId_type_role: {
+        role: AssetRole.EPISODE_MASTER,
         ownerType: AssetOwnerType.EPISODE,
         ownerId: episodeId,
         type: AssetType.VIDEO,
@@ -127,27 +136,34 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
     },
     update: {
       storageKey: outputRelative,
-      status: 'GENERATED',
+      checksum,
+      status: 'PUBLISHED',
       createdByJobId: job.id,
     },
     create: {
       projectId,
       ownerType: AssetOwnerType.EPISODE,
       ownerId: episodeId,
+      role: AssetRole.EPISODE_MASTER,
       type: AssetType.VIDEO,
       storageKey: outputRelative,
-      status: 'GENERATED',
+      checksum,
+      status: 'PUBLISHED',
       createdByJobId: job.id,
     },
   });
 
-  // Also Create PublishedVideo if needed
+  // Record internal readiness without claiming API-side publish reconciliation already happened.
   await prisma.publishedVideo.upsert({
     where: { assetId: asset.id },
     update: {
       storageKey: outputRelative,
       checksum,
-      status: 'PUBLISHED',
+      status: 'INTERNAL_READY',
+      metadata: {
+        pipelineRunId: payload.pipelineRunId ?? null,
+        source: 'episode_render_worker',
+      },
     },
     create: {
       projectId,
@@ -155,7 +171,11 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
       assetId: asset.id,
       storageKey: outputRelative,
       checksum,
-      status: 'PUBLISHED',
+      status: 'INTERNAL_READY',
+      metadata: {
+        pipelineRunId: payload.pipelineRunId ?? null,
+        source: 'episode_render_worker',
+      },
     },
   });
 

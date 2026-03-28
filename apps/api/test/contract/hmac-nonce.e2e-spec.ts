@@ -10,8 +10,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
+import { createHmac } from 'crypto';
 import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { SecretEncryptionService } from '../../src/security/api-security/secret-encryption.service';
+
+process.env.API_KEY_MASTER_KEY_B64 =
+  process.env.API_KEY_MASTER_KEY_B64 || Buffer.alloc(32, 7).toString('base64');
+
+function computeSignature(secret: string, apiKey: string, nonce: string, timestamp: string, body: string) {
+  return createHmac('sha256', secret).update(`${apiKey}${nonce}${timestamp}${body}`).digest('hex');
+}
+
+const TEST_PATH = '/api/audit/logs';
+const TEST_BODY = {
+  traceId: 'trace-contract',
+  projectId: 'project-contract',
+  jobId: 'job-contract',
+  jobType: 'CONTRACT_TEST',
+  engineKey: 'ce_contract',
+  status: 'SUCCESS',
+};
+const TEST_BODY_JSON = JSON.stringify(TEST_BODY);
 
 describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
   let app: INestApplication;
@@ -20,6 +40,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
   const API_SECRET = process.env.TEST_API_SECRET || 'test-secret';
   let userId: string;
   let apiKeyId: string;
+  let secretEncryptionService: SecretEncryptionService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -31,6 +52,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     await app.init();
 
     prisma = app.get(PrismaService);
+    secretEncryptionService = moduleFixture.get(SecretEncryptionService);
 
     // Create User for API Key
     const user = await prisma.user.create({
@@ -42,10 +64,14 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     userId = user.id;
 
     // Create API Key
+    const encrypted = secretEncryptionService.encryptSecret(API_SECRET);
     const apiKey = await prisma.apiKey.create({
       data: {
         key: API_KEY,
-        secretHash: API_SECRET, // Dev environment allows using secretHash as plain secret
+        secretEnc: encrypted.enc,
+        secretEncIv: encrypted.iv,
+        secretEncTag: encrypted.tag,
+        secretVersion: 1,
         status: 'ACTIVE',
         ownerUserId: userId,
       },
@@ -62,10 +88,10 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
   describe('HMAC Signature Validation (4003)', () => {
     it('should return 4003 when signature is missing', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
 
       expect(response.status).toBeGreaterThanOrEqual(400);
       // Should contain 4003 error code or signature-related error
@@ -81,14 +107,16 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     });
 
     it('should return 4003 when signature is invalid', async () => {
+      const invalidNonce = `invalid-signature-${Date.now()}-${Math.random()}`;
+
       const response = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
         .set('X-Signature', 'invalid-signature')
-        .set('X-Nonce', 'test-nonce')
-        .set('X-Timestamp', Date.now().toString())
+        .set('X-Nonce', invalidNonce)
+        .set('X-Timestamp', Math.floor(Date.now() / 1000).toString())
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
 
       expect(response.status).toBeGreaterThanOrEqual(400);
       expect(
@@ -104,37 +132,52 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
   describe('Nonce Replay Detection (4004)', () => {
     let validNonce: string;
-    let validSignature: string;
     let validTimestamp: string;
 
     beforeEach(() => {
       validNonce = `nonce-${Date.now()}-${Math.random()}`;
-      validTimestamp = Date.now().toString();
-      // In a real test, we would generate a valid HMAC signature
-      // For now, we'll test the nonce replay logic
-      validSignature = 'test-signature';
+      validTimestamp = Math.floor(Date.now() / 1000).toString();
     });
 
     it('should return 4004 when nonce is reused', async () => {
+      const firstSignature = computeSignature(
+        API_SECRET,
+        API_KEY,
+        validNonce,
+        validTimestamp,
+        TEST_BODY_JSON
+      );
+
       // First request with valid nonce
       const firstResponse = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
-        .set('X-Signature', validSignature)
+        .set('X-Signature', firstSignature)
         .set('X-Nonce', validNonce)
         .set('X-Timestamp', validTimestamp)
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
+
+      expect(firstResponse.body?.error?.code).not.toBe('4003');
+
+      const replayTimestamp = Math.floor((Date.now() + 1000) / 1000).toString();
+      const replaySignature = computeSignature(
+        API_SECRET,
+        API_KEY,
+        validNonce,
+        replayTimestamp,
+        TEST_BODY_JSON
+      );
 
       // Second request with same nonce
       const secondResponse = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
-        .set('X-Signature', validSignature) // Reusing same signature too (would fail sig check if nonce was fresh, but nonce check is first)
+        .set('X-Signature', replaySignature)
         .set('X-Nonce', validNonce) // Same nonce
-        .set('X-Timestamp', (Date.now() + 1000).toString()) // Different timestamp
+        .set('X-Timestamp', replayTimestamp)
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
 
       // If nonce replay detection is working, second request should return 4004
       expect(
@@ -149,32 +192,32 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
   describe('Timestamp Window Validation', () => {
     it('should reject requests with timestamp too far in the past', async () => {
-      const oldTimestamp = (Date.now() - 10 * 60 * 1000).toString(); // 10 minutes ago
+      const oldTimestamp = Math.floor((Date.now() - 10 * 60 * 1000) / 1000).toString(); // 10 minutes ago
 
       const response = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
         .set('X-Signature', 'test-signature')
         .set('X-Nonce', `nonce-${Date.now()}`)
         .set('X-Timestamp', oldTimestamp)
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
 
       // Should reject old timestamps (typically 5 minutes window)
       expect(response.status).toBeGreaterThanOrEqual(400);
     });
 
     it('should reject requests with timestamp too far in the future', async () => {
-      const futureTimestamp = (Date.now() + 10 * 60 * 1000).toString(); // 10 minutes in future
+      const futureTimestamp = Math.floor((Date.now() + 10 * 60 * 1000) / 1000).toString(); // 10 minutes in future
 
       const response = await request(app.getHttpServer())
-        .post('/api/story/parse')
+        .post(TEST_PATH)
         .set('X-Api-Key', API_KEY)
         .set('X-Signature', 'test-signature')
         .set('X-Nonce', `nonce-${Date.now()}`)
         .set('X-Timestamp', futureTimestamp)
         .set('Content-Type', 'application/json')
-        .send({ text: 'test' });
+        .send(TEST_BODY);
 
       // Should reject future timestamps
       expect(response.status).toBeGreaterThanOrEqual(400);

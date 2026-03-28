@@ -25,22 +25,43 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
     return engineKey === this.name;
   }
 
+  private requireContextId(value: unknown, field: 'projectId' | 'jobId'): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error(`[PP06CreditsGenAdapter] Missing context.${field}`);
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { payload, context } = input;
+    let projectId: string;
+    let jobId: string;
+    try {
+      projectId = this.requireContextId(context.projectId, 'projectId');
+      jobId = this.requireContextId(context.jobId, 'jobId');
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'PP06_CONTEXT_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
 
     await this.audit.log({
       userId: context.userId,
       traceId: context.traceId,
       resourceType: 'project',
-      resourceId: context.projectId,
+      resourceId: projectId,
       action: 'PP06_INVOKE',
       details: payload,
     });
 
     const outputDir = join(process.cwd(), 'storage/pp/credits');
     mkdirSync(outputDir, { recursive: true });
-    const creditsPath = join(outputDir, `${context.jobId}_credits.mp4`);
-    const namesPath = join(outputDir, `${context.jobId}_credits_names.txt`);
+    const creditsPath = join(outputDir, `${jobId}_credits.mp4`);
+    const namesPath = join(outputDir, `${jobId}_credits_names.txt`);
 
     // 使用 FFmpeg 生成一个滚动字幕预览
     const names = payload.names || 'Director: Antigravity\nAI Actor: Gemini';
@@ -67,8 +88,8 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
 
     await this.cost.recordFromEvent({
       userId: context.userId || 'system',
-      projectId: context.projectId || 'unknown',
-      jobId: context.jobId || 'unknown',
+      projectId,
+      jobId,
       jobType: 'PP_RENDER',
       engineKey: this.name,
       costAmount: 0.05,

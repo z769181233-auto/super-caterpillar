@@ -114,25 +114,6 @@ export class ProjectService {
         );
       }
 
-      // CE01: 项目创建后生成角色三视图（占位实现）
-      // P2-4 修复：在事务中创建 Character，确保原子性
-      try {
-        await tx.character.create({
-          data: {
-            projectId: p.id,
-            name: 'Default Character',
-            description: 'Auto-generated default character',
-            referenceSheetUrls: { front: '', side: '', back: '' }, // 占位三视图 URL
-            defaultSeed: `seed_${p.id}_${Date.now()}`,
-            embeddingId: `emb_${p.id}_${Date.now()}`,
-          },
-        });
-      } catch (error: any) {
-        // 软失败：记录 audit_logs 并继续（符合 SafetySpec，Character 非阻断性）
-        // 注意：事务中无法直接调用 auditLogService (外部服务)，记录日志即可
-        this.logger.warn(`CE01 placeholder failed in transaction: ${error?.message}`);
-      }
-
       return p;
     });
 
@@ -766,10 +747,19 @@ export class ProjectService {
       // CE07: 分镜生成前读取短期记忆，并在缺省字段上作为轻量 seed 使用
       if (episode.chapter?.id) {
         try {
-          const shortTermMemory = await tx.memoryShortTerm.findFirst({
+          const shortTermMemories = await tx.memoryShortTerm.findMany({
             where: { chapterId: episode.chapter.id },
             orderBy: { createdAt: 'desc' },
+            take: 2,
           });
+          if (shortTermMemories.length > 1) {
+            throw new Error(
+              `Duplicate short-term memories detected for chapter ${episode.chapter.id}: ${shortTermMemories
+                .map((memory) => memory.id)
+                .join(', ')}`
+            );
+          }
+          const shortTermMemory = shortTermMemories[0] ?? null;
           if (shortTermMemory) {
             memorySeedSummary = shortTermMemory.summary || null;
             if (
@@ -1624,7 +1614,9 @@ export class ProjectService {
       at: log.createdAt.toISOString(),
       actor: {
         id: log.userId || log.apiKeyId || 'system',
-        name: log.user?.email?.split('@')[0] || log.apiKeyId || 'System', // Fallback name
+        name:
+          log.user?.email?.split('@')[0] ||
+          (log.apiKeyId ? `apiKey:${String(log.apiKeyId).slice(0, 8)}` : 'system'),
       },
       action: log.action,
       result: 'OK' as const, // AuditLog doesn't explicitly store result status (assumed OK if logged, or details has it)
@@ -1734,13 +1726,13 @@ export class ProjectService {
       },
       quality: {
         structure: structureQuality as any,
-        semantic: 'OK', // Placeholder for now
-        visual: 'OK',
+        semantic: structureQuality as any,
+        visual: shots > 0 ? 'OK' : 'UNKNOWN',
       },
       cost: {
         total: { money: Math.abs(Number(costAgg._sum?.amount || 0n) / 100) },
-        last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
-        currentRunEstimate: { money: 0.0 },
+        last24h: { money: null },
+        currentRunEstimate: { money: null },
         alert: { level: 'OK' },
       },
       audit: {
@@ -1758,14 +1750,16 @@ export class ProjectService {
     const DEMO_PROJECT_NAME = 'Demo Structure Project';
 
     // 1. 查找或创建 Demo 项目
-    let project = await this.prisma.project.findFirst({
+    const existingProjects = await this.prisma.project.findMany({
       where: {
         ownerId: userId,
         organizationId,
         name: DEMO_PROJECT_NAME,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
     });
+    let project = existingProjects[0] ?? null;
 
     if (!project) {
       project = await this.prisma.project.create({

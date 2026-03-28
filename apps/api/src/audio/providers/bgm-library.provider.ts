@@ -50,13 +50,13 @@ export class BgmLibraryProvider implements AudioProvider {
     const h = crypto.createHash('sha256').update(seed, 'utf8').digest();
 
     // P18-6.0 Resolved Library Routing
-    const requestedId = input.libraryId || DEFAULT_BGM_LIBRARY_ID;
-    const libraryId = BGM_LIBRARIES[requestedId] ? requestedId : DEFAULT_BGM_LIBRARY_ID;
-    const libraryIdSource = !input.libraryId
-      ? 'default'
-      : BGM_LIBRARIES[input.libraryId]
-        ? 'project'
-        : 'fallback';
+    const requestedId = input.libraryId?.trim();
+    if (requestedId && !BGM_LIBRARIES[requestedId]) {
+      throw new Error(`BGM_LIBRARY_NOT_FOUND: ${requestedId}`);
+    }
+
+    const libraryId = requestedId || DEFAULT_BGM_LIBRARY_ID;
+    const libraryIdSource = requestedId ? 'project' : 'default';
 
     const library = BGM_LIBRARIES[libraryId];
 

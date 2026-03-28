@@ -19,6 +19,11 @@ export interface AppConfig {
     appName: string;
     appVersion: string;
     frontendUrl: string;
+    billingPlanFreePriceUsd: number;
+    billingPlanFreeTokens: number;
+    billingPlanProPriceUsd: number;
+    billingPlanProTokens: number;
+    gpuRoiPricePerImageUsd: number;
     bcryptSaltRounds: number;
     enableInternalJobWorker: boolean;
     jobWorkerInterval: number;
@@ -57,6 +62,13 @@ export interface AppConfig {
     ce23RealForceDisable: boolean;
     orchV2AudioEnabled: boolean;
     repoRoot: string;
+    filmIrPlannerEnabled: boolean;
+    filmIrPlannerProvider: 'mock' | 'openai';
+    filmIrPlannerModel: string;
+    filmIrPlannerTimeoutMs: number;
+    filmIrPlannerMaxRetries: number;
+    filmIrPlannerStrictMode: boolean;
+    openaiApiKey: string | undefined;
 }
 export declare const env: AppConfig;
 export declare function validateRequiredEnvs(): void;

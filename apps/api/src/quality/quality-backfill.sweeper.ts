@@ -80,25 +80,42 @@ export class QualityBackfillSweeper {
         if (!isEnabled) continue;
 
         // 3. 检查是否已有评分记录 (基于 shotId + attempt)
-        const existingScore = await this.prisma.qualityScore.findFirst({
+        const existingScores = await this.prisma.qualityScore.findMany({
           where: {
             shotId: job.shotId,
             attempt: job.attempts || 1,
           },
+          select: { id: true },
           orderBy: { createdAt: 'desc' },
+          take: 2,
         });
+        if (existingScores.length > 1) {
+          this.logger.error(
+            `[QualitySweeper] Duplicate quality scores detected for shot=${job.shotId} attempt=${job.attempts || 1}: ${existingScores
+              .map((score) => score.id)
+              .join(', ')}`
+          );
+          continue;
+        }
+        const existingScore = existingScores[0] ?? null;
 
         if (!existingScore) {
           // 4. 补齐评分与返工逻辑
           try {
+            if (!job.traceId) {
+              this.logger.error(
+                `[QualitySweeper] Missing traceId for shot=${job.shotId}; refusing blind backfill.`
+              );
+              continue;
+            }
             this.logger.log(
-              `[QualitySweeper] Backfilling missing score for shot=${job.shotId} (traceId=${job.traceId || 'N/A'})`
+              `[QualitySweeper] Backfilling missing score for shot=${job.shotId} (traceId=${job.traceId})`
             );
 
             // 直接调用核心 Scoring 逻辑，内部会处理 Rework
             await this.qualityScoreService.performScoring(
               job.shotId,
-              job.traceId || '',
+              job.traceId,
               job.attempts || 1
             );
 

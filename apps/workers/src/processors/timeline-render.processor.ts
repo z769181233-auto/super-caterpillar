@@ -1,5 +1,4 @@
-import { JobType, AssetOwnerType, AssetStatus, AssetType, PrismaClient } from 'database';
-import { EngineHubClient } from '../engine-hub-client';
+import { AssetOwnerType, AssetRole, AssetStatus, AssetType, PrismaClient } from 'database';
 import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
 import * as path from 'path';
 import { promises as fsp } from 'fs';
@@ -11,23 +10,32 @@ import { TimelineData } from './timeline-compose.processor';
 
 import { ProcessorContext } from '../types/processor-context';
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * S4-7: Timeline Render Processor
  * 职责：执行两段式渲染 (Shot MP4s -> Scene Concat)，锁死编码参数，绑定 Asset 至 firstShotId。
  */
 export async function processTimelineRenderJob(ctx: ProcessorContext) {
-  const { prisma, job, apiClient } = ctx;
-  const { timelineStorageKey, pipelineRunId } = job.payload as {
+  const { prisma, job } = ctx;
+  const { timelineStorageKey } = job.payload as {
     timelineStorageKey: string;
     pipelineRunId: string;
   };
-  const traceId = job.traceId || `trace-${Date.now()}`;
-  const projectId = job.projectId || (job.payload as any)?.projectId;
+  const pipelineRunId = requireNonEmptyString((job.payload as any)?.pipelineRunId, 'TimelineRender', 'pipelineRunId');
+  const traceId = requireNonEmptyString(job.traceId ?? (job.payload as any)?.traceId, 'TimelineRender', 'traceId');
+  const projectId = requireNonEmptyString(job.projectId || (job.payload as any)?.projectId, 'TimelineRender', 'projectId');
+  const organizationId = job.organizationId;
 
   const storageRoot = (config as any).storageRoot;
 
-  if (!projectId) {
-    throw new Error(`[TimelineRender] [${traceId}] Missing projectId in job ${job.id}`);
+  if (!organizationId) {
+    throw new Error(`[TimelineRender] [${traceId}] Missing organizationId in job ${job.id}`);
   }
 
   // 0. Load Timeline Data
@@ -38,15 +46,54 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const timelineJson = await readFileUnderLimit(timelineStorageKey, 20 * 1024 * 1024); // 20MB limit
   const timeline: TimelineData = JSON.parse(timelineJson);
 
+  if (!timeline.projectId) {
+    throw new Error('[TimelineRender] Missing projectId in timeline');
+  }
+  if (!timeline.organizationId) {
+    throw new Error('[TimelineRender] Missing organizationId in timeline');
+  }
+  if (!timeline.episodeId) {
+    throw new Error('[TimelineRender] Missing episodeId in timeline');
+  }
+  if (!timeline.sceneId) {
+    throw new Error('[TimelineRender] Missing sceneId in timeline');
+  }
+  if (timeline.projectId !== projectId) {
+    throw new Error(
+      `[TimelineRender] Project ownership mismatch: job=${projectId} timeline=${timeline.projectId}`
+    );
+  }
+  if (timeline.organizationId !== organizationId) {
+    throw new Error(
+      `[TimelineRender] Organization ownership mismatch: job=${organizationId} timeline=${timeline.organizationId}`
+    );
+  }
+
   if (timeline.shots.length < 1) {
     throw new Error(`[TimelineRender] Fail-fast: Timeline must contain at least 1 shot.`);
   }
 
-  const fps = timeline.fps || 24;
-  const width = timeline.width || 1280;
-  const height = timeline.height || 720;
-  const masterPriority = timeline.audio?.masterPriority || 'dialogue';
-  const audioMode = timeline.audio?.mode || 'truncate';
+  if (!Number.isFinite(timeline.fps) || timeline.fps <= 0) {
+    throw new Error('[TimelineRender] Invalid timeline fps. Explicit positive value required.');
+  }
+  if (!Number.isInteger(timeline.width) || timeline.width <= 0) {
+    throw new Error('[TimelineRender] Invalid timeline width. Explicit positive integer required.');
+  }
+  if (!Number.isInteger(timeline.height) || timeline.height <= 0) {
+    throw new Error('[TimelineRender] Invalid timeline height. Explicit positive integer required.');
+  }
+
+  const fps = timeline.fps;
+  const width = timeline.width;
+  const height = timeline.height;
+  const masterPriority = timeline.audio?.masterPriority ?? null;
+  const audioMode = timeline.audio?.mode ?? null;
+  if (timeline.audio && !masterPriority) {
+    throw new Error('[TimelineRender] Missing timeline.audio.masterPriority');
+  }
+  if (timeline.audio && audioMode !== 'none' && audioMode !== 'loop' && audioMode !== 'truncate') {
+    throw new Error('[TimelineRender] Invalid timeline audio mode.');
+  }
   const directorRenderSummary = {
     audioMode,
     audioMasterPriority: masterPriority,
@@ -97,7 +144,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     // SSOT Check: Check DB for existing valid Asset
     const existingAsset = await prisma.asset.findUnique({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
+          role: AssetRole.SHOT_SOURCE,
           ownerType: AssetOwnerType.SHOT,
           ownerId: shot.shotId,
           type: AssetType.VIDEO,
@@ -124,7 +172,8 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     try {
       const sourceAsset = await prisma.asset.findUnique({
         where: {
-          ownerType_ownerId_type: {
+          ownerType_ownerId_type_role: {
+            role: AssetRole.SHOT_SOURCE,
             ownerType: AssetOwnerType.SHOT,
             ownerId: shot.shotId,
             type: AssetType.VIDEO,
@@ -155,167 +204,9 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     }
   }
 
-  // Stage 1.5: Prepare Audio Assets (P18-1: Production Audio Routing)
-  const sceneId = timeline.sceneId;
-
-  // P18-1: Instantiate AudioService and Resolve Routing
-  // S3.4 Stage 5 Fix: Replaced local AudioServiceStub with EngineHub calls (AU01/AU02)
-  const killOn = process.env.AUDIO_REAL_FORCE_DISABLE === '1';
-
-  // P22-0 Fix: Extract preview parameters from payload
-  const payloadForAudio = job.payload as any;
-  const preview = payloadForAudio?.preview === true;
-  // const previewCapMs = Number(payloadForAudio?.previewCapMs ?? 3000);
-
-  // P13-2: 确定性 storageKey 规则 (We keep these for DB persistence)
-  const ttsStorageKey = `audio/tts/${traceId}__${sceneId}.wav`;
-  const bgmStorageKey = `audio/bgm/${traceId}__${sceneId}.wav`;
-
-  // Determine if we should generate
-  const shouldGenerate =
-    sceneId &&
-    (process.env.GATE_MODE === '1' ||
-      process.env.AUDIO_MINLOOP_SYNC === '1' ||
-      // For Phase 5, we default to TRUE if not explicitly disabled, relying on EngineHub to handle logic
-      killOn !== true);
-
-  let ttsAsset: any = null;
-  let bgmAsset: any = null;
-  let audioRenderMode: 'standard' | 'fallback_silence' = 'standard';
-
-  if (shouldGenerate && sceneId) {
-    // 1. Generate Voice (TTS) via AU01
-    try {
-      const ttsText = `${traceId}:${sceneId}:AUDIO_TTS`;
-      const ttsRes = await apiClient.invokeEngine({
-        engineKey: 'au01_voice_tts',
-        payload: {
-          text: ttsText,
-          preview,
-          projectId,
-          traceId,
-          sceneId,
-        },
-        context: { ...job.context, jobId: job.id, traceId },
-      });
-
-    if (ttsRes.status !== 'SUCCESS') {
-      const errMsg = ttsRes.error?.message || 'Unknown AU01 error';
-      if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
-        audioRenderMode = 'fallback_silence';
-      } else {
-        throw new Error(`AU01_TTS_FAIL: ${errMsg}`);
-      }
-    }
-
-      if (audioRenderMode === 'standard') {
-        const ttsSourcePath = ttsRes.output.assetUrl.replace('file://', '');
-        const ttsSha = ttsRes.output.meta.audioFileSha256 || 'unknown-sha';
-
-        if (!(await fileExists(ttsSourcePath))) {
-          throw new Error(`AU01 returned path but file missing: ${ttsSourcePath}`);
-        }
-
-        const ttsAbsPath = path.join(storageRoot, ttsStorageKey);
-        await ensureDir(path.dirname(ttsAbsPath));
-        await fsp.copyFile(ttsSourcePath, ttsAbsPath);
-
-        // Persist TTS Asset
-        ttsAsset = await prisma.asset.upsert({
-          where: {
-            ownerType_ownerId_type: {
-              ownerId: sceneId,
-              ownerType: AssetOwnerType.SCENE,
-              type: AssetType.AUDIO_TTS,
-            },
-          },
-          update: {
-            checksum: ttsSha,
-            status: 'GENERATED',
-            storageKey: ttsStorageKey,
-          },
-          create: {
-            projectId,
-            ownerId: sceneId,
-            ownerType: AssetOwnerType.SCENE,
-            type: AssetType.AUDIO_TTS,
-            storageKey: ttsStorageKey,
-            checksum: ttsSha,
-            status: 'GENERATED',
-          },
-        });
-      }
-    } catch (error: any) {
-      const errMsg = error?.message || String(error);
-      if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
-        audioRenderMode = 'fallback_silence';
-      } else {
-        throw error;
-      }
-    }
-
-    // 2. Handle BGM via AU02
-    if (audioRenderMode === 'standard') {
-      try {
-        const bgmSeed = payloadForAudio?.bgmSeed ?? `${traceId}:${sceneId}:AUDIO_BGM`;
-
-        const bgmRes = await apiClient.invokeEngine({
-          engineKey: 'au02_bgm_gen',
-          payload: {
-            seed: bgmSeed,
-            style: bgmSeed, // Use seed as style/text
-            preview,
-            projectId,
-            traceId,
-            sceneId,
-          },
-          context: { ...job.context, jobId: job.id, traceId },
-        });
-
-        if (bgmRes.status === 'SUCCESS') {
-          const bgmSourcePath = bgmRes.output.assetUrl.replace('file://', '');
-          const bgmSha = bgmRes.output.meta.audioFileSha256 || 'unknown-sha';
-
-          if (await fileExists(bgmSourcePath)) {
-            const bgmAbsPath = path.join(storageRoot, bgmStorageKey);
-            await ensureDir(path.dirname(bgmAbsPath));
-            await fsp.copyFile(bgmSourcePath, bgmAbsPath);
-
-            bgmAsset = await prisma.asset.upsert({
-              where: {
-                ownerType_ownerId_type: {
-                  ownerId: sceneId,
-                  ownerType: AssetOwnerType.SCENE,
-                  type: AssetType.AUDIO_BGM,
-                },
-              },
-              update: {
-                checksum: bgmSha,
-                status: 'GENERATED',
-                storageKey: bgmStorageKey,
-              },
-              create: {
-                projectId,
-                ownerId: sceneId,
-                ownerType: AssetOwnerType.SCENE,
-                type: AssetType.AUDIO_BGM,
-                storageKey: bgmStorageKey,
-                checksum: bgmSha,
-                status: 'GENERATED',
-              },
-            });
-          }
-        }
-      } catch (error: any) {
-        const errMsg = error?.message || String(error);
-        if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
-          audioRenderMode = 'fallback_silence';
-        } else {
-          throw error;
-        }
-      }
-    }
-  }
+  // Stage 1.5: Prepare Audio Assets
+  // Truth policy: consume timeline-composed audio tracks only; synthetic scene-level TTS/BGM fallbacks are banned.
+  const audioRenderMode = timeline.audio?.tracks?.length ? 'timeline_tracks' : 'no_audio_tracks';
 
   // Stage 2: Scene Composition
   const finalOutputRelative = `renders/${projectId}/scenes/${timeline.sceneId}/output.mp4`;
@@ -325,36 +216,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   // P13-2: 构建 audio tracks（如果音频资产存在）
   let tracks = timeline.audio?.tracks || [];
-  if (ttsAsset && bgmAsset) {
-    const existingBgmTrack = timeline.audio?.tracks?.find((track) => track.type === 'music');
-    const derivedBgmGain =
-      typeof existingBgmTrack?.gain === 'number'
-        ? existingBgmTrack.gain
-        : masterPriority === 'music'
-          ? 0.45
-          : 0.25;
-
-    tracks = [
-      {
-        id: 'tts_main',
-        type: 'dialogue',
-        storageKey: ttsAsset.storageKey,
-        gain: 1.0,
-      },
-      {
-        id: 'bgm_main',
-        type: 'music', // 使用 'music' 而非 'bgm'
-        storageKey: bgmAsset.storageKey,
-        gain: derivedBgmGain,
-        loop: audioMode === 'loop',
-        ducking:
-          masterPriority === 'music'
-            ? { target: 'dialogue', gain: 0.18 }
-            : { target: 'dialogue', gain: 0.3 },
-        truncate: audioMode === 'loop' ? 'longest' : 'shortest',
-      },
-    ];
-  }
 
   const hasTransitions = timeline.shots.some((s) => s.transition && s.transition !== 'none');
   const hasDucking = tracks.some((t) => t.ducking);
@@ -543,21 +404,25 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     await runFfmpeg(hlsArgs, 'Stage3_HLS_Package');
   }
 
-  // Stage 3: Persistence (Asset linked to firstShotId)
+  // Stage 3: Persistence
+  // Formal scene output must be scene-owned. Binding it to the first shot would overwrite
+  // the authoritative source VIDEO asset for that shot because of @@unique(ownerType, ownerId, type).
   const firstShotId = timeline.shots[0].shotId;
   const asset = await prisma.asset.upsert({
     where: {
-      ownerType_ownerId_type: {
-        ownerType: AssetOwnerType.SHOT,
-        ownerId: firstShotId,
+      ownerType_ownerId_type_role: {
+        role: AssetRole.SCENE_MASTER,
+        ownerType: AssetOwnerType.SCENE,
+        ownerId: timeline.sceneId,
         type: AssetType.VIDEO,
       },
     },
-    update: { storageKey: finalOutputRelative, status: 'GENERATED' },
+    update: { storageKey: finalOutputRelative, createdByJobId: job.id, status: 'GENERATED' },
     create: {
       projectId: projectId,
-      ownerId: firstShotId,
-      ownerType: AssetOwnerType.SHOT,
+      ownerId: timeline.sceneId,
+      ownerType: AssetOwnerType.SCENE,
+      role: AssetRole.SCENE_MASTER,
       type: AssetType.VIDEO,
       storageKey: finalOutputRelative,
       status: 'GENERATED',

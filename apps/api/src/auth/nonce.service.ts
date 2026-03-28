@@ -13,10 +13,8 @@ import { RedisService } from '../redis/redis.service';
 @Injectable()
 export class NonceService {
   private readonly logger = new Logger(NonceService.name);
-  private readonly nonceTtlSeconds = Number(process.env.NONCE_TTL_SECONDS || '300');
-  // Dev-only: 内存 Map 作为 fallback（仅当 Redis 不可用时）
+  private readonly nonceTtlSeconds = this.resolveNonceTtlSeconds();
   private readonly devMemoryStore = new Map<string, { timestamp: number; expiresAt: number }>();
-  private readonly isDev = process.env.NODE_ENV !== 'production';
 
   constructor(
     @Inject(PrismaService)
@@ -26,6 +24,39 @@ export class NonceService {
     @Inject(RedisService)
     private readonly redisService?: RedisService
   ) {}
+
+  private resolveNonceTtlSeconds(): number {
+    const raw = process.env.NONCE_TTL_SECONDS;
+    if (typeof raw !== 'string' || raw.trim().length === 0) {
+      return 300;
+    }
+    const ttl = Number(raw);
+    if (!Number.isFinite(ttl) || ttl <= 0 || !Number.isInteger(ttl)) {
+      this.logger.warn(`Invalid NONCE_TTL_SECONDS=${raw}, falling back to 300`);
+      return 300;
+    }
+    return ttl;
+  }
+
+  private shouldAllowNonceMemoryFallback(): boolean {
+    return process.env.ALLOW_NONCE_MEMORY_FALLBACK === '1';
+  }
+
+  private storeNonceInMemory(nonceKey: string, timestamp: number) {
+    const now = Date.now();
+    const existing = this.devMemoryStore.get(nonceKey);
+    if (existing && existing.expiresAt > now) {
+      throw {
+        code: 'P2002',
+        message: 'Unique constraint failed',
+        meta: { target: ['nonce', 'apiKey'] },
+      };
+    }
+    this.devMemoryStore.set(nonceKey, {
+      timestamp,
+      expiresAt: now + this.nonceTtlSeconds * 1000,
+    });
+  }
 
   /**
    * 检查并写入 nonce，若已存在则抛出异常
@@ -63,32 +94,6 @@ export class NonceService {
     const nonceKey = `nonce:${apiKey}:${nonce}`;
 
     try {
-      if (this.isDev) {
-        const now = Date.now();
-        const existing = this.devMemoryStore.get(nonceKey);
-        if (existing && existing.expiresAt > now) {
-          throw {
-            code: 'P2002',
-            message: 'Unique constraint failed',
-            meta: { target: ['nonce', 'apiKey'] },
-          };
-        }
-        this.devMemoryStore.set(nonceKey, {
-          timestamp,
-          expiresAt: now + this.nonceTtlSeconds * 1000,
-        });
-
-        if (process.env.NODE_ENV !== 'production') {
-          this.logger.log(
-            `✅ nonce stored ok (使用 devMemoryStore): ${JSON.stringify({
-              nonce: nonce.substring(0, 16) + '...',
-              apiKey: apiKey.substring(0, 8) + '...',
-            })}`
-          );
-        }
-        return;
-      }
-
       if (this.redisService) {
         const stored = await this.redisService.setNx(nonceKey, String(timestamp), this.nonceTtlSeconds);
         if (stored) {
@@ -123,6 +128,14 @@ export class NonceService {
         );
       }
     } catch (err: any) {
+      if (err?.code !== 'P2002' && this.shouldAllowNonceMemoryFallback()) {
+        this.logger.warn(
+          `Nonce durable storage degraded; using in-memory fallback via explicit override for ${apiKey.substring(0, 8)}...`
+        );
+        this.storeNonceInMemory(nonceKey, timestamp);
+        return;
+      }
+
       // 开发/测试环境：记录错误详情
       if (process.env.NODE_ENV !== 'production') {
         this.logger.error(

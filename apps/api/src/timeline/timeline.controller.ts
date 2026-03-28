@@ -40,12 +40,11 @@ export class TimelineController {
 
     // 2. Resolve User/Org
     const userId = req.user?.id || req.apiKeyOwnerUserId;
-    // Fallback: If req.user doesn't have orgId (e.g. specialized auth), try apiKey attribute or body or default
     const orgId =
+      req.user?.organizationId ||
       req.user?.orgId ||
       req.user?.defaultOrganizationId ||
-      req.apiKeyOwnerOrgId ||
-      body.organizationId;
+      req.apiKeyOwnerOrgId;
 
     if (!userId || !orgId) {
       throw new BadRequestException('User context invalid (userId or orgId missing)');

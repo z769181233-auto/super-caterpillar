@@ -16,17 +16,33 @@ export class BillingSettlementService {
     private readonly auditLogService: AuditLogService
   ) {}
 
+  private resolveRunId(value?: string): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    return `settlement-${randomUUID()}`;
+  }
+
   /**
    * P1-C Settlement Engine
    * Atomically settles all PENDING CostLedgers for a project.
    * Ensures SUM(Ledger) == SUM(Event) == Delta(Credits).
    */
-  async settleProject(projectId: string, runId: string = 'batch-' + Date.now()) {
+  async settleProject(projectId: string, runId?: string) {
+    const effectiveRunId = this.resolveRunId(runId);
     const startTime = Date.now();
-    this.logger.log(`[P1-C] Starting settlement for project: ${projectId} (runId: ${runId})`);
+    this.logger.log(
+      `[P1-C] Starting settlement for project: ${projectId} (runId: ${effectiveRunId})`
+    );
 
     // Audit Start
-    await this.recordAudit(null, projectId, 'billing.settle.start', { runId }, runId);
+    await this.recordAudit(
+      null,
+      projectId,
+      'billing.settle.start',
+      { runId: effectiveRunId },
+      effectiveRunId
+    );
 
     const ledgers = await this.prisma.billingLedger.findMany({
       where: {
@@ -97,7 +113,7 @@ export class BillingSettlementService {
                   ledgerId: l.id,
                   itemId: normalizedLedger?.itemId ?? l.jobId,
                   traceId: normalizedLedger?.traceId ?? null,
-                  settleRunId: runId,
+                  settleRunId: effectiveRunId,
                 },
               },
             });
@@ -156,7 +172,7 @@ export class BillingSettlementService {
         projectId,
         'billing.reconcile.pass',
         { processedCount, durationMs },
-        runId
+        effectiveRunId
       );
     } else {
       await this.recordAudit(
@@ -164,7 +180,7 @@ export class BillingSettlementService {
         projectId,
         'billing.reconcile.fail',
         { processedCount, failedCount, durationMs },
-        runId
+        effectiveRunId
       );
     }
 

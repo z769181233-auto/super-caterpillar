@@ -55,7 +55,10 @@ export class AssetReceiptResolverService {
 
     // Level 1: Match by createdByJobId (Deterministic)
     const level1 = await this.prisma.asset.findMany({
-      where: { createdByJobId: jobId },
+      where: {
+        createdByJobId: jobId,
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
+      },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -68,6 +71,7 @@ export class AssetReceiptResolverService {
       where: {
         job: { traceId },
         projectId,
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
         status: 'PUBLISHED',
         type: 'VIDEO',
       },
@@ -88,6 +92,7 @@ export class AssetReceiptResolverService {
           gte: new Date(jobCreatedAt.getTime() - fiveMins),
           lte: new Date(jobCreatedAt.getTime() + fiveMins),
         },
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
         status: 'PUBLISHED',
         type: 'VIDEO',
       },

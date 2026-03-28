@@ -76,11 +76,17 @@ export class QualityMetricsWriter {
       // 写入 QualityMetrics（如果指标存在）
       // 规则：每次 SUCCEEDED 都 create 一条新记录，避免丢失历史
       if (visualDensityScore !== undefined || enrichmentQuality !== undefined) {
+        if (!traceId) {
+          this.logger.error(
+            `QualityMetrics skipped for ${engine} job ${jobId}: missing traceId`
+          );
+          return false;
+        }
         // 确保 metadata 包含必要字段（jobId/traceId/engineKey），避免丢失历史
         const finalMetadata = {
           ...metadata,
           jobId, // 必含：用于追溯具体 Job
-          traceId: traceId || undefined, // 必含：用于追溯 Pipeline
+          traceId, // 必含：用于追溯 Pipeline
           engineKey: engine === 'CE03' ? 'ce03_visual_density' : 'ce04_visual_enrichment', // 必含：用于追溯引擎
         };
 
@@ -98,7 +104,7 @@ export class QualityMetricsWriter {
         });
 
         this.logger.log(
-          `QualityMetrics created for ${engine} job ${jobId}, project ${projectId} (traceId: ${traceId || 'N/A'})`
+          `QualityMetrics created for ${engine} job ${jobId}, project ${projectId} (traceId: ${traceId})`
         );
         return true;
       } else {

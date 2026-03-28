@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { randomBytes, createHash, webcrypto } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -38,12 +37,8 @@ export class AuditLogService {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowAuditLogPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_AUDIT_LOG_PG_FALLBACK === '1';
+    return process.env.FORCE_AUDIT_LOG_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -115,6 +110,8 @@ export class AuditLogService {
         detailsStr = '[UNSERIALIZABLE]';
       }
       const detailsDigest = createHash('sha256').update(detailsStr).digest('hex');
+      const signingTraceId =
+        typeof traceId === 'string' && traceId.length > 0 ? traceId : '[TRACE_ID_MISSING]';
 
       const signBase = [
         options.action,
@@ -123,7 +120,7 @@ export class AuditLogService {
         serverTimestamp.toISOString(),
         serverNonce,
         detailsDigest,
-        traceId || '',
+        signingTraceId,
       ].join('|');
 
       const secret = process.env.AUDIT_SIGNING_SECRET;
@@ -177,7 +174,7 @@ export class AuditLogService {
         }
         if (!this.shouldAllowAuditLogPgFallback()) {
           this.logger.warn(
-            `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, skipping pg fallback outside CI/test/gate unless FORCE_AUDIT_LOG_PG_FALLBACK=1`
+            `Prisma audit log degraded for ${options.action} ${options.resourceType}:${options.resourceId}, skipping pg fallback unless FORCE_AUDIT_LOG_PG_FALLBACK=1`
           );
           return;
         }

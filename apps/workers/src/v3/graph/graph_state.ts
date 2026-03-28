@@ -37,30 +37,37 @@ export async function getLatestCharacterStates(params: {
 }): Promise<CharacterState[]> {
   const { prisma, projectId, beforeChapterIndex } = params;
 
-  // 查找上一章的 memory_short_term 记录
-  const shortTermMemory = await prisma.memoryShortTerm.findFirst({
+  const priorChapters = await prisma.novelChapter.findMany({
     where: {
-      projectId,
-      chapterId: {
-        in: await prisma.novelChapter
-          .findMany({
-            where: {
-              volume: {
-                projectId,
-              },
-              index: {
-                lt: beforeChapterIndex,
-              },
-            },
-            select: { id: true },
-            orderBy: { index: 'desc' },
-            take: 3, // 检查最近 3 章
-          })
-          .then((chapters) => chapters.map((c) => c.id)),
+      volume: {
+        projectId,
+      },
+      index: {
+        lt: beforeChapterIndex,
       },
     },
-    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+    orderBy: { index: 'desc' },
+    take: 3,
   });
+
+  if (priorChapters.length === 0) {
+    return [];
+  }
+
+  const chapterIds = priorChapters.map((chapter) => chapter.id);
+  const shortTermMemories = await prisma.memoryShortTerm.findMany({
+    where: {
+      projectId,
+      chapterId: { in: chapterIds },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+  });
+
+  const shortTermMemory =
+    priorChapters
+      .map((chapter) => shortTermMemories.find((memory) => memory.chapterId === chapter.id))
+      .find(Boolean) ?? null;
 
   if (!shortTermMemory?.characterStates) {
     return [];

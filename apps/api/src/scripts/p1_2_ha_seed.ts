@@ -19,14 +19,16 @@ async function main() {
 
   // 1) 找一个"活跃"的 worker（5 分钟内有心跳）
   const threshold = new Date(Date.now() - 5 * 60 * 1000);
-  const worker = await prisma.workerNode.findFirst({
+  const workers = await prisma.workerNode.findMany({
     where: {
       lastHeartbeat: { gte: threshold },
       status: { not: 'offline' },
     },
-    orderBy: { lastHeartbeat: 'desc' },
+    orderBy: [{ lastHeartbeat: 'desc' }, { id: 'desc' }],
     select: { id: true, workerId: true, lastHeartbeat: true },
+    take: 1,
   });
+  const worker = workers[0] ?? null;
 
   if (!worker) {
     throw new Error(
@@ -104,17 +106,21 @@ async function main() {
   // 3) 解析 organizationId (shotJob 现在要求必填 organization)
   async function resolveOrgId(): Promise<string> {
     // a) 若已有 project 带 organizationId,优先使用
-    const p = await prisma.project.findFirst({
-      orderBy: { createdAt: 'desc' },
+    const projects = await prisma.project.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: { id: true, organizationId: true },
+      take: 1,
     });
+    const p = projects[0] ?? null;
     if (p?.organizationId) return p.organizationId;
 
     // b) 找一个现存 organization
-    const org = await (prisma as any).organization?.findFirst?.({
-      orderBy: { createdAt: 'desc' },
+    const orgs = await (prisma as any).organization?.findMany?.({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: { id: true },
+      take: 1,
     });
+    const org = orgs?.[0] ?? null;
     if (org?.id) return org.id;
 
     // c) 没有就创建一个最小 organization
@@ -132,10 +138,13 @@ async function main() {
 
   // 4) 创建/复用一个 project(最小化:用已有 project,避免 schema 易碎)
   const project =
-    (await prisma.project.findFirst({
-      orderBy: { createdAt: 'desc' },
+    (
+      await prisma.project.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       select: { id: true, organizationId: true },
-    })) ??
+      take: 1,
+    })
+    )[0] ??
     (await prisma.project.create({
       data: {
         name: `p1_2_ha_${Date.now()}`,
@@ -263,12 +272,15 @@ async function main() {
   // 5.16) 可选连接 worker (不阻断seed,找到就连)
   async function resolveWorkerNodeIdByWorkerId(wid: string): Promise<string | null> {
     try {
-      const found = await prisma.workerNode.findFirst({
+      const foundWorkers = await prisma.workerNode.findMany({
         where: {
           OR: [{ workerId: wid }, { name: wid }, { id: wid }],
         },
         select: { id: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 1,
       });
+      const found = foundWorkers[0] ?? null;
       return found?.id ?? null;
     } catch {
       return null;

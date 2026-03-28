@@ -1,4 +1,4 @@
-import { PrismaClient, AssetOwnerType, AssetType } from 'database';
+import { PrismaClient, AssetOwnerType, AssetRole, AssetType } from 'database';
 import { ApiClient } from '../api-client';
 import { ProcessorContext } from '../types/processor-context';
 
@@ -6,6 +6,13 @@ export interface ShotRenderProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
   output?: any;
   error?: string;
+}
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
 }
 
 /**
@@ -21,7 +28,7 @@ export async function processShotRenderJob(
   const logger = context.logger || console;
   const payload = (job.payload || {}) as any;
   const { pipelineRunId, shotId } = payload;
-  const traceId = payload.traceId || job.id;
+  const traceId = requireNonEmptyString(payload.traceId || job.traceId, 'ShotRender_HUB', 'traceId');
 
   logger.log(`[ShotRender_HUB] Processing job ${job.id} for shot ${shotId}`);
 
@@ -118,12 +125,14 @@ export async function processShotRenderJob(
     // 5. Success Persistence
     const isVideo = (storageKey || '').match(/\.(mp4|mkv|mov|avi)$/i);
     const assetType = isVideo ? AssetType.VIDEO : AssetType.IMAGE;
+    const assetRole = isVideo ? AssetRole.SHOT_SOURCE : AssetRole.PRIMARY;
 
     const asset = await prisma.asset.upsert({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
           ownerId: shot.id,
           ownerType: AssetOwnerType.SHOT,
+          role: assetRole,
           type: assetType,
         },
       },
@@ -132,6 +141,7 @@ export async function processShotRenderJob(
         projectId: resolvedProjectId,
         ownerId: shot.id,
         ownerType: AssetOwnerType.SHOT,
+        role: assetRole,
         type: assetType,
         storageKey,
         checksum: sha256,
@@ -146,11 +156,12 @@ export async function processShotRenderJob(
     });
 
     // 6. Trigger VIDEO_RENDER
-    if (shot.sceneId) {
+    if (shot.sceneId && pipelineRunId) {
       await apiClient.createJob({
         projectId: resolvedProjectId,
         organizationId: resolvedOrganizationId,
         jobType: 'VIDEO_RENDER' as any,
+        dedupeKey: `video_render_${shot.sceneId}_${pipelineRunId}`,
         payload: {
           pipelineRunId,
           traceId,
@@ -161,6 +172,10 @@ export async function processShotRenderJob(
           episodeId: shot.scene?.episodeId,
         },
       });
+    } else if (!pipelineRunId) {
+      logger.warn(
+        `[ShotRender_HUB] Job ${job.id} missing pipelineRunId; skipping VIDEO_RENDER fanout for shot ${shot.id}.`
+      );
     }
 
     // W3-1: 原生落盘四件套（禁止 fallback） - PLAN-B Permanent Fix

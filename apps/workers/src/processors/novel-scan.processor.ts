@@ -3,6 +3,7 @@ import { config } from '@scu/config';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
+import { createHash } from 'crypto';
 import { fileExists } from '../../../../packages/shared/fs_async';
 import { ProcessorContext } from '../types/processor-context';
 import { streamScanFile, ScanResult } from '../../../../packages/ingest/stream_scan';
@@ -14,6 +15,28 @@ import {
   stage4PeakRssMb,
   stage4ThroughputBps,
 } from '../observability/stage4.metrics';
+
+async function sha256FileRange(
+  filePath: string,
+  startByte: number,
+  endByteExclusive: number
+): Promise<string> {
+  if (endByteExclusive <= startByte) {
+    return createHash('sha256').digest('hex');
+  }
+
+  return await new Promise((resolve, reject) => {
+    const hash = createHash('sha256');
+    const stream = fs.createReadStream(filePath, {
+      start: startByte,
+      end: endByteExclusive - 1,
+    });
+
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
 
 /**
  * Stage 4: NOVEL_SCAN_TOC Processor (Hardened)
@@ -88,9 +111,13 @@ export async function processNovelScan(context: ProcessorContext) {
         projectId,
         organizationId,
         novelSourceId: job.payload.novelSourceId,
-        manifestHash: job.payload.manifestHash || 'v1',
-        engineVersion: job.payload.engineVersion || 'ce06-v3',
         status: 'PROCESSING',
+        ...(typeof job.payload.manifestHash === 'string' && job.payload.manifestHash.length > 0
+          ? { manifestHash: job.payload.manifestHash }
+          : {}),
+        ...(typeof job.payload.engineVersion === 'string' && job.payload.engineVersion.length > 0
+          ? { engineVersion: job.payload.engineVersion }
+          : {}),
       },
     });
 
@@ -115,22 +142,36 @@ export async function processNovelScan(context: ProcessorContext) {
 
     for (let i = 0; i < episodes.length; i += BATCH_SIZE) {
       const batch = episodes.slice(i, i + BATCH_SIZE);
+      const batchWithHashes = await Promise.all(
+        batch.map(async (ep) => ({
+          ep,
+          sha256: await sha256FileRange(filePath, ep.startByte, ep.endByte),
+        }))
+      );
 
       await prisma.$transaction(
         async (tx) => {
-          for (const [idx, ep] of batch.entries()) {
+          for (const [idx, item] of batchWithHashes.entries()) {
             const globalIndex = i + idx + 1;
+            const { ep, sha256 } = item;
 
             // A. Create NovelChunk Record
-            const dbChunk = await tx.novelChunk.create({
-              data: {
-                ingestRunId: ingestRun.id,
-                chunkId: `${ingestRun.id}_${globalIndex}`, // Idempotent key
-                chNo: globalIndex,
-                volNo: 1, // Default volume
+            const chunkBusinessKey = `${ingestRun.id}_${globalIndex}`;
+            const dbChunk = await tx.novelChunk.upsert({
+              where: { chunkId: chunkBusinessKey },
+              update: {
                 offsetStart: ep.startByte,
                 offsetEnd: ep.endByte,
-                sha256: '', // Optional: placeholder for content hash
+                sha256,
+              },
+              create: {
+                ingestRunId: ingestRun.id,
+                chunkId: chunkBusinessKey,
+                chNo: globalIndex,
+                volNo: 1,
+                offsetStart: ep.startByte,
+                offsetEnd: ep.endByte,
+                sha256,
                 status: 'PENDING',
               },
             });
@@ -138,6 +179,7 @@ export async function processNovelScan(context: ProcessorContext) {
             // B. Dispatch Job
             const jobPayload = {
               projectId,
+              episodeId: job.payload.episodeId,
               fileKey,
               chunkId: dbChunk.id, // Primary key of NovelChunk
               ingestRunId: ingestRun.id,
@@ -148,21 +190,36 @@ export async function processNovelScan(context: ProcessorContext) {
               isVerification: !!isVerification,
             };
 
-            const newJob = await tx.shotJob.create({
-              data: {
+            const dedupeKey = `novel_chunk_${ingestRun.id}_${globalIndex}`;
+            const newJob = await tx.shotJob.upsert({
+              where: { dedupeKey },
+              update: {},
+              create: {
+                dedupeKey,
                 organizationId,
                 projectId,
+                episodeId: job.payload.episodeId,
                 type: JobType.NOVEL_CHUNK_PARSE,
                 status: 'PENDING',
                 priority: 10,
                 payload: jobPayload,
                 taskId: job.taskId,
+                traceId: job.traceId,
                 isVerification: !!isVerification,
+                engineBinding: {
+                  create: {
+                    engineId: engine.id,
+                    engineKey: engine.engineKey,
+                    status: 'BOUND',
+                  },
+                },
               },
             });
 
-            await tx.jobEngineBinding.create({
-              data: {
+            await tx.jobEngineBinding.upsert({
+              where: { jobId: newJob.id },
+              update: {},
+              create: {
                 jobId: newJob.id,
                 engineId: engine.id,
                 engineKey: engine.engineKey,

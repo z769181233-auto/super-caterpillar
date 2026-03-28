@@ -13,7 +13,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const { Client } = require('pg');
 
 const DATABASE_URL =
-  process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/scu?schema=public';
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/scu?schema=public';
 const MAX_WAIT_MS = 30000; // 30 秒
 const RETRY_INTERVAL_MS = 1000; // 1 秒
 
@@ -34,7 +34,7 @@ function parseDatabaseUrl(url) {
       port: 5432,
       database: 'scu',
       user: 'postgres',
-      password: 'postgres',
+      password: 'password',
     };
   }
 }

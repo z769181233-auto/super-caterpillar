@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
-import { UserRole, UserTier } from 'database';
+import { UserRole, UserTier, UserType } from 'database';
 import { RedisService } from '../redis/redis.service';
 
 type RefreshTokenPayload = {
@@ -39,8 +39,12 @@ export class AuthService {
     private readonly redisService: RedisService
   ) { }
 
+  private shouldAllowRefreshRevocationMemoryFallback(): boolean {
+    return process.env.ALLOW_REFRESH_TOKEN_MEMORY_FALLBACK === '1';
+  }
+
   async register(registerDto: RegisterDto) {
-    const { email, password, userType = 'individual' as any } = registerDto;
+    const { email, password, userType = UserType.individual } = registerDto;
     this.logger.log(`[AUTH_FLOW] register lookup existing user email=${email}`);
 
     // 1. 预检查 email 是否已存在 (外部快速失败，减少事务开销)
@@ -251,15 +255,19 @@ export class AuthService {
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<void> {
+    let payload: RefreshTokenPayload;
     try {
-      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
-      if (payload.type !== 'refresh' || !payload.jti) {
-        return;
-      }
-      await this.revokeRefreshTokenPayload(payload);
+      payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
     } catch {
       // Ignore invalid tokens during logout.
+      return;
     }
+
+    if (payload.type !== 'refresh' || !payload.jti) {
+      return;
+    }
+
+    await this.revokeRefreshTokenPayload(payload);
   }
 
   async generateTokens(userId: string, email: string, tier: string, organizationId: string | null) {
@@ -346,9 +354,12 @@ export class AuthService {
     );
 
     if (!storedInRedis) {
+      if (!this.shouldAllowRefreshRevocationMemoryFallback()) {
+        throw new UnauthorizedException('Refresh token revocation storage unavailable');
+      }
       this.inMemoryRevokedRefreshTokens.set(payload.jti, Date.now() + expiresInMs);
       this.logger.warn(
-        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation for jti=${payload.jti}`
+        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation via explicit override for jti=${payload.jti}`
       );
     }
   }
@@ -385,10 +396,12 @@ export class AuthService {
     }
 
     this.logger.log(`[AUTH_FLOW] getCurrentOrganization userId=${userId} lookup first membership`);
-    const firstMembership = await this.prisma.organizationMember.findFirst({
+    const firstMemberships = await this.prisma.organizationMember.findMany({
       where: { userId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const firstMembership = firstMemberships[0] ?? null;
     this.logger.log(
       `[AUTH_FLOW] getCurrentOrganization userId=${userId} first membership orgId=${firstMembership?.organizationId ?? 'null'}`
     );

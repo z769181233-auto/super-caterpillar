@@ -55,6 +55,13 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
   }
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * NovelAnalysisLocalAdapter（Worker 端版本）
  * 将现有的 NOVEL_ANALYSIS 本地处理逻辑包装为 EngineAdapter
@@ -83,6 +90,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
    */
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const startTime = Date.now();
+    const jobId = requireNonEmptyString(input.payload.jobId, 'NovelAnalysisAdapterWorker', 'payload.jobId');
 
     try {
       // 验证 JobType
@@ -154,7 +162,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       // 记录解析完成日志
       logStructured('info', {
         action: 'NOVEL_ANALYSIS_PARSED',
-        jobId: input.payload.jobId || 'unknown',
+        jobId,
         projectId,
         stats: structure.stats,
         adapter: this.name,
@@ -167,7 +175,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       // 记录写库开始日志
       logStructured('info', {
         action: 'NOVEL_ANALYSIS_WRITE_START',
-        jobId: input.payload.jobId || 'unknown',
+        jobId,
         projectId,
         stats: structure.stats,
         adapter: this.name,
@@ -182,7 +190,6 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
 
       // Standard: 写入 AuditLog 和 CostLedger
       if (selectedOutput) {
-        const jobId = input.payload.jobId || 'unknown';
         const inputHash = hashData(ce06Input);
         const outputHash = hashData(selectedOutput);
 
@@ -236,7 +243,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       // S3-B Fine-Tune: 记录写库完成日志（包含修正统计）
       logStructured('info', {
         action: 'NOVEL_ANALYSIS_WRITE_COMPLETE',
-        jobId: input.payload.jobId || 'unknown',
+        jobId,
         projectId,
         writeDurationMs: writeDuration,
         totalDurationMs: totalDuration,
@@ -274,7 +281,7 @@ export class NovelAnalysisLocalAdapterWorker implements EngineAdapter {
       // 记录失败日志
       logStructured('error', {
         action: 'NOVEL_ANALYSIS_FAILED',
-        jobId: input.payload.jobId || 'unknown',
+        jobId,
         projectId: input.context.projectId || input.payload.projectId,
         error: error?.message || 'Unknown error',
         errorStack: error?.stack,

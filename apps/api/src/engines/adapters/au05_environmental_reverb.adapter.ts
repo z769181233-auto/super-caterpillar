@@ -22,14 +22,35 @@ export class AU05EnvironmentalReverbAdapter implements EngineAdapter {
     return engineKey === this.name;
   }
 
+  private requireContextId(value: unknown, field: 'projectId' | 'jobId'): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error(`[AU05EnvironmentalReverbAdapter] Missing context.${field}`);
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { payload, context } = input;
+    let projectId: string;
+    let jobId: string;
+    try {
+      projectId = this.requireContextId(context.projectId, 'projectId');
+      jobId = this.requireContextId(context.jobId, 'jobId');
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'AU05_CONTEXT_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
 
     await this.audit.log({
       userId: context.userId,
       traceId: context.traceId,
       resourceType: 'project',
-      resourceId: context.projectId,
+      resourceId: projectId,
       action: 'AU05_INVOKE',
       details: payload,
     });
@@ -44,8 +65,8 @@ export class AU05EnvironmentalReverbAdapter implements EngineAdapter {
 
     await this.cost.recordFromEvent({
       userId: context.userId || 'system',
-      projectId: context.projectId || 'unknown',
-      jobId: context.jobId || 'unknown',
+      projectId,
+      jobId,
       jobType: 'AU_RENDER',
       engineKey: this.name,
       costAmount: 0.02,
