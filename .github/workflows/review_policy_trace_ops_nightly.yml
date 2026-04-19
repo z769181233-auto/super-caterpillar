@@ -44,6 +44,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Prepare database runtime artifacts
+        run: |
+          set -euo pipefail
+          pnpm --filter database prisma:generate
+          pnpm --filter database build
+
       - name: Run review policy trace ops
         run: |
           set -euo pipefail
