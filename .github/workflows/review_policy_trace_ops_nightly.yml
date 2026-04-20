@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 45
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REVIEW_POLICY_TRACE_SKIP_EXPORT: ${{ vars.REVIEW_POLICY_TRACE_SKIP_EXPORT }}
       REVIEW_POLICY_TRACE_PAGES_BASE_URL: ${{ vars.REVIEW_POLICY_TRACE_PAGES_BASE_URL }}
       REVIEW_POLICY_TRACE_ALERT_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_ALERT_WEBHOOK_URL }}
       REVIEW_POLICY_TRACE_SLACK_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_SLACK_WEBHOOK_URL }}
@@ -45,6 +46,7 @@ jobs:
         run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Prepare database runtime artifacts
+        if: env.REVIEW_POLICY_TRACE_SKIP_EXPORT != 'true'
         run: |
           set -euo pipefail
           pnpm --filter database prisma:generate
@@ -53,7 +55,15 @@ jobs:
       - name: Run review policy trace ops
         run: |
           set -euo pipefail
-          pnpm dataset:review-policy-trace:ops
+          OPS_ARGS=()
+          if [ "${REVIEW_POLICY_TRACE_SKIP_EXPORT:-}" = "true" ]; then
+            OPS_ARGS+=(--skip-export)
+          fi
+
+          set +e
+          pnpm dataset:review-policy-trace:ops "${OPS_ARGS[@]}"
+          OPS_EXIT=$?
+          set -e
 
           STATUS_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json"
           SUMMARY_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_summary.md"
@@ -122,7 +132,10 @@ jobs:
             echo "Hosted site bundle: $HOSTED_SITE_DIR" >> "$GITHUB_STEP_SUMMARY"
           fi
 
+          exit "$OPS_EXIT"
+
       - name: Evaluate review policy trace alerts
+        if: always()
         run: |
           set -euo pipefail
           STATUS_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json"
@@ -345,7 +358,7 @@ jobs:
           path: apps/api/storage/exports/film_ir_dataset/review_policy_trace_pages
 
   deploy-review-policy-trace-pages:
-    if: vars.REVIEW_POLICY_TRACE_ENABLE_PAGES_DEPLOY == 'true'
+    if: always() && vars.REVIEW_POLICY_TRACE_ENABLE_PAGES_DEPLOY == 'true'
     needs: review-policy-trace-ops
     runs-on: ubuntu-latest
     environment:
