@@ -23,6 +23,15 @@ export class AuditInsightService {
     private readonly signedUrlService: SignedUrlService
   ) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') {
+      return undefined;
+    }
+
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   async getNovelInsight(novelSourceId: string): Promise<NovelInsightResponse> {
     // 1. Find Project by Novel
     const novelSource = await this.prisma.novel.findUnique({
@@ -62,13 +71,15 @@ export class AuditInsightService {
             action: { contains: 'SUCCESS' },
           },
           select: { details: true, apiKey: { select: { ownerUserId: true } } },
+          orderBy: { createdAt: 'desc' },
         });
 
         const details = (auditLog?.details as Record<string, any>) || {};
 
         return {
           jobId: job.id,
-          workerId: (details['workerId'] as string) || auditLog?.apiKey?.ownerUserId || 'UNKNOWN',
+          workerId:
+            this.asNonEmptyString(details['workerId']) ?? auditLog?.apiKey?.ownerUserId ?? null,
           engineKey: (details['engineKey'] as string) || 'ce06_novel_parsing',
           engineVersion: (details['engineVersion'] as string) || '1.0.0',
           createdAt: job.createdAt,
@@ -84,7 +95,7 @@ export class AuditInsightService {
       const payload = (job.payload as Record<string, any>) || {};
       return {
         jobId: job.id,
-        workerId: job.workerId || 'UNKNOWN',
+        workerId: job.workerId ?? null,
         engineKey: 'ce06_novel_parsing',
         engineVersion: '1.0.0',
         createdAt: job.createdAt,
@@ -113,37 +124,33 @@ export class AuditInsightService {
       take: 20,
     });
 
-    const ce07Artifacts: MemoryUpdateArtifact[] = await Promise.all(
+    const ce07Artifacts = await Promise.all(
       ce07AuditLogs.map(async (log) => {
         const details = (log.details as Record<string, any>) || {};
         const jobId = log.resourceId;
 
         if (!jobId) {
-          return {
-            jobId: 'UNKNOWN',
-            workerId: (details['workerId'] as string) || 'UNKNOWN',
-            engineKey: (details['engineKey'] as string) || 'ce07_memory_update',
-            engineVersion: (details['engineVersion'] as string) || '1.0.0',
-            createdAt: log.createdAt,
-            status: 'UNKNOWN',
-            payload: (log.payload as Record<string, any>) || {},
-            latencyMs: (details['latency_ms'] as number) || 0,
-          };
+          this.logger.warn(
+            `[AuditInsight] Skip CE07 audit log ${log.id} because resourceId is empty`
+          );
+          return null;
         }
 
         const job = await this.prisma.shotJob.findUnique({ where: { id: jobId } });
 
         return {
           jobId: jobId,
-          workerId: (details['workerId'] as string) || 'UNKNOWN',
+          workerId: this.asNonEmptyString(details['workerId']) ?? null,
           engineKey: (details['engineKey'] as string) || 'ce07_memory_update',
           engineVersion: (details['engineVersion'] as string) || '1.0.0',
           createdAt: log.createdAt,
-          status: job?.status || 'UNKNOWN',
+          status: job?.status ?? null,
           payload: job?.payload || {},
           memoryContent: details['output'] || (job as any)?.result || {},
         };
       })
+    ).then(
+      (artifacts) => artifacts.filter((artifact): artifact is NonNullable<typeof artifact> => artifact !== null)
     );
 
     // 4. Fetch CE03/CE04: Visual Metrics Jobs
@@ -161,11 +168,11 @@ export class AuditInsightService {
 
     const visualMetricArtifacts = visualJobs.map((job) => {
       const output = ((job as any).result as any) || {};
-      let score = 0;
+      let score: number | null = null;
       if (job.type === 'CE03_VISUAL_DENSITY') {
-        score = (output['visual_density_score'] as number) || 0;
+        score = typeof output['visual_density_score'] === 'number' ? output['visual_density_score'] : null;
       } else if (job.type === 'CE04_VISUAL_ENRICHMENT') {
-        score = (output['enrichment_quality'] as number) || 0;
+        score = typeof output['enrichment_quality'] === 'number' ? output['enrichment_quality'] : null;
       }
 
       return {
@@ -220,10 +227,10 @@ export class AuditInsightService {
       j
         ? {
             jobId: j.id,
-            traceId: j.traceId || '',
+            traceId: this.asNonEmptyString(j.traceId) ?? null,
             status: j.status,
             createdAtIso: j.createdAt.toISOString(),
-            workerId: j.workerId || 'UNKNOWN',
+            workerId: j.workerId ?? null,
           }
         : null;
 
@@ -243,7 +250,6 @@ export class AuditInsightService {
 
     // 4. Director (Real-time with Cap and Timeout)
     const PERFORMANCE_CAP = 50;
-    const TIMEOUT_MS = 2000;
 
     const shots = await this.prisma.shot.findMany({
       where: {
@@ -266,31 +272,24 @@ export class AuditInsightService {
 
     const solver = new DirectorConstraintSolverService();
 
-    // Timeout Protection using Promise.race
     let results: any[] = [];
     let isPartial = false;
     let message = 'Success';
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
     try {
-      results = (await Promise.race([
-        Promise.resolve(
-          shots.map((s) =>
-            solver.validateShot({
-              id: s.id,
-              type: s.type as any,
-              // Ensure params is parsed if it's stored as JSON string, or used as object
-              params: typeof s.params === 'string' ? JSON.parse(s.params) : s.params || {},
-              // Map other necessary fields like enriched_prompt if available
-            })
-          )
-        ),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), TIMEOUT_MS)),
-      ])) as any[];
+      results = shots.map((s) =>
+        solver.validateShot({
+          id: s.id,
+          type: s.type as any,
+          // Ensure params is parsed if it's stored as JSON string, or used as object
+          params: typeof s.params === 'string' ? JSON.parse(s.params) : s.params || {},
+          // Map other necessary fields like enriched_prompt if available
+        })
+      ) as any[];
     } catch (e: any) {
       isPartial = true;
-      message =
-        e.message === 'TIMEOUT' ? 'Director evaluation timed out (partial results)' : e.message;
+      message = e.message;
       results = []; // Or keep partial if we had them
     }
     /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -310,11 +309,9 @@ export class AuditInsightService {
     const director: DirectorAuditSummaryDto & {
       partial?: boolean;
       message?: string;
-      evaluatedShots?: number;
     } = {
       mode: 'realtime',
       shotsEvaluated: shots.length,
-      evaluatedShots: shots.length, // Alias for backward compatibility
       isValid: results.length > 0 ? results.every((r) => r.isValid) : false, // Default to false if no shots
       violationsCount: totalViolations,
       suggestionsCount: totalSuggestions,
@@ -349,8 +346,8 @@ export class AuditInsightService {
         if (!job) missingPhases.push(p.label);
         return {
           phase: p.label,
-          jobId: job?.id || 'MISSING',
-          status: job?.status || 'MISSING',
+          jobId: job?.id ?? null,
+          status: job?.status ?? null,
         };
       });
     } else {
@@ -369,45 +366,47 @@ export class AuditInsightService {
         };
 
     // Step 6A: Resolve shotId (must be derived from reliable context)
-    // Prefer explicit shotId from VIDEO_RENDER job payload if present, else from CE04 payload, else latest shot in this project.
+    // Only trust explicit shotId carried by related jobs; do not guess from project order.
     let shotId: string | null =
       ((videoJ?.payload as any)?.shotId as string | undefined) ||
       ((ce04J?.payload as any)?.shotId as string | undefined) ||
       null;
-
-    if (!shotId) {
-      const shot = await this.prisma.shot.findFirst({
-        where: { scene: { episode: { season: { projectId } } } },
-        select: { id: true },
-      });
-      shotId = shot?.id || null;
-    }
 
     // Step 6B: Query Asset table as SSOT
     let videoFromAsset: {
       id: string;
       storageKey: string | null;
       createdByJobId: string | null;
+      status: string;
+      projectId: string;
     } | null = null;
 
     if (shotId) {
-      videoFromAsset = await this.prisma.asset.findFirst({
+      videoFromAsset = await this.prisma.asset.findUnique({
         where: {
-          projectId,
-          ownerType: 'SHOT',
-          ownerId: shotId,
-          type: 'VIDEO',
-          status: 'GENERATED',
+          ownerType_ownerId_type: {
+            ownerType: 'SHOT',
+            ownerId: shotId,
+            type: 'VIDEO',
+          },
         },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, storageKey: true, createdByJobId: true },
+        select: {
+          id: true,
+          storageKey: true,
+          createdByJobId: true,
+          status: true,
+          projectId: true,
+        },
       });
+      if (videoFromAsset && videoFromAsset.status !== 'GENERATED') {
+        videoFromAsset = null;
+      }
     }
 
     if (videoFromAsset?.storageKey) {
       // Use Asset SSOT
       try {
-        const { url } = this.signedUrlService.generateSignedUrl({
+        const { url } = await this.signedUrlService.generateSignedUrl({
           key: videoFromAsset.storageKey,
           tenantId: projectId, // tenant binding (project-scoped)
           userId,
@@ -434,28 +433,37 @@ export class AuditInsightService {
         };
       }
     } else if (videoJ) {
-      // DEPRECATED Fallback (job payload result.videoKey)
+      // Fallback: older jobs may still persist videoKey in payload.result.
       this.logger.warn(`WARN_DEPRECATED_JOB_VIDEO_KEY_PATH_USED=1 projectId=${projectId}`);
 
       const payload = (videoJ.payload as any) || {};
       const res = payload.result || {};
-      const legacyKey = res.videoKey as string | undefined;
+      const payloadVideoStorageKey = res.videoKey as string | undefined;
 
-      if (videoJ.status === 'SUCCEEDED' && legacyKey) {
+      if (videoJ.status === 'SUCCEEDED' && payloadVideoStorageKey) {
         try {
-          const { url } = this.signedUrlService.generateSignedUrl({
-            key: legacyKey,
+          const { url } = await this.signedUrlService.generateSignedUrl({
+            key: payloadVideoStorageKey,
             tenantId: projectId,
             userId,
             expiresIn: 3600,
           });
-          videoAsset = { status: 'READY', secureUrl: url, jobId: videoJ.id, storageKey: legacyKey };
+          videoAsset = {
+            status: 'READY',
+            secureUrl: url,
+            jobId: videoJ.id,
+            storageKey: payloadVideoStorageKey,
+          };
         } catch (e) {
           this.logger.error(
-            '[AuditInsight] Failed to sign video URL from legacy job payload',
+            '[AuditInsight] Failed to sign video URL from job payload storage key',
             (e as Error).message
           );
-          videoAsset = { status: 'ERROR_SIGNING', jobId: videoJ.id, storageKey: legacyKey };
+          videoAsset = {
+            status: 'ERROR_SIGNING',
+            jobId: videoJ.id,
+            storageKey: payloadVideoStorageKey,
+          };
         }
       } else {
         videoAsset = { status: videoJ.status, jobId: videoJ.id };
@@ -463,7 +471,7 @@ export class AuditInsightService {
     }
 
     const dag: DagRunSummaryDto = {
-      traceId: dagTraceId || 'NONE',
+      traceId: dagTraceId ?? null,
       timeline,
       missingPhases,
       builtFrom: ce04J ? 'latest_ce04_trace' : ce03J ? 'latest_run' : 'empty',
@@ -481,8 +489,8 @@ export class AuditInsightService {
         video: mapJob(videoJ),
       },
       metrics: {
-        ce03Score: ce03M?.visualDensityScore || 0,
-        ce04Score: ce04M?.enrichmentQuality || 0,
+        ce03Score: ce03M?.visualDensityScore ?? null,
+        ce04Score: ce04M?.enrichmentQuality ?? null,
       },
       director,
       dag,
@@ -522,7 +530,7 @@ export class AuditInsightService {
       jobId: job.id,
       type: job.type || job.jobType,
       status: job.status,
-      workerId: job.workerId || safeWorkerId(auditLogs) || 'UNKNOWN',
+      workerId: job.workerId ?? safeWorkerId(auditLogs) ?? null,
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
       payload: job.payload || {},

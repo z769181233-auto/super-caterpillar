@@ -1,4 +1,5 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import {
   HealthCheck,
   HealthCheckService,
@@ -7,6 +8,7 @@ import {
 } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('observability')
 export class ObservabilityController {
   constructor(

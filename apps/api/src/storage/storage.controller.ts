@@ -1,4 +1,18 @@
-import { Controller, Post, Get, Req, Res, HttpStatus, Query, Logger, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import {
+  Controller,
+  Post,
+  Get,
+  Req,
+  Res,
+  HttpStatus,
+  Query,
+  Logger,
+  Param,
+  UseGuards,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,12 +28,21 @@ import { AuthenticatedUser } from '@scu/shared-types';
 
 function normalizeStorageKey(keyDef: any): string {
   if (!keyDef) return '';
+  let key = '';
   if (Array.isArray(keyDef)) {
-    return keyDef.join('/');
+    key = keyDef.join('/');
+  } else {
+    key = String(keyDef);
   }
-  return String(keyDef).replace(/^\/+/, '');
+
+  // P1 Security: Path Traversal Protection
+  // 1. Normalize path to resolve '..' and '.'
+  const normalized = path.normalize(key).replace(/^(\.\.(\/|\\|$))+/, '');
+  // 2. Remove leading slashes and prevent drive letters (Windows)
+  return normalized.replace(/^[/\\]+/, '').replace(/^[a-zA-Z]:/, '');
 }
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('storage')
 export class StorageController {
   private readonly logger = new Logger(StorageController.name);
@@ -51,10 +74,16 @@ export class StorageController {
     @CurrentOrganization() orgId: string
   ) {
     const key = normalizeStorageKey(rawKey);
-    const { url, expiresAt } = this.signedUrlService.generateSignedUrl({
+    if (!user?.userId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!orgId) {
+      throw new BadRequestException('Organization context required');
+    }
+    const { url, expiresAt } = await this.signedUrlService.generateSignedUrl({
       key,
-      tenantId: orgId || 'system-gate',
-      userId: user?.userId || 'system-gate-user',
+      tenantId: orgId,
+      userId: user.userId,
     });
     return { url, expiresAt };
   }
@@ -81,7 +110,7 @@ export class StorageController {
     // Proactive Fix: Normalize HEAD to GET for signature verification to support curl -I
     const verifyMethod = method === 'HEAD' ? 'GET' : method;
 
-    const isValid = this.signedUrlService.verifySignedUrl(
+    const isValid = await this.signedUrlService.verifySignedUrl(
       key,
       parseInt(expires, 10),
       signature,

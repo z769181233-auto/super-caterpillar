@@ -60,7 +60,6 @@ export class DistributedLock {
       const result = await this.redis.set(key, lockValue, 'EX', lockTTLSeconds, 'NX');
 
       if (result === 'OK') {
-        console.log(`[DistributedLock] Acquired lock: ${key} (${lockValue})`);
         return lockValue;
       }
 
@@ -70,9 +69,6 @@ export class DistributedLock {
       }
     }
 
-    console.warn(
-      `[DistributedLock] Failed to acquire lock after ${this.maxRetries + 1} attempts: ${key}`
-    );
     return null;
   }
 
@@ -93,15 +89,8 @@ export class DistributedLock {
       const result = await this.redis.eval(script, 1, key, lockValue);
       const released = result === 1;
 
-      if (released) {
-        console.log(`[DistributedLock] Released lock: ${key} (${lockValue})`);
-      } else {
-        console.warn(`[DistributedLock] Failed to release lock (not owner or expired): ${key}`);
-      }
-
       return released;
     } catch (error) {
-      console.error(`[DistributedLock] Error releasing lock: ${error.message}`);
       return false;
     }
   }
@@ -123,7 +112,6 @@ export class DistributedLock {
       const result = await this.redis.eval(script, 1, key, lockValue, ttlSeconds);
       return result === 1;
     } catch (error) {
-      console.error(`[DistributedLock] Error extending lock: ${error.message}`);
       return false;
     }
   }

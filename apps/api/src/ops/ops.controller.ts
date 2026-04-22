@@ -3,7 +3,16 @@
  * 仅用于 dev/管理员环境，用于快速定位 Job 问题
  */
 
-import { Controller, Get, Param, UseGuards, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  UseGuards,
+  NotFoundException,
+  ForbiddenException,
+  Req,
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsMetricsService } from './ops-metrics.service';
@@ -18,12 +27,27 @@ export class OpsController {
     private readonly metricsService: OpsMetricsService
   ) {}
 
+  private assertOpsAccess(request: Request) {
+    const authType = (request as any).authType;
+    if (authType === 'hmac') {
+      return;
+    }
+
+    const role = String((request as any).user?.role || '').toLowerCase();
+    if (role === 'admin' || role === 'owner') {
+      return;
+    }
+
+    throw new ForbiddenException('ADMIN JWT or internal HMAC required');
+  }
+
   /**
    * GET /api/ops/metrics
    * 聚合指标 (只读，带限流)
    */
   @Get('metrics')
-  async getMetrics() {
+  async getMetrics(@Req() request: Request) {
+    this.assertOpsAccess(request);
     return this.metricsService.getProductionMetrics();
   }
 
@@ -32,7 +56,8 @@ export class OpsController {
    * 诊断 Job 状态（仅 dev/管理员）
    */
   @Get('jobs/:id/diagnose')
-  async diagnoseJob(@Param('id') jobId: string) {
+  async diagnoseJob(@Param('id') jobId: string, @Req() request: Request) {
+    this.assertOpsAccess(request);
     // 检查环境（生产环境禁止）
     if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_OPS_ENDPOINTS) {
       throw new NotFoundException('Diagnostic endpoint not available in production');

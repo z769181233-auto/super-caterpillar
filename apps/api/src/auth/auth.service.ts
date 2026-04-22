@@ -14,19 +14,34 @@ import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
 import { UserRole, UserTier } from 'database';
+import { RedisService } from '../redis/redis.service';
+
+type RefreshTokenPayload = {
+  sub: string;
+  email: string;
+  tier: string;
+  orgId: string | null;
+  type: 'refresh';
+  jti: string;
+  exp?: number;
+};
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly inMemoryRevokedRefreshTokens = new Map<string, number>();
   constructor(
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(JwtService)
-    private readonly jwtService: JwtService
+    private readonly jwtService: JwtService,
+    @Inject(RedisService)
+    private readonly redisService: RedisService
   ) { }
 
   async register(registerDto: RegisterDto) {
     const { email, password, userType = 'individual' as any } = registerDto;
+    this.logger.log(`[AUTH_FLOW] register lookup existing user email=${email}`);
 
     // 1. 预检查 email 是否已存在 (外部快速失败，减少事务开销)
     const existingUser = await this.prisma.user.findUnique({
@@ -38,9 +53,12 @@ export class AuthService {
     }
 
     // 2. 哈希密码
+    this.logger.log(`[AUTH_FLOW] register hashing password email=${email}`);
     const passwordHash = await bcrypt.hash(password, env.bcryptSaltRounds);
+    this.logger.log(`[AUTH_FLOW] register password hashed email=${email}`);
 
     // 3. 事务处理：User + Org + Membership
+    this.logger.log(`[AUTH_FLOW] register transaction start email=${email}`);
     const { user, organizationId } = await this.prisma.$transaction(async (tx) => {
       // a) 创建用户
       const newUser = await tx.user.create({
@@ -101,9 +119,12 @@ export class AuthService {
 
       return { user: newUser, organizationId: org.id };
     });
+    this.logger.log(`[AUTH_FLOW] register transaction done email=${email} orgId=${organizationId}`);
 
     // 4. 生成 tokens
+    this.logger.log(`[AUTH_FLOW] register generate tokens email=${email}`);
     const tokens = await this.generateTokens(user.id, user.email, user.tier, organizationId);
+    this.logger.log(`[AUTH_FLOW] register done email=${email}`);
 
     return {
       success: true,
@@ -126,6 +147,7 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+    this.logger.log(`[AUTH_FLOW] login lookup user email=${email}`);
 
     // 查询用户
     const user = await this.prisma.user.findUnique({
@@ -137,7 +159,9 @@ export class AuthService {
     }
 
     // 验证密码
+    this.logger.log(`[AUTH_FLOW] login compare password email=${email}`);
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    this.logger.log(`[AUTH_FLOW] login password compared email=${email} valid=${isPasswordValid}`);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
@@ -145,6 +169,7 @@ export class AuthService {
 
     // Studio v0.7: 获取当前组织 (解耦 OrganizationService)
     let organizationId = await this.getCurrentOrganization(user.id);
+    this.logger.log(`[AUTH_FLOW] login current org resolved email=${email} orgId=${organizationId}`);
 
     // FIX: 如果用户没有任何组织成员关系（可能是老数据或脏数据），自动补齐个人组织
     if (!organizationId) {
@@ -153,10 +178,13 @@ export class AuthService {
       );
       await this.ensurePersonalOrganization(user.id, user.email);
       organizationId = await this.getCurrentOrganization(user.id);
+      this.logger.log(`[AUTH_FLOW] login personal org repaired email=${email} orgId=${organizationId}`);
     }
 
     // 生成 tokens（包含 organizationId）
+    this.logger.log(`[AUTH_FLOW] login generate tokens email=${email}`);
     const tokens = await this.generateTokens(user.id, user.email, user.tier, organizationId);
+    this.logger.log(`[AUTH_FLOW] login done email=${email}`);
 
     return {
       success: true,
@@ -179,15 +207,13 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       // 验证 refresh token（使用 refresh secret）
-      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as {
-        sub: string;
-        email: string;
-        tier: string;
-        type: string;
-      };
+      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
 
-      if (payload.type !== 'refresh') {
+      if (payload.type !== 'refresh' || !payload.jti) {
         throw new UnauthorizedException('Invalid refresh token');
+      }
+      if (await this.isRefreshTokenRevoked(payload.jti)) {
+        throw new UnauthorizedException('Refresh token has been revoked');
       }
 
       // 查询用户
@@ -202,8 +228,8 @@ export class AuthService {
       // Studio v0.7: 获取当前组织
       const currentOrganizationId = await this.getCurrentOrganization(user.id);
 
-      // 生成新的 access token（包含组织 ID）
-      const accessToken = await this.generateAccessToken(
+      await this.revokeRefreshTokenPayload(payload);
+      const tokens = await this.generateTokens(
         user.id,
         user.email,
         user.tier,
@@ -213,13 +239,26 @@ export class AuthService {
       return {
         success: true,
         data: {
-          accessToken,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
         },
         requestId: randomUUID(),
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
+  async revokeRefreshToken(refreshToken: string): Promise<void> {
+    try {
+      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
+      if (payload.type !== 'refresh' || !payload.jti) {
+        return;
+      }
+      await this.revokeRefreshTokenPayload(payload);
+    } catch {
+      // Ignore invalid tokens during logout.
     }
   }
 
@@ -259,23 +298,78 @@ export class AuthService {
       tier,
       orgId: organizationId, // Studio v0.7: 组织 ID
       type: 'refresh',
+      jti: randomUUID(),
     };
-    // TODO: 实现 refresh token 黑名单 / 轮转策略
     return jwt.sign(payload, env.jwtRefreshSecret, {
       expiresIn: env.jwtRefreshExpiresIn,
     } as jwt.SignOptions);
+  }
+
+  private getRefreshBlacklistKey(jti: string): string {
+    return `auth:refresh:blacklist:${jti}`;
+  }
+
+  private pruneInMemoryRevocations() {
+    const now = Date.now();
+    for (const [jti, expiresAt] of this.inMemoryRevokedRefreshTokens.entries()) {
+      if (expiresAt <= now) {
+        this.inMemoryRevokedRefreshTokens.delete(jti);
+      }
+    }
+  }
+
+  private async isRefreshTokenRevoked(jti: string): Promise<boolean> {
+    this.pruneInMemoryRevocations();
+    if (this.inMemoryRevokedRefreshTokens.has(jti)) {
+      return true;
+    }
+
+    const revoked = await this.redisService.get(this.getRefreshBlacklistKey(jti));
+    return revoked === '1';
+  }
+
+  private async revokeRefreshTokenPayload(payload: RefreshTokenPayload): Promise<void> {
+    if (!payload.jti || !payload.exp) {
+      return;
+    }
+
+    const expiresInMs = payload.exp * 1000 - Date.now();
+    if (expiresInMs <= 0) {
+      return;
+    }
+
+    const ttlSeconds = Math.ceil(expiresInMs / 1000);
+    const storedInRedis = await this.redisService.set(
+      this.getRefreshBlacklistKey(payload.jti),
+      '1',
+      ttlSeconds
+    );
+
+    if (!storedInRedis) {
+      this.inMemoryRevokedRefreshTokens.set(payload.jti, Date.now() + expiresInMs);
+      this.logger.warn(
+        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation for jti=${payload.jti}`
+      );
+    }
   }
 
   /**
    * 内部实现：获取用户当前的默认组织 (替代 OrganizationService 调用以打破循环依赖)
    */
   private async getCurrentOrganization(userId: string): Promise<string | null> {
+    this.logger.log(`[AUTH_FLOW] getCurrentOrganization userId=${userId} lookup user`);
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { defaultOrganizationId: true },
     });
+    this.logger.log(
+      `[AUTH_FLOW] getCurrentOrganization userId=${userId} defaultOrganizationId=${user?.defaultOrganizationId ?? 'null'}`
+    );
 
     if (user?.defaultOrganizationId) {
+      this.logger.log(
+        `[AUTH_FLOW] getCurrentOrganization userId=${userId} validate default membership`
+      );
       const membership = await this.prisma.organizationMember.findUnique({
         where: {
           userId_organizationId: {
@@ -284,13 +378,20 @@ export class AuthService {
           },
         },
       });
+      this.logger.log(
+        `[AUTH_FLOW] getCurrentOrganization userId=${userId} default membership found=${Boolean(membership)}`
+      );
       if (membership) return user.defaultOrganizationId;
     }
 
+    this.logger.log(`[AUTH_FLOW] getCurrentOrganization userId=${userId} lookup first membership`);
     const firstMembership = await this.prisma.organizationMember.findFirst({
       where: { userId },
       orderBy: { createdAt: 'asc' },
     });
+    this.logger.log(
+      `[AUTH_FLOW] getCurrentOrganization userId=${userId} first membership orgId=${firstMembership?.organizationId ?? 'null'}`
+    );
 
     return firstMembership?.organizationId || null;
   }
@@ -299,6 +400,7 @@ export class AuthService {
    * 补齐用户个人组织（幂等）
    */
   private async ensurePersonalOrganization(userId: string, email: string): Promise<void> {
+    this.logger.log(`[AUTH_FLOW] ensurePersonalOrganization start userId=${userId}`);
     await this.prisma.$transaction(async (tx) => {
       // b) 幂等创建个人组织 (确保 ownerId_type 唯一约束)
       const org = await tx.organization.upsert({
@@ -342,5 +444,6 @@ export class AuthService {
         });
       }
     });
+    this.logger.log(`[AUTH_FLOW] ensurePersonalOrganization done userId=${userId}`);
   }
 }

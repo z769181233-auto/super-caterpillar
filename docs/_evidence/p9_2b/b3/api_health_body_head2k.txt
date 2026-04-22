@@ -1,1 +1,0 @@
-{"status":"ok","mode":"stub","service":"api","missing_envs":["DATABASE_URL","JWT_SECRET","REDIS_URL","REPLICATE_API_TOKEN","HMAC_SECRET_KEY"],"ts":"2026-03-01T12:38:16.531Z","p9_b3_gate":"active"}

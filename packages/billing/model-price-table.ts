@@ -13,12 +13,20 @@ export const MODEL_PRICE_TABLE: Record<string, number> = {
   'gemini-1.5-pro': 2.0, // 0.10 RMB / 1k tokens = 2.0 credits
   'gemini-1.5-flash': 0.2, // 0.01 RMB / 1k tokens = 0.2 credits
 
-  // Mock/Replay（用于测试和门禁）
-  'ce06-replay-mock': 0.2, // 0.01 RMB / 1k tokens = 0.2 credits
-  'sdxl-turbo-stub': 50.0, // High Cost Render: 2.5 RMB / 1k "tokens" (units) = 50.0 credits
+  // 生产级模型价格 (Final Truth Seal)
+  'ce06-novel-parsing': 8.0,
+  'sdxl-turbo-real': 50.0,
 
   // 默认值（未知模型）
   default: 1.0, // 0.05 RMB / 1k tokens = 1.0 credits
+};
+
+/**
+ * P1-2: 时间维度计费标准 (Credits per Second)
+ */
+export const DURATION_PRICE_TABLE = {
+  GPU_SECOND: 0.05, // 1小时 GPU ≈ 180 Credits ≈ 9 RMB
+  CPU_SECOND: 0.005, // 1小时 CPU ≈ 18 Credits ≈ 0.9 RMB
 };
 
 /**

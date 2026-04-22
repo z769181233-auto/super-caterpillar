@@ -62,7 +62,7 @@ export interface EngineInvokeResult {
   /**
    * 输出数据（成功时返回）
    */
-  output?: Record<string, any>;
+  output?: Record<string, unknown>;
 
   /**
    * 错误信息（失败时返回）
@@ -70,7 +70,7 @@ export interface EngineInvokeResult {
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
   };
 
   /**
@@ -80,7 +80,7 @@ export interface EngineInvokeResult {
     durationMs?: number;
     tokensUsed?: number;
     cost?: number;
-    [key: string]: any;
+    [key: string]: string | number | boolean | Record<string, unknown> | null | undefined;
   };
 }
 

@@ -6,7 +6,7 @@ async function main() {
   const orgId = process.argv[4] || 'org-stage5-test';
   const secret = process.env.JWT_SECRET || 'secret';
   console.error(
-    `[DEBUG] gen-gate-token using secret: ${secret.substring(0, 10)}... (len=${secret.length})`
+    `[DEBUG] gen-gate-token token generation started...`
   );
 
   if (!userId || !role) {

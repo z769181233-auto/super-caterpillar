@@ -6,8 +6,7 @@ import {
   InsightsPayload,
   EmotionalFrame,
 } from './types';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+import { buildApiUrl } from '@/lib/api-base';
 
 async function getJSON<T>(url: string): Promise<T> {
   const res = await fetch(url, { cache: 'no-store' });
@@ -33,6 +32,31 @@ interface ApiBuildResponse {
   sceneCount?: number;
   shotCount?: number;
   characterCount?: number;
+  seasons?: Array<{
+    id: string;
+    index: number;
+    title?: string;
+    summary?: string;
+    episodes: Array<{
+      id: string;
+      index: number;
+      title: string;
+      summary?: string;
+      scenes: Array<{
+        id: string;
+        index: number;
+        title: string;
+        summary?: string;
+        shots: Array<{
+          id: string;
+          index: number;
+          summary?: string;
+          startOffset?: number;
+          endOffset?: number;
+        }>;
+      }>;
+    }>;
+  }>;
   episodes: Array<{
     id: string;
     index: number;
@@ -57,6 +81,16 @@ interface ApiBuildResponse {
     topLocations: Array<{ name: string; count: number }>;
     pacing: { beats: number; intensityHint: string };
   };
+}
+
+function getProjectEpisodes(data: ApiBuildResponse) {
+  const seasonEpisodes = (data.seasons || []).flatMap((season) => season.episodes || []);
+  return seasonEpisodes.length > 0 ? seasonEpisodes : data.episodes || [];
+}
+
+function getDeterministicVariance(index: number, salt: number): number {
+  const seed = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return seed - Math.floor(seed);
 }
 
 interface ApiShotResponse {
@@ -87,7 +121,8 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   tree: ScriptNode[];
   insights: InsightsPayload;
 }> {
-  const data = await getJSON<ApiBuildResponse>(`${API_BASE}/builds/${buildId}/outline`);
+  const data = await getJSON<ApiBuildResponse>(buildApiUrl(`/api/builds/${buildId}/outline`));
+  const episodes = getProjectEpisodes(data);
 
   const summary: BuildSummary = {
     buildId,
@@ -117,7 +152,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   };
 
   // 后端 episodes -> tree 映射
-  const tree: ScriptNode[] = (data?.episodes || []).map((ep) => ({
+  const tree: ScriptNode[] = episodes.map((ep) => ({
     type: 'episode',
     id: ep.id,
     index: ep.index,
@@ -141,13 +176,14 @@ export async function fetchBuildStudio(buildId: string): Promise<{
   }));
 
   // Mock L1 Curve Data with AI Diagnostics (必需件 B)
-  const shots = (data.episodes || []).flatMap((ep) =>
+  const shots = episodes.flatMap((ep) =>
     (ep.scenes || []).flatMap((sc) => sc.shots || [])
   );
   const dynamicFrames: EmotionalFrame[] = shots.map((sh, i) => {
+    const variance = getDeterministicVariance(i, 1);
     const score = Math.min(
       100,
-      Math.max(0, Math.round(40 + Math.sin(i * 0.8) * 30 + Math.random() * 10))
+      Math.max(0, Math.round(40 + Math.sin(i * 0.8) * 30 + variance * 10))
     );
 
     return {
@@ -162,7 +198,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
             : score > 80
               ? '高频动作词爆发，多重指令交叠，情节张力达到峰值。'
               : '节奏稳定，角色互动比例符合剧本模型要求。',
-        dialogueRatio: Math.floor(Math.random() * 60) + 20,
+        dialogueRatio: Math.floor(getDeterministicVariance(i, 2) * 60) + 20,
         actionVerbDensity: score > 50 ? 65 : 25,
       },
     };
@@ -179,7 +215,7 @@ export async function fetchBuildStudio(buildId: string): Promise<{
 }
 
 export async function fetchShotReader(shotId: string): Promise<ShotReaderPayload> {
-  const data = await getJSON<ApiShotResponse>(`${API_BASE}/shots/${shotId}/source`);
+  const data = await getJSON<ApiShotResponse>(buildApiUrl(`/api/shots/${shotId}/source`));
 
   return {
     shotId,

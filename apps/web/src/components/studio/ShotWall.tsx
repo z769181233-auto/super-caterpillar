@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef } from 'react';
+import Image from 'next/image';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { getPreviewStatus, getPreviewUrl } from '@/lib/preview-status';
 
@@ -23,6 +24,7 @@ interface ShotWallProps {
 export default function ShotWall({ shots, selectedShotId, onSelectShot }: ShotWallProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: shots.length,
     getScrollElement: () => parentRef.current,
@@ -88,7 +90,14 @@ export default function ShotWall({ shots, selectedShotId, onSelectShot }: ShotWa
                 `}
                 >
                   {status === 'READY' && previewUrl ? (
-                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      fill
+                      sizes="192px"
+                      unoptimized
+                      className="object-cover"
+                    />
                   ) : (
                     <div className="text-center p-2 flex flex-col items-center">
                       {status === 'PENDING' ? (

@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * VG10: 布料动力学引擎
@@ -60,7 +60,7 @@ export class VG10ClothDynamicsAdapter extends VgBaseEngine {
 
     // 生成预览图 (FFmpeg)
     const previewPath = join(outputDir, `${hash}_preview.png`);
-    this.generateClothPreview(previewPath, clothType);
+    await this.generateClothPreview(previewPath, clothType);
 
     return {
       dynamicsDataUrl: `file://${dynamicsPath}`,
@@ -68,20 +68,32 @@ export class VG10ClothDynamicsAdapter extends VgBaseEngine {
       meta: {
         characterId,
         clothType,
-        engine: 'vg10-cloth-dyn-stub',
+        engine: 'vg10-cloth-dyn-v1',
       },
     };
   }
 
-  private generateClothPreview(outputPath: string, clothType: string): void {
+  private async generateClothPreview(outputPath: string, clothType: string): Promise<void> {
     let color = 'lightgray';
     if (clothType === 'silk') color = 'violet';
     if (clothType === 'leather') color = 'darkred';
 
-    const cmd = `ffmpeg -y -f lavfi -i color=c=${color}:s=256x256 -vf "noise=alls=20:allf=t" -frames:v 1 "${outputPath}"`;
-
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', [
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=${color}:s=256x256`,
+        '-vf',
+        'noise=alls=20:allf=t',
+        '-frames:v',
+        '1',
+        outputPath,
+      ]);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (error) {
       writeFileSync(outputPath, '');
     }

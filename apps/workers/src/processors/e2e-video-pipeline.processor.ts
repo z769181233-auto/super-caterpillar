@@ -52,6 +52,9 @@ export async function processE2EVideoPipelineJob(
   const jobId = job.id;
   const payload = job.payload as E2EVideoPipelinePayload;
   const projectId = job.projectId || payload.projectId;
+  if (!projectId) {
+    throw new Error('[PIPELINE_E2E_VIDEO] Missing projectId');
+  }
 
   // 1. 确定 pipelineRunId
   // 如果 payload 里传了 pipelineRunId，就用传的；否则用当前 job.id 作为 runId
@@ -59,6 +62,7 @@ export async function processE2EVideoPipelineJob(
 
   // TraceId 透传
   const traceId = job.traceId || payload.traceId || `trace-${jobId}`;
+  const ce06DedupeKey = `e2e_ce06_${projectId}_${pipelineRunId}`;
 
   // 审计: Pipeline Start
   // 使用 SUCCESS 状态但明确 action 为 start
@@ -87,35 +91,18 @@ export async function processE2EVideoPipelineJob(
 
   try {
     // 2. 幂等检查: 是否已经存在属于该 pipelineRunId 的 CE06 Job
-    // 关键修正: 必须加上 projectId, organizationId 隔离
-
-    // 获取 OrgId (后面 fallback 逻辑里有更详细获取，但这里幂等查询需要)
-    const initialOrgId = (job as any).organizationId;
-
-    const idempotencyWhere: any = {
-      type: JobType.CE06_NOVEL_PARSING,
-      projectId,
-      payload: {
-        path: ['pipelineRunId'],
-        equals: pipelineRunId,
-      },
-    };
-
-    if (initialOrgId) {
-      idempotencyWhere.organizationId = initialOrgId;
-    }
-
-    const existingCE06 = await prisma.shotJob.findFirst({
-      where: idempotencyWhere,
+    const existingCE06ByDedupe = await prisma.shotJob.findUnique({
+      where: { dedupeKey: ce06DedupeKey },
       select: { id: true },
     });
 
-    if (existingCE06) {
+    if (existingCE06ByDedupe) {
+      const existingId = existingCE06ByDedupe.id;
       logStructured('info', {
         action: 'PIPELINE_IDEMPOTENT_HIT',
         jobId,
         pipelineRunId,
-        existingCE06Job: existingCE06.id,
+        existingCE06Job: existingId,
       });
 
       await apiClient
@@ -128,7 +115,7 @@ export async function processE2EVideoPipelineJob(
           status: 'SUCCESS',
           auditTrail: {
             action: 'pipeline.e2e_video.idempotent_hit',
-            existingCE06Job: existingCE06.id,
+            existingCE06Job: existingId,
           },
         })
         .catch(() => {});
@@ -138,7 +125,7 @@ export async function processE2EVideoPipelineJob(
         status: 'SPAWNED_CE06', // 逻辑上已成功
         pipelineRunId,
         spawned: {
-          ce06JobId: existingCE06.id,
+          ce06JobId: existingId,
         },
       };
     }
@@ -216,11 +203,13 @@ export async function processE2EVideoPipelineJob(
         type: JobType.CE06_NOVEL_PARSING,
         status: JobStatus.PENDING,
         traceId,
+        dedupeKey: ce06DedupeKey,
         payload: {
           projectId,
           novelSourceId: payload.novelSourceId,
-          rawText:
-            payload.raw_text || payload.sourceText || `GATE_MOCK_PROD_SLICE_TEXT_${Date.now()}`,
+          rawText: payload.raw_text || payload.sourceText || (() => {
+            throw new Error('[PIPELINE_E2E_VIDEO] Missing rawText/sourceText');
+          })(),
           pipelineRunId,
           rootJobId: jobId,
         },

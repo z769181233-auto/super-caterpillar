@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, ReactNode } from 'react';
-import { WorkbenchSidebar, WorkbenchModule } from '@/components/_legacy/workbench/WorkbenchSidebar';
+import { WorkbenchSidebar, WorkbenchModule } from '@/components/workbench/WorkbenchSidebar';
 
 interface WorkbenchLayoutProps {
   children?: ReactNode;
@@ -9,26 +9,18 @@ interface WorkbenchLayoutProps {
   renderModule: (module: WorkbenchModule) => ReactNode;
   header?: ReactNode;
 }
-
-import { useEffect } from 'react';
-// ...
 export function WorkbenchLayout({
   defaultModule = 'overview',
   renderModule,
   header,
 }: WorkbenchLayoutProps) {
-  const [currentModule, setCurrentModule] = useState<WorkbenchModule>(defaultModule);
-
-  useEffect(() => {
-    if (defaultModule) {
-      setCurrentModule(defaultModule);
-    }
-  }, [defaultModule]);
+  const [selectedModule, setSelectedModule] = useState<WorkbenchModule | null>(null);
+  const currentModule = selectedModule ?? defaultModule;
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: '#fff' }}>
       {/* Sidebar */}
-      <WorkbenchSidebar currentModule={currentModule} onModuleChange={setCurrentModule} />
+      <WorkbenchSidebar currentModule={currentModule} onModuleChange={setSelectedModule} />
 
       {/* Main Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

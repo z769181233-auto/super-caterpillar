@@ -4,9 +4,9 @@ import { AuBaseEngine } from '../base/au_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class AU04AudioMixAdapter extends AuBaseEngine {
@@ -30,23 +30,31 @@ export class AU04AudioMixAdapter extends AuBaseEngine {
     const outputPath = join(outputDir, `${hash}.wav`);
 
     // FFmpeg: amix
-    let inputs = '';
+    const inputArgs: string[] = [];
     let count = 0;
     for (const t of tracks) {
       const p = t.url.replace('file://', '');
       if (existsSync(p)) {
-        inputs += `-i "${p}" `;
+        inputArgs.push('-i', p);
         count++;
       }
     }
 
     if (count === 0) {
-      inputs = '-f lavfi -i "sine=f=440:d=1"';
+      inputArgs.push('-f', 'lavfi', '-i', 'sine=f=440:d=1');
       count = 1;
     }
 
-    const cmd = `ffmpeg -y ${inputs} -filter_complex amix=inputs=${count} "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      ...inputArgs,
+      '-filter_complex',
+      `amix=inputs=${count}`,
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(`AU04 audio mix failed: ${res.stderr}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

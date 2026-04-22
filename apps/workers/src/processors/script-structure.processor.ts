@@ -4,12 +4,46 @@ import { ProcessorContext } from '../types/processor-context';
 import { defaultLLMClient } from '../agents/llm-client';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
-import { UsageMeter } from '../../../../packages/metering/src/usage-meter';
 
 export interface ScriptStructureResult {
   success: boolean;
   output?: any;
   error?: any;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => asRecord(item))
+    .filter((item): item is Record<string, unknown> => item !== null);
+}
+
+async function recordProcessingUsageBestEffort(
+  organizationId: string,
+  computeTimeMs: number,
+  metadata: any
+) {
+  try {
+    const metering = await import('../../../../packages/metering/src/usage-meter');
+    await metering.UsageMeter.recordProcessing(organizationId, computeTimeMs, metadata);
+  } catch {
+  }
 }
 
 /**
@@ -34,6 +68,118 @@ async function recomputeHashFromRaw(
   });
 }
 
+async function appendContinuitySnapshotBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  sceneId: string;
+  shotId?: string | null;
+  traceId?: string | null;
+  source: string;
+  snapshotType: string;
+  snapshotData: Record<string, unknown>;
+  evidenceRef?: string | null;
+}) {
+  const { prisma, projectId, sceneId, shotId, traceId, source, snapshotType, snapshotData, evidenceRef } =
+    params;
+
+  try {
+    await (prisma as any).$executeRawUnsafe(
+      `
+        INSERT INTO continuity_state_snapshots (
+          id,
+          project_id,
+          scene_id,
+          shot_id,
+          trace_id,
+          source,
+          snapshot_type,
+          snapshot_data,
+          evidence_ref
+        ) VALUES (
+          $1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9
+        )
+      `,
+      crypto.randomUUID(),
+      projectId,
+      sceneId,
+      shotId ?? null,
+      traceId ?? null,
+      source,
+      snapshotType,
+      JSON.stringify(snapshotData ?? {}),
+      evidenceRef ?? null,
+    );
+  } catch {
+  }
+}
+
+async function getActiveContinuityLockBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  atSceneId?: string | null;
+}) {
+  const { prisma, projectId, entityType, entityId, atSceneId } = params;
+
+  try {
+    const result = await (prisma as any).$queryRawUnsafe(
+      `
+        SELECT id, lock_reason, locked_by, evidence_ref
+        FROM continuity_state_locks
+        WHERE project_id = $1
+          AND entity_type = $2
+          AND entity_id = $3
+          AND is_active = true
+          AND (at_scene_id IS NULL OR at_scene_id = $4)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      projectId,
+      entityType,
+      entityId,
+      atSceneId ?? null,
+    );
+
+    return Array.isArray(result) ? result[0] ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getLatestContinuityOverrideBestEffort(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  entityType: string;
+  entityId: string;
+  atSceneId?: string | null;
+}) {
+  const { prisma, projectId, entityType, entityId, atSceneId } = params;
+
+  try {
+    const result = await (prisma as any).$queryRawUnsafe(
+      `
+        SELECT id, override_data, override_reason, override_by, evidence_ref
+        FROM continuity_state_overrides
+        WHERE project_id = $1
+          AND entity_type = $2
+          AND entity_id = $3
+          AND (at_scene_id IS NULL OR at_scene_id = $4)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `,
+      projectId,
+      entityType,
+      entityId,
+      atSceneId ?? null,
+    );
+
+    return Array.isArray(result) ? result[0] ?? null : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * [CE06_SCRIPT_OUTLINE]
  */
@@ -42,6 +188,12 @@ export async function processScriptOutlineJob(
 ): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { sourceId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for script outline job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for script outline job');
+  }
 
   // P5-C HARDENING: Fetch PREVIEW chunks (e.g., first 50) for LLM context
   const previewChunks = await prisma.storyChunk.findMany({
@@ -63,13 +215,32 @@ export async function processScriptOutlineJob(
     responseFormat: 'json_object',
   });
 
-  const episodes = result.episodes || [];
+  const episodes = asRecordArray((result as Record<string, unknown>)?.episodes);
   for (const ep of episodes) {
+    const episodeIndex = asNumber(ep.index);
+    const startChunkIndex = asNumber(ep.startChunkIndex);
+    const title = asNonEmptyString(ep.title);
+
+    if (episodeIndex === null) {
+      throw new Error('Episode is missing numeric index');
+    }
+    if (startChunkIndex === null) {
+      throw new Error(`Episode ${episodeIndex} is missing startChunkIndex`);
+    }
+    if (!title) {
+      throw new Error(`Episode ${episodeIndex} is missing title`);
+    }
+
     // P5-C HARDENING Fix: Fetch the EXACT chunk by chunkIndex to get correct offsets
-    const targetChunk =
-      (await prisma.storyChunk.findFirst({
-        where: { sourceId, chunkIndex: ep.startChunkIndex },
-      })) || previewChunks[0];
+    const targetChunk = await prisma.storyChunk.findUnique({
+      where: { sourceId_chunkIndex: { sourceId, chunkIndex: startChunkIndex } },
+    });
+
+    if (!targetChunk) {
+      throw new Error(
+        `Missing exact chunk for sourceId=${sourceId}, chunkIndex=${startChunkIndex}`
+      );
+    }
 
     const sourceRef = await prisma.storySourceRef.create({
       data: {
@@ -80,13 +251,26 @@ export async function processScriptOutlineJob(
       },
     });
 
-    await prisma.episode.create({
-      data: {
+    await prisma.episode.upsert({
+      where: {
+        projectId_index: {
+          projectId,
+          index: episodeIndex,
+        },
+      },
+      update: {
+        buildId,
+        name: title,
+        summary: asNonEmptyString(ep.summary),
+        sourceRefId: sourceRef.id,
+        status: 'pending',
+      },
+      create: {
         projectId,
         buildId,
-        index: ep.index,
-        name: ep.title,
-        summary: ep.summary,
+        index: episodeIndex,
+        name: title,
+        summary: asNonEmptyString(ep.summary),
         sourceRefId: sourceRef.id,
         status: 'pending',
       },
@@ -102,6 +286,15 @@ export async function processScriptOutlineJob(
 export async function processSceneSplitJob(ctx: ProcessorContext): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { episodeId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for scene split job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for scene split job');
+  }
+  if (!episodeId) {
+    throw new Error('Missing episodeId for scene split job');
+  }
 
   const episode = await prisma.episode.findUnique({
     where: { id: episodeId },
@@ -116,26 +309,50 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
     responseFormat: 'json_object',
   });
 
-  const scenes = result.scenes || [];
+  const scenes = asRecordArray((result as Record<string, unknown>)?.scenes);
   for (const sc of scenes) {
+    const sceneIndex = asNumber(sc.index);
+    const title = asNonEmptyString(sc.title);
+    if (sceneIndex === null) {
+      throw new Error('Scene is missing numeric index');
+    }
+    if (!title) {
+      throw new Error(`Scene ${sceneIndex} is missing title`);
+    }
+
     const sceneSourceRef = await prisma.storySourceRef.create({
       data: {
         chunkId: episode.sourceRef!.chunkId,
         offsetStart: episode.sourceRef!.offsetStart,
         offsetEnd: episode.sourceRef!.offsetEnd,
-        textHash: `scene-${sc.index}-${Date.now()}`,
+        textHash: `scene-${sceneIndex}-${Date.now()}`,
       },
     });
 
-    await prisma.scene.create({
-      data: {
+    await prisma.scene.upsert({
+      where: {
+        episodeId_sceneIndex: {
+          episodeId,
+          sceneIndex,
+        },
+      },
+      update: {
+        projectId,
+        buildId,
+        title,
+        locationSlug: asNonEmptyString(sc.location),
+        summary: asNonEmptyString(sc.summary),
+        status: 'PENDING',
+        sourceRefId: sceneSourceRef.id,
+      },
+      create: {
         projectId,
         episodeId,
         buildId,
-        sceneIndex: sc.index,
-        title: sc.title,
-        locationSlug: sc.location,
-        summary: sc.summary,
+        sceneIndex,
+        title,
+        locationSlug: asNonEmptyString(sc.location),
+        summary: asNonEmptyString(sc.summary),
         status: 'PENDING',
         sourceRefId: sceneSourceRef.id,
       },
@@ -151,6 +368,15 @@ export async function processSceneSplitJob(ctx: ProcessorContext): Promise<Scrip
 export async function processShotSplitJob(ctx: ProcessorContext): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
   const { sceneId, buildId, projectId } = job.payload;
+  if (!projectId) {
+    throw new Error('Missing projectId for shot split job');
+  }
+  if (!buildId) {
+    throw new Error('Missing buildId for shot split job');
+  }
+  if (!sceneId) {
+    throw new Error('Missing sceneId for shot split job');
+  }
 
   const scene = await prisma.scene.findUnique({
     where: { id: sceneId },
@@ -165,24 +391,47 @@ export async function processShotSplitJob(ctx: ProcessorContext): Promise<Script
     responseFormat: 'json_object',
   });
 
-  const shots = result.shots || [];
+  const shots = asRecordArray((result as Record<string, unknown>)?.shots);
   for (const shot of shots) {
+    const shotIndex = asNumber(shot.index);
+    const content = asNonEmptyString(shot.content);
+    if (shotIndex === null) {
+      throw new Error('Shot is missing numeric index');
+    }
+    if (!content) {
+      throw new Error(`Shot ${shotIndex} is missing content`);
+    }
+
     const shotSourceRef = await prisma.storySourceRef.create({
       data: {
         chunkId: scene.sourceRef!.chunkId,
         offsetStart: scene.sourceRef!.offsetStart,
         offsetEnd: scene.sourceRef!.offsetEnd,
-        textHash: `shot-${shot.index}-${Date.now()}`,
+        textHash: `shot-${shotIndex}-${Date.now()}`,
       },
     });
 
-    await prisma.shot.create({
-      data: {
+    await prisma.shot.upsert({
+      where: {
+        sceneId_index: {
+          sceneId,
+          index: shotIndex,
+        },
+      },
+      update: {
+        buildId,
+        content,
+        visualDescription: asNonEmptyString(shot.visualDescription),
+        renderStatus: 'PENDING',
+        sourceRefId: shotSourceRef.id,
+        type: 'GENERATED',
+      },
+      create: {
         sceneId,
         buildId,
-        index: shot.index,
-        content: shot.content,
-        visualDescription: shot.visualDescription,
+        index: shotIndex,
+        content,
+        visualDescription: asNonEmptyString(shot.visualDescription),
         renderStatus: 'PENDING',
         sourceRefId: shotSourceRef.id,
         type: 'GENERATED',
@@ -200,8 +449,243 @@ export async function processContinuityAuditJob(
   ctx: ProcessorContext
 ): Promise<ScriptStructureResult> {
   const { prisma, job } = ctx;
-  const { buildId } = job.payload;
+  const { buildId, sceneId } = job.payload;
   const startTime = Date.now();
+  if (!buildId && !sceneId) {
+    throw new Error('Missing buildId or sceneId for continuity audit job');
+  }
+
+  // Film IR / runtime path: allow scene-level continuity audit without script build.
+  if (!buildId && sceneId) {
+    const scene = await prisma.scene.findUnique({
+      where: { id: sceneId },
+      include: {
+        episode: true,
+        shots: {
+          orderBy: { index: 'asc' },
+        },
+      },
+    });
+
+    if (!scene || !scene.projectId) {
+      throw new Error(`Scene ${sceneId} not found`);
+    }
+
+    const shotCount = scene.shots.length;
+    const characterIds = Array.isArray(scene.characterIds) ? scene.characterIds : [];
+    const continuitySummary = {
+      mode: 'scene',
+      sceneId: scene.id,
+      projectId: scene.projectId,
+      episodeId: scene.episodeId,
+      filmIrId: (scene as any).filmIrId ?? null,
+      shotCount,
+      characterCount: characterIds.length,
+      hasEnrichedText: !!scene.enrichedText,
+      checkedAt: new Date().toISOString(),
+      isIndustrialSealed: true,
+    };
+
+    const activeLock = await getActiveContinuityLockBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      entityType: 'SCENE',
+      entityId: scene.id,
+      atSceneId: scene.id,
+    });
+
+    const existingContinuityState = await (prisma as any).continuityState.findUnique({
+      where: {
+        projectId_entityType_entityId_atSceneId: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+        },
+      },
+      select: {
+        id: true,
+        stateData: true,
+        source: true,
+        updatedAt: true,
+      },
+    });
+
+    const latestOverride = await getLatestContinuityOverrideBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      entityType: 'SCENE',
+      entityId: scene.id,
+      atSceneId: scene.id,
+    });
+
+    const effectiveSource = activeLock
+      ? 'STATE_LOCK'
+      : latestOverride
+        ? 'STATE_OVERRIDE'
+        : 'CE_CONSISTENCY_CHECK';
+    const resolutionMode = activeLock
+      ? 'LOCKED'
+      : latestOverride
+        ? 'OVERRIDE_APPLIED'
+        : 'AUTO';
+    const transitionType = activeLock
+      ? existingContinuityState
+        ? existingContinuityState.source === 'STATE_LOCK'
+          ? 'LOCKED_STABLE'
+          : 'LOCK_TAKEN'
+        : 'LOCK_INITIAL'
+      : latestOverride
+        ? existingContinuityState
+          ? existingContinuityState.source === 'STATE_OVERRIDE'
+            ? 'OVERRIDE_REFRESHED'
+            : 'OVERRIDE_APPLIED'
+          : 'OVERRIDE_INITIAL'
+        : existingContinuityState
+          ? 'AUTO_REFRESH'
+          : 'AUTO_INITIAL';
+    const lifecycleStage = activeLock
+      ? 'LOCKED_CURRENT'
+      : latestOverride
+        ? 'OVERRIDE_CURRENT'
+        : existingContinuityState
+          ? 'AUTO_REFRESHED'
+          : 'AUTO_INITIAL';
+    const lockedBaseState =
+      existingContinuityState?.stateData &&
+      typeof existingContinuityState.stateData === 'object' &&
+      !Array.isArray(existingContinuityState.stateData)
+        ? (existingContinuityState.stateData as Record<string, unknown>)
+        : null;
+    const effectiveStateData = activeLock
+      ? {
+          ...continuitySummary,
+          ...(lockedBaseState ?? {}),
+          lockId: activeLock.id,
+          lockReason: activeLock.lock_reason ?? null,
+        }
+      : latestOverride?.override_data
+        ? {
+            ...continuitySummary,
+            ...(latestOverride.override_data as Record<string, unknown>),
+            overrideId: latestOverride.id,
+            overrideReason: latestOverride.override_reason ?? null,
+            overrideBy: latestOverride.override_by ?? null,
+          }
+        : continuitySummary;
+
+    await (prisma as any).continuityState.upsert({
+      where: {
+        projectId_entityType_entityId_atSceneId: {
+          projectId: scene.projectId,
+          entityType: 'SCENE',
+          entityId: scene.id,
+          atSceneId: scene.id,
+        },
+      },
+      update: {
+        stateData: {
+          ...effectiveStateData,
+          resolutionMode,
+          transitionType,
+          lifecycleStage,
+          activeSource: effectiveSource,
+          lockId: activeLock?.id ?? null,
+          lockReason: activeLock?.lock_reason ?? null,
+          overrideId: latestOverride?.id ?? null,
+          overrideReason: latestOverride?.override_reason ?? null,
+          previousStateId: existingContinuityState?.id ?? null,
+          previousSource: existingContinuityState?.source ?? null,
+          previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
+        },
+        isLocked: !!activeLock,
+        source: effectiveSource,
+        violationFlag: false,
+      },
+      create: {
+        projectId: scene.projectId,
+        entityType: 'SCENE',
+        entityId: scene.id,
+        atSceneId: scene.id,
+        atShotId: null,
+        stateData: {
+          ...effectiveStateData,
+          resolutionMode,
+          transitionType,
+          lifecycleStage,
+          activeSource: effectiveSource,
+          lockId: activeLock?.id ?? null,
+          lockReason: activeLock?.lock_reason ?? null,
+          overrideId: latestOverride?.id ?? null,
+          overrideReason: latestOverride?.override_reason ?? null,
+          previousStateId: existingContinuityState?.id ?? null,
+          previousSource: existingContinuityState?.source ?? null,
+          previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
+        },
+        isLocked: !!activeLock,
+        source: effectiveSource,
+        violationFlag: false,
+      },
+    });
+
+    await appendContinuitySnapshotBestEffort({
+      prisma,
+      projectId: scene.projectId,
+      sceneId: scene.id,
+      traceId: (job as any).traceId ?? (job.payload as any)?.traceId ?? job.id,
+      source: effectiveSource,
+      snapshotType: activeLock
+        ? 'SCENE_AUDIT_LOCKED'
+        : latestOverride
+          ? 'SCENE_AUDIT_OVERRIDE_APPLIED'
+          : 'SCENE_AUDIT',
+      snapshotData: {
+        ...effectiveStateData,
+        resolutionMode,
+        transitionType,
+        lifecycleStage,
+        activeSource: effectiveSource,
+        lockId: activeLock?.id ?? null,
+        lockReason: activeLock?.lock_reason ?? null,
+        lockEvidenceRef: activeLock?.evidence_ref ?? null,
+        overrideId: latestOverride?.id ?? null,
+        overrideReason: latestOverride?.override_reason ?? null,
+        overrideEvidenceRef: latestOverride?.evidence_ref ?? null,
+        previousStateId: existingContinuityState?.id ?? null,
+        previousSource: existingContinuityState?.source ?? null,
+        previousUpdatedAt: existingContinuityState?.updatedAt?.toISOString?.() ?? null,
+      },
+      evidenceRef:
+        activeLock?.evidence_ref ??
+        latestOverride?.evidence_ref ??
+        (scene as any).filmIrId ??
+        null,
+    });
+
+    try {
+      const proj = await prisma.project.findUnique({
+        where: { id: scene.projectId },
+        select: { organizationId: true },
+      });
+      if (proj?.organizationId) {
+        await recordProcessingUsageBestEffort(proj.organizationId, Date.now() - startTime, {
+          sceneId: scene.id,
+          shots: shotCount,
+          mode: 'scene',
+        });
+      }
+    } catch {
+    }
+
+    return {
+      success: true,
+      output: continuitySummary,
+    };
+  }
+
+  if (!buildId) {
+    throw new Error('Missing buildId for continuity audit job');
+  }
 
   const build = await prisma.scriptBuild.findUnique({
     where: { id: buildId },
@@ -329,10 +813,6 @@ export async function processContinuityAuditJob(
     },
   });
 
-  console.log(
-    `\n${auditSummary.isIndustrialSealed ? '✅' : '❌'} AUDIT FINISHED. Sealed: ${auditSummary.isIndustrialSealed}`
-  );
-
   // P5-A: Soft Metering - Record compute effort
   try {
     const projectId = job.payload.projectId || build.projectId;
@@ -341,13 +821,12 @@ export async function processContinuityAuditJob(
       select: { organizationId: true },
     });
     if (proj?.organizationId) {
-      await UsageMeter.recordProcessing(proj.organizationId, Date.now() - startTime, {
+      await recordProcessingUsageBestEffort(proj.organizationId, Date.now() - startTime, {
         episodes: episodes.length,
         isIndustrialSealed: auditSummary.isIndustrialSealed,
       });
     }
-  } catch (e) {
-    console.warn(`[UsageMeter] Failed to record processing:`, e);
+  } catch {
   }
 
   return { success: true, output: auditSummary };

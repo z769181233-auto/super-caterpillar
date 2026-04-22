@@ -21,7 +21,7 @@ interface EngineRoutingResult {
  * 2. payload.engineKey 显式指定时优先使用
  * 3. *_HTTP JobType：默认走 HTTP 引擎
  * 4. useHttpEngine === true：灰度切 HTTP
- * 5. 无特殊情况：返回 baseEngineKey（保持向后兼容）
+ * 5. 无特殊情况：返回 baseEngineKey（作为默认路由结果）
  */
 @Injectable()
 export class EngineRoutingService {
@@ -72,7 +72,7 @@ export class EngineRoutingService {
       // 其他 jobType 暂时不做强制切 HTTP，保留 baseEngineKey
     }
 
-    // 5) 无特殊情况：返回 baseEngineKey（保持向后兼容）
+    // 5) 无特殊情况：返回 baseEngineKey（作为默认路由结果）
     return {
       engineKey,
       resolvedVersion: payload.engineVersion ?? null,

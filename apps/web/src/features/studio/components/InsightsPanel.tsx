@@ -22,7 +22,7 @@ export type InsightsPanelProps = {
   t: TFunc;
 };
 
-export function InsightsPanel({ insights, onSelectShot, auditConfig, t }: InsightsPanelProps) {
+export function InsightsPanel({ insights, onSelectShot, auditConfig: _auditConfig, t }: InsightsPanelProps) {
   // P6.2: subscribe to store for activeShotId + action
   const activeShotId = useStudioUiStore((s) => s.activeShotId);
   const setActiveShot = useStudioUiStore((s) => s.setActiveShot);

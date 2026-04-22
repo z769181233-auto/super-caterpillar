@@ -4,9 +4,9 @@ import { VgBaseEngine } from '../base/vg_base.engine';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 @Injectable()
 export class VG02CharacterRenderAdapter extends VgBaseEngine {
@@ -33,8 +33,21 @@ export class VG02CharacterRenderAdapter extends VgBaseEngine {
     const outputPath = join(outputDir, `${hash}.png`);
 
     // FFmpeg: 生成立绘占位 (蓝色色块)
-    const cmd = `ffmpeg -y -f lavfi -i color=c=white:s=512x512 -vf "drawbox=x=150:y=100:w=200:h=300:color=blue@0.7:t=fill" -frames:v 1 "${outputPath}"`;
-    execSync(cmd, { stdio: 'ignore' });
+    const res = await execAsync('ffmpeg', [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=white:s=512x512',
+      '-vf',
+      'drawbox=x=150:y=100:w=200:h=300:color=blue@0.7:t=fill',
+      '-frames:v',
+      '1',
+      outputPath,
+    ]);
+    if (res.code !== 0) {
+      throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+    }
 
     return {
       assetUrl: `file://${outputPath}`,

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/components/_legacy/ui/Button';
+import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 
 export default function SolutionStudioPage() {

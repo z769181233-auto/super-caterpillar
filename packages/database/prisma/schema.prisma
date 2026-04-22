@@ -1,7 +1,7 @@
 generator client {
   provider      = "prisma-client-js"
   output        = "../src/generated/prisma"
-  engineType    = "binary"
+  engineType    = "library"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -98,7 +98,7 @@ model NovelSource {
 
   error String?
 
-  rawText String? @map("rawText")
+  rawText   String?  @map("rawText")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -155,9 +155,10 @@ model Project {
   Prop                   Prop[]
   Outfit                 Outfit[]
   StorySource            StorySource[]
+  filmIrs                FilmIR[]                @relation("ProjectFilmIR")
+
   @@map("projects")
 }
-
 
 model Season {
   id          String    @id @default(uuid())
@@ -223,17 +224,20 @@ model Scene {
   shotType           String?          @default("MEDIUM_SHOT") @map("shot_type")
   characterIds       Json?            @map("character_ids")
   createdAt          DateTime         @default(now()) @map("created_at")
+  // ★ Film IR Layer (P1 新增，nullable，不破坏现有链路)
+  filmIrId           String?          @unique @map("film_ir_id")
 
-  updatedAt          DateTime         @updatedAt @map("updated_at")
-  engineTasks        EngineTask[]     @relation("SceneEngineTask")
-  chapter            NovelChapter?    @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
-  episode            Episode?         @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
-  sceneDraft         SceneDraft?      @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
-  shotJobs           ShotJob[]        @relation("SceneShotJobs")
-  shots              Shot[]           @relation("SceneShots")
-  buildId            String?          @map("build_id")
-  sourceRefId        String?          @unique @map("source_ref_id")
-  sourceRef          StorySourceRef?  @relation(fields: [sourceRefId], references: [id])
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  engineTasks EngineTask[]    @relation("SceneEngineTask")
+  chapter     NovelChapter?   @relation("ChapterNovelScenes", fields: [chapterId], references: [id], onDelete: Cascade)
+  episode     Episode?        @relation("EpisodeScenes", fields: [episodeId], references: [id], onDelete: Cascade)
+  sceneDraft  SceneDraft?     @relation("SceneDraftScene", fields: [sceneDraftId], references: [id])
+  shotJobs    ShotJob[]       @relation("SceneShotJobs")
+  shots       Shot[]          @relation("SceneShots")
+  buildId     String?         @map("build_id")
+  sourceRefId String?         @unique @map("source_ref_id")
+  sourceRef   StorySourceRef? @relation(fields: [sourceRefId], references: [id])
+  filmIr      FilmIR?         @relation("SceneFilmIR", fields: [filmIrId], references: [id])
 
   @@unique([chapterId, sceneIndex])
   @@unique([episodeId, sceneIndex])
@@ -242,38 +246,42 @@ model Scene {
 }
 
 model Shot {
-  id                   String                @id @default(uuid())
-  sceneId              String
-  index                Int
-  title                String?
-  description          String?               // Existing
-  reviewStatus         ShotReviewStatus      @default(DRAFT)
+  id           String           @id @default(uuid())
+  sceneId      String
+  index        Int
+  title        String?
+  description  String? // Existing
+  reviewStatus ShotReviewStatus @default(DRAFT)
 
-  type                 String
-  params               Json                  @default("{}")
-  qualityScore         Json                  @default("{}")
-  reviewedAt           DateTime?
-  durationSeconds      Int?
-  organizationId       String?
-  enrichedPrompt       String?
-  shotType             String?               @map("shot_type")
-  cameraMovement       String?               @map("camera_movement")
-  cameraAngle          String?               @map("camera_angle")
-  lightingPreset       String?               @map("lighting_preset")
-  renderStatus         ShotRenderStatus      @default(PENDING) @map("render_status")
-  resultImageUrl       String?               @map("result_image_url")
-  resultVideoUrl       String?               @map("result_video_url")
-  visualPrompt         String?               @map("visual_prompt")
-  negativePrompt       String?               @map("negative_prompt")
-  actionDescription    String?               @map("action_description")
-  dialogueContent      String?               @map("dialogue_content")
-  soundFx              String?               @map("sound_fx")
-  assetBindings        Json?                 @map("asset_bindings")
-  controlnetSettings   Json?                 @map("controlnet_settings")
-  durationSec          Decimal?              @map("duration_sec")
-  emotion              String?               @map("emotion")
-  novelQuote           String?               @map("novel_quote")
-  assets               Asset[]               @relation("ShotAssets")
+  type               String
+  params             Json             @default("{}")
+  qualityScore       Json             @default("{}")
+  reviewedAt         DateTime?
+  durationSeconds    Int?
+  organizationId     String?
+  enrichedPrompt     String?
+  shotType           String?          @map("shot_type")
+  cameraMovement     String?          @map("camera_movement")
+  cameraAngle        String?          @map("camera_angle")
+  lightingPreset     String?          @map("lighting_preset")
+  renderStatus       ShotRenderStatus @default(PENDING) @map("render_status")
+  resultImageUrl     String?          @map("result_image_url")
+  resultVideoUrl     String?          @map("result_video_url")
+  visualPrompt       String?          @map("visual_prompt")
+  negativePrompt     String?          @map("negative_prompt")
+  actionDescription  String?          @map("action_description")
+  dialogueContent    String?          @map("dialogue_content")
+  soundFx            String?          @map("sound_fx")
+  assetBindings      Json?            @map("asset_bindings")
+  controlnetSettings Json?            @map("controlnet_settings")
+  durationSec        Decimal?         @map("duration_sec")
+  emotion            String?          @map("emotion")
+  novelQuote         String?          @map("novel_quote")
+  // ★ Film IR Layer (P1 新增，全部 nullable，不破坏现有链路)
+  dramaticFunction   String?          @map("dramatic_function")
+  emotionalTarget    String?          @map("emotional_target")
+  filmIrId           String?          @map("film_ir_id")
+  assets             Asset[]          @relation("ShotAssets")
 
   characterAppearances CharacterAppearance[] @relation("ShotCharacterAppearances")
   engineTasks          EngineTask[]          @relation("ShotEngineTask")
@@ -293,6 +301,7 @@ model Shot {
   @@unique([sceneId, index])
   @@index([sceneId, index])
   @@index([shotType, cameraMovement, cameraAngle, lightingPreset], map: "idx_shots_director_controls")
+  @@index([filmIrId], map: "idx_shots_film_ir_id")
   @@map("shots")
 }
 
@@ -797,17 +806,27 @@ model UsageRecord {
 }
 
 model BillingLedger {
-  id             String   @id @default(uuid())
-  jobId          String   @map("job_id")
-  projectId      String   @map("project_id")
-  billingState   String   @map("billing_state") @db.VarChar(20)
-  amount         BigInt   @map("amount")
-  idempotencyKey String   @unique(map: "unique_idempotency") @map("idempotency_key") @db.VarChar(128)
+  id             String    @id @default(uuid())
+  jobId          String    @map("job_id")
+  projectId      String    @map("project_id")
+  billingState   String    @map("billing_state") @db.VarChar(20)
+  traceId        String?   @map("trace_id")
+  itemType       String?   @map("item_type")
+  itemId         String?   @map("item_id")
+  chargeCode     String?   @map("charge_code")
+  amount         BigInt    @map("amount")
+  currency       String?   @default("CREDIT")
+  evidenceRef    String?   @map("evidence_ref")
+  idempotencyKey String    @unique(map: "unique_idempotency") @map("idempotency_key") @db.VarChar(128)
   status         String?
-  tenantId       String?  @map("tenant_id")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamp()
+  tenantId       String?   @map("tenant_id")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp()
+  updatedAt      DateTime? @updatedAt @map("updated_at") @db.Timestamp()
 
   @@unique([jobId, billingState], name: "unique_job_billing")
+  @@index([tenantId, traceId, itemType, itemId, chargeCode], map: "idx_billing_ledger_ssot_lookup")
+  @@index([traceId], map: "idx_billing_ledger_trace_id")
+  @@index([status], map: "idx_billing_ledger_status")
   @@map("billing_ledger")
 }
 
@@ -1017,10 +1036,10 @@ model Character {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  project      Project          @relation(fields: [projectId], references: [id])
-  aliases      CharacterAlias[]
-  firstSeenSourceRefId String? @map("first_seen_source_ref_id")
-  firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
+  project              Project          @relation(fields: [projectId], references: [id])
+  aliases              CharacterAlias[]
+  firstSeenSourceRefId String?          @map("first_seen_source_ref_id")
+  firstSeenRef         StorySourceRef?  @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
   @@map("characters")
@@ -1414,7 +1433,7 @@ enum UserRole {
 }
 
 enum UserTier {
-  Free
+  Free       @map("Basic")
   Pro
   Studio
   Enterprise
@@ -1533,6 +1552,11 @@ enum JobType {
   AU_RENDER
   PP_RENDER
   QC_CHECK
+  // ★ Film IR Layer (P1 新增)
+  CE_FILM_IR_PLAN // Film IR 规划任务
+  CE_SHOT_PLAN // Shot Planner 任务
+  CE_CONSISTENCY_CHECK // 一致性检查任务
+  CE_CONTENT_JUDGE // 内容质量判定任务
 }
 
 enum JobEngineBindingStatus {
@@ -1573,6 +1597,11 @@ enum TaskType {
   PIPELINE_TIMELINE_COMPOSE
   TIMELINE_RENDER
   PIPELINE_E2E_VIDEO
+  // ★ Film IR Layer (P1 新增)
+  CE_FILM_IR_PLAN
+  CE_SHOT_PLAN
+  CE_CONSISTENCY_CHECK
+  CE_CONTENT_JUDGE
 }
 
 enum TaskStatus {
@@ -1730,6 +1759,7 @@ enum AssetStatus {
 enum AssetOwnerType {
   SCENE
   SHOT
+  EPISODE
   CHARACTER
 }
 
@@ -1786,18 +1816,18 @@ model NovelIngestRun {
 }
 
 model NovelChunk {
-  id            String   @id @default(uuid())
-  ingestRunId   String
-  chunkId       String   @unique // Business key
-  chNo          Int
-  volNo         Int      @default(1)
-  offsetStart   Int
-  offsetEnd     Int
-  sha256        String?
-  status        String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  artifactUrl   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id          String   @id @default(uuid())
+  ingestRunId String
+  chunkId     String   @unique // Business key
+  chNo        Int
+  volNo       Int      @default(1)
+  offsetStart Int
+  offsetEnd   Int
+  sha256      String?
+  status      String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  artifactUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   ingestRun NovelIngestRun @relation("IngestRunChunks", fields: [ingestRunId], references: [id], onDelete: Cascade)
 
@@ -1862,13 +1892,13 @@ model StorySourceRef {
 }
 
 model ScriptBuild {
-  id            String   @id @default(uuid())
-  projectId     String   @map("project_id")
-  sourceId      String   @map("source_id")
-  status        String   @default("PENDING")
-  metadata      Json?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  projectId String   @map("project_id")
+  sourceId  String   @map("source_id")
+  status    String   @default("PENDING")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   project     Project     @relation(fields: [projectId], references: [id])
   storySource StorySource @relation(fields: [sourceId], references: [id])
@@ -1929,5 +1959,213 @@ model Outfit {
   @@unique([projectId, name])
   @@map("outfits")
 }
+
 // Removed non-existent models as they don't exist in DB
 
+// ===========================================================
+// ★ Film IR Layer (P1 新增) — 导演中间语言与一致性状态系统
+// ===========================================================
+
+/// Film IR v1 — 导演中间语言。存储 Scene 级别的导演决策，
+/// 是 Script-to-Directing 的输出，也是 Shot Planner 的输入。
+/// 支持 planner_version 版本化，replan 不破坏历史记录。
+model FilmIR {
+  id             String       @id @default(uuid())
+  sceneId        String?      @map("scene_id") // 只在 Scene 回链时引用，主链路通过 Scene.filmIrId
+  projectId      String       @map("project_id")
+  plannerVersion String       @default("film-planner-v1") @map("planner_version")
+  status         FilmIRStatus @default(DRAFT)
+
+  // === 内容源 ===
+  sourceText           String? @map("source_text") @db.Text
+  sourceContextSummary String? @map("source_context_summary") @db.Text
+
+  // === 戏剧功能层 ===
+  dramaticFunction        String? @map("dramatic_function")
+  dramaticGoal            String? @map("dramatic_goal") @db.Text
+  emotionalTarget         String? @map("emotional_target") @db.Text
+  tensionCurve            String? @map("tension_curve")
+  povCharacter            String? @map("pov_character") // characterId 引用
+  audienceInformationMode String? @map("audience_information_mode")
+  relationshipBefore      String? @map("relationship_before") @db.Text
+  relationshipAfter       String? @map("relationship_after") @db.Text
+
+  // === 视觉策略层 ===
+  visualStrategy         String?  @map("visual_strategy") @db.Text
+  blockingStrategy       String?  @map("blocking_strategy") @db.Text
+  shotPattern            String?  @map("shot_pattern")
+  avgShotLengthSec       Decimal? @map("avg_shot_length_sec")
+  cameraDistanceStrategy String?  @map("camera_distance_strategy")
+  cameraAngleStrategy    String?  @map("camera_angle_strategy")
+  cameraMotionStyle      String?  @map("camera_motion_style")
+  compositionStyle       String?  @map("composition_style")
+  spatialStrategy        String?  @map("spatial_strategy") @db.Text
+
+  // === 光色与声音 ===
+  lightingStyle         String? @map("lighting_style")
+  colorStrategy         String? @map("color_strategy") @db.Text
+  soundStrategy         String? @map("sound_strategy") @db.Text
+  silenceStrategy       String? @map("silence_strategy") @db.Text
+  editingRhythmStrategy String? @map("editing_rhythm_strategy") @db.Text
+
+  // === 连续性约束 (JSONB 存储) ===
+  continuityConstraints     Json? @map("continuity_constraints")
+  characterStateConstraints Json? @map("character_state_constraints")
+  costumeStateConstraints   Json? @map("costume_state_constraints")
+  propStateConstraints      Json? @map("prop_state_constraints")
+  locationStateConstraints  Json? @map("location_state_constraints")
+
+  // === 决策溯源 ===
+  whyThisChoice             String? @map("why_this_choice") @db.Text
+  alternativeRejectedReason String? @map("alternative_rejected_reason") @db.Text
+
+  // === 质量与证据 ===
+  qualityScore Decimal? @map("quality_score")
+  confidence   Decimal?
+  evidenceRef  String?  @map("evidence_ref") // ShotJobArtifact.id 或外部 SHA
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // === 关系 ===
+  project  Project @relation("ProjectFilmIR", fields: [projectId], references: [id], onDelete: Cascade)
+  sceneRef Scene?  @relation("SceneFilmIR")
+
+  @@unique([sceneId, plannerVersion])
+  @@index([projectId])
+  @@index([status])
+  @@index([plannerVersion])
+  @@map("film_ir")
+}
+
+enum FilmIRStatus {
+  DRAFT
+  APPROVED
+  LOCKED
+
+  @@map("film_ir_status")
+}
+
+/// 跨镜头连续性状态记录。
+/// 一个实体（角色/服装/道具/场景/风格）在某个 Scene/Shot 时的状态快照。
+/// 同一实体在同一 Scene 只保留最新状态（UPSERT）。
+model ContinuityState {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  entityType    String   @map("entity_type") // CHARACTER / COSTUME / PROP / LOCATION / STYLE
+  entityId      String   @map("entity_id") // characterId / propId / locationId
+  atSceneId     String   @map("at_scene_id")
+  atShotId      String?  @map("at_shot_id")
+  stateData     Json     @map("state_data") // {position, costume, emotion, props_held, etc.}
+  isLocked      Boolean  @default(false) @map("is_locked")
+  source        String   @default("FILM_IR") // FILM_IR / HUMAN_REVIEW / INFERENCE
+  violationFlag Boolean  @default(false) @map("violation_flag")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([projectId, entityType, entityId, atSceneId])
+  @@index([projectId, entityType])
+  @@index([atSceneId])
+  @@index([entityId])
+  @@map("continuity_states")
+}
+
+/// 连续性违规记录（append-only，不允许 UPDATE/DELETE）。
+/// 由 ConsistencyStateEngine 在检测到违规时写入。
+model ContinuityViolation {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  fromSceneId   String?  @map("from_scene_id")
+  toSceneId     String?  @map("to_scene_id")
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  violationType String   @map("violation_type") // COSTUME_CHANGE / LOCATION_JUMP / PROP_DISAPPEAR / WOUND_HEALED
+  severity      String   @default("WARNING") // ERROR / WARNING / INFO
+  description   String?  @db.Text
+  autoResolved  Boolean  @default(false) @map("auto_resolved")
+  evidenceRef   String?  @map("evidence_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, severity])
+  @@index([fromSceneId, toSceneId])
+  @@index([entityType, entityId])
+  @@map("continuity_violations")
+}
+
+/// 连续性状态锁（append-only + active flag）。
+/// 用于冻结某个实体在某个 Scene/Shot 上的状态，不允许自动审计覆盖。
+model ContinuityStateLock {
+  id         String   @id @default(uuid())
+  projectId  String   @map("project_id")
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  atSceneId  String?  @map("at_scene_id")
+  atShotId   String?  @map("at_shot_id")
+  lockReason String?  @map("lock_reason") @db.Text
+  lockedBy   String?  @map("locked_by")
+  evidenceRef String? @map("evidence_ref")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, entityType, entityId])
+  @@index([atSceneId])
+  @@index([isActive, createdAt])
+  @@map("continuity_state_locks")
+}
+
+/// 连续性状态覆盖（append-only）。
+/// 由人工或高优先级流程写入，用于覆盖自动推断的状态摘要。
+model ContinuityStateOverride {
+  id            String   @id @default(uuid())
+  projectId     String   @map("project_id")
+  entityType    String   @map("entity_type")
+  entityId      String   @map("entity_id")
+  atSceneId     String?  @map("at_scene_id")
+  atShotId      String?  @map("at_shot_id")
+  overrideData  Json     @map("override_data")
+  overrideReason String? @map("override_reason") @db.Text
+  overrideBy    String?  @map("override_by")
+  evidenceRef   String?  @map("evidence_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, entityType, entityId])
+  @@index([atSceneId])
+  @@index([createdAt])
+  @@map("continuity_state_overrides")
+}
+
+/// 内容质量门禁结果（append-only，不允许 UPDATE/DELETE）。
+/// 由 ContentJudgeService 在评分完成后写入。
+model ContentGateResult {
+  id          String  @id @default(uuid())
+  projectId   String  @map("project_id")
+  sceneId     String? @map("scene_id")
+  episodeId   String? @map("episode_id")
+  filmIrId    String? @map("film_ir_id")
+  gateVersion String  @default("content-judge-v1") @map("gate_version")
+
+  // === 评分维度 ===
+  dramaticAlignmentScore    Decimal? @map("dramatic_alignment_score")
+  visualStrategyMatchScore  Decimal? @map("visual_strategy_match_score")
+  continuityScore           Decimal? @map("continuity_score")
+  shotCoherenceScore        Decimal? @map("shot_coherence_score")
+  rhythmScore               Decimal? @map("rhythm_score")
+  characterConsistencyScore Decimal? @map("character_consistency_score")
+  soundAlignmentScore       Decimal? @map("sound_alignment_score")
+  publishReadinessScore     Decimal? @map("publish_readiness_score")
+
+  // === 门禁判定 ===
+  gateVerdict String  @default("PENDING") @map("gate_verdict") // PASS / WARN / BLOCK / PENDING
+  gateDetails Json?   @map("gate_details") // 各维度详细评分理由
+  evidenceRef String? @map("evidence_ref")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([projectId, gateVerdict])
+  @@index([sceneId])
+  @@index([episodeId])
+  @@index([filmIrId])
+  @@map("content_gate_results")
+}
+
+// 为 Project 添加 FilmIR 关系（反向关系声明）

@@ -1,11 +1,13 @@
+const path = require('path');
 const withNextIntl = require('next-intl/plugin')();
+const isStaticExport = process.env.STATIC_EXPORT === '1';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['database', '@scu/shared-types'],
-  output: 'export',
   trailingSlash: true,
+  outputFileTracingRoot: path.join(__dirname, '../..'),
   images: {
     unoptimized: true,
   },
@@ -14,7 +16,7 @@ const nextConfig = {
     if (process.env.NODE_ENV === 'development') {
       return [
         {
-          source: '/api/:path*',
+          source: '/api/backend/:path*',
           destination: 'http://localhost:3000/api/:path*',
         },
       ];
@@ -22,5 +24,9 @@ const nextConfig = {
     return [];
   },
 };
+
+if (isStaticExport) {
+  nextConfig.output = 'export';
+}
 
 module.exports = withNextIntl(nextConfig);

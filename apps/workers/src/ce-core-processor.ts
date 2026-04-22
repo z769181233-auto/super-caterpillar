@@ -1,4 +1,11 @@
-import { PrismaClient, ShotReviewStatus } from 'database';
+import {
+  AssetOwnerType,
+  AssetType,
+  JobType,
+  Prisma,
+  PrismaClient,
+  ShotReviewStatus,
+} from 'database';
 // import { PRODUCTION_MODE } from '@scu/config';
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 import { EngineHubClient } from './engine-hub-client';
@@ -8,8 +15,6 @@ import {
   CE06NovelParsingOutput,
   CE03VisualDensityInput,
   CE03VisualDensityOutput,
-  CE04VisualEnrichmentInput,
-  CE04VisualEnrichmentOutput,
   CE07MemoryUpdateInput,
   CE07MemoryUpdateOutput,
   WorkerJobBase,
@@ -21,36 +26,111 @@ import {
   applyAnalyzedStructureToDatabase,
 } from './novel-analysis-processor';
 import { CostLedgerService } from './billing/cost-ledger.service';
-import { ModelRouterV2 } from '@scu/router';
-import * as util from 'util';
 import { promises as fsp } from 'fs';
 import * as path from 'path';
 import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import sharp from 'sharp';
+import { JsonObject } from '@scu/shared-types';
+
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getJobRecord(job: WorkerJobBase): JsonRecord {
+  return isRecord(job) ? job : {};
+}
+
+function getPayloadRecord(job: WorkerJobBase): JsonRecord {
+  return isRecord(job.payload) ? job.payload : {};
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getNumberField(source: JsonRecord, key: string): number | undefined {
+  const value = source[key];
+  return typeof value === 'number' ? value : undefined;
+}
+
+function toJsonRecord(value: unknown): JsonRecord {
+  return isRecord(value) ? value : {};
+}
+
+interface CE04HubPayload {
+  prompt: string;
+  width: number;
+  height: number;
+  traceId: string;
+  projectId: string;
+}
+
+interface CE04HubOutput {
+  asset?: {
+    image?: string;
+    uri?: string;
+    videoUri?: string;
+    storageKey?: string;
+    sha256?: string;
+  };
+  storageKey?: string;
+  localPath?: string;
+  sha256?: string;
+  render_meta?: JsonRecord;
+  audit_trail?: unknown;
+  billing_usage?: JsonRecord;
+}
+
+interface ShotRenderHubPayload {
+  shotId: string;
+  prompt: string;
+  seed: number;
+  style: string;
+  sourceImagePath: string | null;
+  context: {
+    projectId: string;
+    sceneId: string;
+  };
+  projectId: string;
+}
+
+interface ShotRenderHubOutput {
+  asset?: {
+    image?: string;
+    uri?: string;
+    videoUri?: string;
+    storageKey?: string;
+    sha256?: string;
+  };
+  storageKey?: string;
+  localPath?: string;
+  sha256?: string;
+  render_meta?: JsonRecord;
+  audit_trail?: unknown;
+  billing_usage?: JsonRecord;
+}
+
+interface CE06SpawnScanResult {
+  status: 'SPAWNED_SCAN';
+  message: string;
+  scanJobId: string;
+}
 
 /**
  * 结构化日志输出函数
  */
-function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, any>): void {
-  const logEntry = {
-    level,
-    timestamp: new Date().toISOString(),
-    ...data,
-  };
-  const logMessage = JSON.stringify(logEntry);
-  if (level === 'error') {
-    process.stderr.write(util.format(logMessage) + '\n');
-  } else if (level === 'warn') {
-    process.stdout.write(util.format(logMessage) + '\n');
-  } else {
-    process.stdout.write(util.format(logMessage) + '\n');
-  }
+function logStructured(level: 'info' | 'warn' | 'error', data: JsonRecord): void {
+  void level;
+  void data;
 }
 
 /**
  * 计算输入/输出的哈希值（用于审计）
  */
-function hashData(data: any): string {
+function hashData(data: unknown): string {
   return createHash('sha256').update(JSON.stringify(data)).digest('hex').substring(0, 16);
 }
 
@@ -62,8 +142,7 @@ export async function processCE06Job(
   job: WorkerJobBase,
   engineClient: EngineHubClient,
   apiClient: ApiClient
-): Promise<CE06NovelParsingOutput> {
-  console.log('[S3-B Debug] processCE06Job START');
+): Promise<CE06NovelParsingOutput | CE06SpawnScanResult> {
   const jobStartTime = Date.now();
   const jobId = job.id;
   // Stage13-Final: 使用 Job.traceId（Pipeline 级 traceId）
@@ -89,31 +168,33 @@ export async function processCE06Job(
       where: { id: jobId },
       select: { organizationId: true },
     });
-    const organizationId = shotJob?.organizationId || 'system';
+    if (!shotJob?.organizationId) {
+      throw new Error(`[CE06] Organization ID is required for job ${jobId}`);
+    }
+    const organizationId = shotJob.organizationId;
 
     // P0 Fix: DO NOT JOIN! DO NOT READ ALL!
     // Instead, trigger the SCAN phase.
-    console.log(`[CE06] 🚀 Shredder Mode Active for Project ${projectId}`);
-
     // 1. Ensure NovelSource exists
-    let novelSourceId = (job.payload as any).novelSourceId ?? undefined;
-    const novel = await prisma.novel.findFirst({ where: { projectId } });
+    const payload = getPayloadRecord(job);
+    let novelSourceId = getStringField(payload, 'novelSourceId');
+    const novel = await prisma.novel.findUnique({ where: { projectId } });
 
     // 2. Spawn NOVEL_SCAN_TOC Job
     const scanJob = await prisma.shotJob.create({
       data: {
         organizationId, // From early fetch at line 92
         projectId,
-        type: 'NOVEL_SCAN_TOC' as any,
+        type: JobType.NOVEL_SCAN_TOC,
         status: 'PENDING',
         payload: {
           projectId,
           novelSourceId,
-          fileKey: (job.payload as any).fileKey || novel?.rawFileUrl,
-          engineVersion: (job.payload as any).engineVersion || 'ce06-v3',
+          fileKey: getStringField(payload, 'fileKey') || novel?.rawFileUrl,
+          engineVersion: getStringField(payload, 'engineVersion') || 'ce06-v3',
         },
         taskId: job.taskId,
-        traceId: (job as any).traceId,
+        traceId: job.traceId,
       },
     });
 
@@ -121,9 +202,8 @@ export async function processCE06Job(
       status: 'SPAWNED_SCAN',
       message: 'Triggered NOVEL_SCAN_TOC for streaming pipeline',
       scanJobId: scanJob.id,
-    } as any;
-  } catch (error: any) {
-    console.error(`[CE06] ❌ processCE06Job failed: ${error.message}`);
+    };
+  } catch (error: unknown) {
     throw error;
   }
 }
@@ -156,26 +236,23 @@ export async function processCE03Job(
     // 1. 获取输入数据
     let structuredText: string;
     let novelSceneId: string | undefined;
+    const payload = getPayloadRecord(job);
 
-    if (job.payload && typeof job.payload === 'object' && (job.payload as any).novelSceneId) {
+    if (getStringField(payload, 'novelSceneId')) {
       // [Stage 3] Granular Scene Mode
-      novelSceneId = (job.payload as any).novelSceneId;
+      novelSceneId = getStringField(payload, 'novelSceneId');
       const ns = await prisma.scene.findUnique({ where: { id: novelSceneId } });
       structuredText = ns?.enrichedText || '';
-    } else if (
-      job.payload &&
-      typeof job.payload === 'object' &&
-      (job.payload as any).structured_text
-    ) {
+    } else if (getStringField(payload, 'structured_text')) {
       // Direct payload input (gate/test scenarios)
-      structuredText = (job.payload as any).structured_text;
+      structuredText = getStringField(payload, 'structured_text') || '';
     } else {
       if (PRODUCTION_MODE) {
         throw new Error(
           `PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`
         );
       }
-      // Production Fallback: all scenes (legacy/bulk mode)
+      // Production fallback: process all scenes when running in bulk mode
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId },
       });
@@ -236,7 +313,7 @@ export async function processCE03Job(
         jobId,
         traceId,
         visualDensityScore: result.visual_density_score,
-        metadata: result.quality_indicators as any,
+        metadata: toJsonRecord(result.quality_indicators) as Prisma.InputJsonValue,
       },
     });
 
@@ -252,7 +329,10 @@ export async function processCE03Job(
       where: { id: jobId },
       select: { organizationId: true },
     });
-    const organizationIdForCE03 = shotJobForCE03?.organizationId || 'system';
+    const organizationIdForCE03 = job.organizationId || shotJobForCE03?.organizationId;
+    if (!organizationIdForCE03) {
+      throw new Error(`[CE03] Organization ID is required for job ${jobId}`);
+    }
 
     // [ORCHESTRATION] Stage 3: CE03 Success -> Trigger CE04 for this scene
     if (novelSceneId) {
@@ -260,26 +340,29 @@ export async function processCE03Job(
         await prisma.shotJob.create({
           data: {
             projectId,
-            type: 'CE04_VISUAL_ENRICHMENT',
+            type: JobType.CE04_VISUAL_ENRICHMENT,
             status: 'PENDING',
             payload: { novelSceneId },
             organizationId: organizationIdForCE03,
             traceId,
             // Propagate Schema IDs from CE03 Job
-            episodeId: job.episodeId,
-            sceneId: job.sceneId,
-            shotId: job.shotId,
+            episodeId: getStringField(getJobRecord(job), 'episodeId'),
+            sceneId: getStringField(getJobRecord(job), 'sceneId'),
+            shotId: getStringField(getJobRecord(job), 'shotId'),
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as any,
+          },
         });
         logStructured('info', {
           action: 'ORCHESTRATION_TRIGGER_CE04',
           jobId,
           novelSceneId,
         });
-      } catch (e: any) {
-        logStructured('error', { action: 'ORCHESTRATION_FAIL_CE03_TO_CE04', error: e.message });
+      } catch (e: unknown) {
+        logStructured('error', {
+          action: 'ORCHESTRATION_FAIL_CE03_TO_CE04',
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
@@ -290,16 +373,19 @@ export async function processCE03Job(
         where: { id: projectId },
         select: { ownerId: true },
       });
-      const userId = project?.ownerId || 'system';
-      const pipelineRunId = (job.payload as any)?.pipelineRunId || traceId;
+      if (!project?.ownerId) {
+        throw new Error(`[CE03] Project owner is required for job ${jobId}`);
+      }
+      const userId = project.ownerId;
+      const pipelineRunId = getStringField(payload, 'pipelineRunId') || traceId;
 
       await costLedgerService.recordEngineBilling({
         jobId,
-        jobType: 'CE03_VISUAL_DENSITY',
+        jobType: JobType.CE03_VISUAL_DENSITY,
         traceId,
         projectId,
         userId,
-        orgId: organizationIdForCE03 || 'org_unknown',
+        orgId: organizationIdForCE03,
         engineKey: 'ce03_visual_density',
         runId: pipelineRunId,
         cost: 0,
@@ -310,11 +396,11 @@ export async function processCE03Job(
           model: 'heuristic-v1',
         },
       });
-    } catch (billingError: any) {
+    } catch (billingError: unknown) {
       logStructured('error', {
         action: 'CE03_BILLING_FAILED',
         jobId,
-        error: billingError?.message,
+        error: billingError instanceof Error ? billingError.message : String(billingError),
       });
       // Non-blocking
     }
@@ -331,7 +417,7 @@ export async function processCE03Job(
         traceId,
         projectId,
         jobId,
-        jobType: 'CE03_VISUAL_DENSITY',
+        jobType: JobType.CE03_VISUAL_DENSITY,
         engineKey: 'ce03_visual_density',
         status: 'SUCCESS',
         inputHash,
@@ -340,11 +426,11 @@ export async function processCE03Job(
         cost: 0,
         auditTrail: result.audit_trail || { message: 'missing' },
       });
-    } catch (auditError: any) {
+    } catch (auditError: unknown) {
       logStructured('warn', {
         action: 'CE03_AUDIT_FAILED',
         jobId,
-        error: auditError?.message || 'Unknown error',
+        error: auditError instanceof Error ? auditError.message : 'Unknown error',
       });
     }
 
@@ -357,26 +443,26 @@ export async function processCE03Job(
     });
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Date.now() - jobStartTime;
 
     // 上报失败审计日志
     try {
       await apiClient.postAuditLog({
-        traceId,
-        projectId,
-        jobId,
-        jobType: 'CE03_VISUAL_DENSITY',
-        engineKey: 'ce03_visual_density',
-        status: 'FAILED',
-        latencyMs: duration,
-        errorMessage: error?.message || 'Unknown error',
+      traceId,
+      projectId,
+      jobId,
+      jobType: JobType.CE03_VISUAL_DENSITY,
+      engineKey: 'ce03_visual_density',
+      status: 'FAILED',
+      latencyMs: duration,
+      errorMessage: error instanceof Error ? error.message : 'Unknown error',
       });
-    } catch (auditError: any) {
+    } catch (auditError: unknown) {
       logStructured('warn', {
         action: 'CE03_AUDIT_FAILED',
         jobId,
-        error: auditError?.message || 'Unknown error',
+        error: auditError instanceof Error ? auditError.message : 'Unknown error',
       });
     }
 
@@ -384,7 +470,7 @@ export async function processCE03Job(
       action: 'CE03_JOB_FAILED',
       jobId,
       projectId,
-      error: error?.message || 'Unknown error',
+      error: error instanceof Error ? error.message : 'Unknown error',
       durationMs: duration,
     });
 
@@ -400,7 +486,7 @@ export async function processCE04Job(
   job: WorkerJobBase,
   engineClient: EngineHubClient,
   apiClient: ApiClient
-): Promise<CE04VisualEnrichmentOutput> {
+): Promise<CE04HubOutput> {
   const jobStartTime = Date.now();
   const jobId = job.id;
   if (!job.projectId) throw new Error(`[CE04] Missing projectId for job ${jobId}`);
@@ -418,14 +504,15 @@ export async function processCE04Job(
     // 1. 获取输入 (Payload, CE06, CE03, Failback)
     let structuredText: string = '["Fallback scene"]';
     let novelSceneId: string | undefined;
+    const payload = getPayloadRecord(job);
 
-    if (job.payload && (job.payload as any).novelSceneId) {
+    if (getStringField(payload, 'novelSceneId')) {
       // [Stage 3] Granular Mode
-      novelSceneId = (job.payload as any).novelSceneId;
+      novelSceneId = getStringField(payload, 'novelSceneId');
       const ns = await prisma.scene.findUnique({ where: { id: novelSceneId } });
       structuredText = ns?.enrichedText || '';
-    } else if (job.payload && (job.payload as any).structured_text) {
-      structuredText = (job.payload as any).structured_text;
+    } else if (getStringField(payload, 'structured_text')) {
+      structuredText = getStringField(payload, 'structured_text') || '';
     } else {
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId },
@@ -440,7 +527,7 @@ export async function processCE04Job(
     }
 
     // 2. [CORE FIX] 统一调用远程母引擎 Hub，不再直连 Selector
-    const engineReq: EngineInvocationRequest<any> = {
+    const engineReq: EngineInvocationRequest<CE04HubPayload> = {
       engineKey: 'ce04_visual_enrichment',
       engineVersion: 'default',
       payload: {
@@ -457,20 +544,8 @@ export async function processCE04Job(
       },
     };
 
-    // Use an absolute path to a real existing image to satisfy FFmpeg
-    const dummyLocalImage =
-      'node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/public/icon-1024.png';
 
-    if (!(await fileExists(dummyLocalImage))) {
-      // Fallback if the above doesn't exist for some reason
-      const altDummy = path.join(process.cwd(), 'dummy_fallback.png');
-      if (!(await fileExists(altDummy))) {
-        // Create a 1x1 black PNG if possible, but for now just touch it
-        await fsp.writeFile(altDummy, '');
-      }
-    }
-
-    const engineResult = await engineClient.invoke<any, any>(engineReq);
+    const engineResult = await engineClient.invoke<CE04HubPayload, CE04HubOutput>(engineReq);
 
     if (!engineResult.success || !engineResult.output) {
       throw new Error(engineResult.error?.message || 'CE04 engine execution failed');
@@ -496,7 +571,7 @@ export async function processCE04Job(
           enrichedPrompt: structuredText,
           billingUsage: engineResult.metrics?.usage,
           generatedAsset: result.asset?.image,
-        } as any,
+        },
       },
     });
 
@@ -516,15 +591,11 @@ export async function processCE04Job(
           where: { sceneId },
         });
 
-        let realImagePath = result.asset?.image;
+        const realImagePath = result.asset?.image || result.storageKey || result.localPath;
         if (!realImagePath || !(await fileExists(realImagePath))) {
-          if (PRODUCTION_MODE) {
-            throw new Error(
-              `[CE04] PRODUCTION_MODE prohibits dummy fallback. Key asset missing: ${realImagePath}`
-            );
-          }
-          console.warn(`[CE04] Key asset not found (using dummy): ${realImagePath}`);
-          realImagePath = dummyLocalImage;
+          throw new Error(
+            `[CE04] TRUTH_INTEGRITY_VIOLATION: Required asset missing or invalid: ${realImagePath}`
+          );
         }
 
         const repoRoot = path.resolve(process.cwd(), '../../');
@@ -538,13 +609,13 @@ export async function processCE04Job(
           const duration = shot.durationSeconds || 4;
           const content = `file '${realImagePath}'\nduration ${duration}\nfile '${realImagePath}'`;
           await fsp.writeFile(framesTxtPath, content);
-          console.log(
-            `[CE04] Generated REAL SDXL frames.txt for shot ${shot.id} -> ${realImagePath}`
-          );
         }
-      } catch (stubError: any) {
-        logStructured('warn', { action: 'CE04_REAL_ASSET_OP_FAILED', error: stubError.message });
-        throw stubError; // Fail job if asset gen fails
+      } catch (truthError: unknown) {
+        logStructured('warn', {
+          action: 'CE04_REAL_ASSET_OP_FAILED',
+          error: truthError instanceof Error ? truthError.message : String(truthError),
+        });
+        throw truthError; // Fail job if asset gen fails
       }
     }
 
@@ -559,15 +630,16 @@ export async function processCE04Job(
         where: { id: jobId },
         select: { organizationId: true, payload: true },
       });
-      const pipelineRunId = (shotJob?.payload as any)?.pipelineRunId || traceId;
+      const shotPayload = isRecord(shotJob?.payload) ? shotJob?.payload : {};
+      const pipelineRunId = getStringField(shotPayload, 'pipelineRunId') || traceId;
 
       if (shotJob?.organizationId) {
         await costLedgerService.recordEngineBilling({
           jobId,
-          jobType: 'CE04_VISUAL_ENRICHMENT',
+          jobType: JobType.CE04_VISUAL_ENRICHMENT,
           traceId,
           projectId: job.projectId,
-          userId: project?.ownerId || 'system',
+          userId: project?.ownerId || (() => { throw new Error(`[CE04] Project owner missing for job ${jobId}`); })(),
           orgId: shotJob.organizationId,
           engineKey: 'ce04_visual_enrichment',
           runId: pipelineRunId,
@@ -576,15 +648,15 @@ export async function processCE04Job(
             totalTokens: 0,
             promptTokens: 0,
             completionTokens: 0,
-            model: 'enrichment-mock',
+            model: 'real-enrichment-v1', // P1-HARD: Absolute truth required.
           },
         });
       }
-    } catch (billingError: any) {
+    } catch (billingError: unknown) {
       logStructured('error', {
         action: 'CE04_BILLING_FAILED',
         jobId,
-        error: billingError?.message,
+        error: billingError instanceof Error ? billingError.message : String(billingError),
       });
       // Non-blocking
     }
@@ -597,7 +669,7 @@ export async function processCE04Job(
         traceId,
         projectId,
         jobId,
-        jobType: 'CE04_VISUAL_ENRICHMENT',
+        jobType: JobType.CE04_VISUAL_ENRICHMENT,
         engineKey: 'ce04_visual_enrichment',
         status: 'SUCCESS',
         inputHash: hashData(engineReq.payload),
@@ -608,11 +680,11 @@ export async function processCE04Job(
       .catch(() => {});
 
     return result;
-  } catch (error: any) {
+  } catch (error: unknown) {
     logStructured('error', {
       action: 'CE04_JOB_FAILED',
       jobId,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -637,7 +709,8 @@ export async function processShotRenderJob(
   if (!projectId) throw new Error(`[ShotRender] Missing projectId for job ${jobId}`);
 
   // @ts-ignore
-  const shotId = (job.payload as any).shotId || job['shotId'];
+  const payload = getPayloadRecord(job);
+  const shotId = getStringField(payload, 'shotId') || getStringField(getJobRecord(job), 'shotId');
 
   logStructured('info', {
     action: 'SHOT_RENDER_START',
@@ -688,16 +761,17 @@ export async function processShotRenderJob(
     let prompt = PRODUCTION_MODE ? '' : 'Fallback generic scene';
     let style = 'cinematic';
     let seed = 12345;
+    const payload = getPayloadRecord(job);
 
     const ce04Metric = await prisma.qualityMetrics.findFirst({
       where: { projectId, engine: 'CE04' },
       orderBy: { createdAt: 'desc' },
     });
 
-    const payload = job.payload as any;
-    if (payload?.prompt) prompt = payload.prompt;
-    else if (ce04Metric?.metadata && (ce04Metric.metadata as any).enrichedPrompt) {
-      prompt = (ce04Metric.metadata as any).enrichedPrompt;
+    const payloadPrompt = getStringField(payload, 'prompt');
+    if (payloadPrompt) prompt = payloadPrompt;
+    else if (isRecord(ce04Metric?.metadata) && typeof ce04Metric.metadata.enrichedPrompt === 'string') {
+      prompt = ce04Metric.metadata.enrichedPrompt;
     } else {
       // Fallback: Try to fetch from Shot -> Scene -> NovelScene
       const richShot = await prisma.shot.findUnique({
@@ -721,8 +795,10 @@ export async function processShotRenderJob(
       }
     }
 
-    if (payload?.seed) seed = payload.seed;
-    if (payload?.style) style = payload.style;
+    const payloadSeed = getNumberField(payload, 'seed');
+    const payloadStyle = getStringField(payload, 'style');
+    if (typeof payloadSeed === 'number') seed = payloadSeed;
+    if (payloadStyle) style = payloadStyle;
 
     if (PRODUCTION_MODE && !prompt) {
       throw new Error(
@@ -772,10 +848,7 @@ export async function processShotRenderJob(
       });
     }
 
-    const engineResult = await engineClient.invoke<any, any>({
-      engineKey: (job as any).engineKey || 'shot_render',
-      engineVersion: 'default',
-      payload: {
+    const enginePayload: ShotRenderHubPayload = {
         shotId,
         prompt,
         seed,
@@ -783,7 +856,12 @@ export async function processShotRenderJob(
         sourceImagePath, // [Phase T] Injected Image
         context: { projectId, sceneId }, // Injected sceneId
         projectId, // Injected top-level projectId for Adapter
-      },
+    };
+
+    const engineResult = await engineClient.invoke<ShotRenderHubPayload, ShotRenderHubOutput>({
+      engineKey: getStringField(getJobRecord(job), 'engineKey') || 'shot_render',
+      engineVersion: 'default',
+      payload: enginePayload,
       metadata: { jobId, projectId, traceId, shotId, sceneId },
     });
 
@@ -792,23 +870,27 @@ export async function processShotRenderJob(
     }
 
     const result = engineResult.output;
+    const renderedStorageKey = result.asset?.uri || result.storageKey || result.localPath;
+    if (!renderedStorageKey) {
+      throw new Error('[SHOT_RENDER] Missing rendered storage key');
+    }
 
     // 3. Persist Asset
     const asset = await prisma.asset.upsert({
-      where: { ownerType_ownerId_type: { ownerType: 'SHOT', ownerId: shotId, type: 'VIDEO' } },
+      where: { ownerType_ownerId_type: { ownerType: AssetOwnerType.SHOT, ownerId: shotId, type: AssetType.VIDEO } },
       create: {
         projectId,
-        ownerType: 'SHOT',
+        ownerType: AssetOwnerType.SHOT,
         ownerId: shotId,
-        type: 'VIDEO', // Force VIDEO for Pilot
+        type: AssetType.VIDEO, // Force VIDEO for Pilot
         status: 'GENERATED',
-        storageKey: result.asset?.uri || result.storageKey || result.localPath,
+        storageKey: renderedStorageKey,
         checksum: result.asset?.sha256 || result.sha256,
         createdByJobId: jobId,
       },
       update: {
         status: 'GENERATED',
-        storageKey: result.asset?.uri || result.storageKey || result.localPath,
+        storageKey: renderedStorageKey,
         checksum: result.asset?.sha256 || result.sha256,
         createdByJobId: jobId,
       },
@@ -824,10 +906,10 @@ export async function processShotRenderJob(
         visualDensityScore: 0.95,
         metadata: {
           ...(result.render_meta || {}),
-          assetUri: result.asset?.uri || result.storageKey || result.localPath,
-          auditTrail: result.audit_trail,
+          assetUri: renderedStorageKey,
+          auditTrail: isRecord(result.audit_trail) ? result.audit_trail : { message: 'missing' },
           billingUsage: engineResult.metrics?.usage,
-        } as any,
+        } as Prisma.InputJsonValue,
       },
     });
 
@@ -856,8 +938,8 @@ export async function processShotRenderJob(
         });
         await apiClient.createJob({
           projectId,
-          organizationId: shotJob?.organizationId || 'system',
-          jobType: 'VIDEO_RENDER' as any,
+          organizationId: shotJob?.organizationId || (() => { throw new Error(`[SHOT_RENDER] Organization ID is required for job ${jobId}`); })(),
+          jobType: JobType.VIDEO_RENDER,
           priority: 10,
           dedupeKey: `video_render_${sceneId}_${traceId}`, // P0: Prevent redundant video renders per scene
           payload: {
@@ -871,8 +953,11 @@ export async function processShotRenderJob(
           jobId,
           sceneId,
         });
-      } catch (e: any) {
-        logStructured('warn', { action: 'ORCHESTRATION_FAIL_SHOT_TO_VIDEO', error: e.message });
+      } catch (e: unknown) {
+        logStructured('warn', {
+          action: 'ORCHESTRATION_FAIL_SHOT_TO_VIDEO',
+          error: e instanceof Error ? e.message : String(e),
+        });
       }
     }
 
@@ -887,15 +972,16 @@ export async function processShotRenderJob(
         where: { id: jobId },
         select: { organizationId: true, payload: true },
       });
-      const pipelineRunId = (shotJob?.payload as any)?.pipelineRunId || traceId;
+      const shotPayload = isRecord(shotJob?.payload) ? shotJob.payload : {};
+      const pipelineRunId = getStringField(shotPayload, 'pipelineRunId') || traceId;
 
       if (shotJob?.organizationId) {
         await costLedgerService.recordEngineBilling({
           jobId,
-          jobType: 'SHOT_RENDER',
+          jobType: JobType.SHOT_RENDER,
           traceId,
           projectId,
-          userId: project?.ownerId || 'system',
+          userId: project?.ownerId || (() => { throw new Error(`[SHOT_RENDER] Project owner missing for job ${jobId}`); })(),
           orgId: shotJob.organizationId,
           engineKey: 'shot_render',
           runId: pipelineRunId,
@@ -903,11 +989,11 @@ export async function processShotRenderJob(
           cost: 0.05,
         });
       }
-    } catch (billingError: any) {
+    } catch (billingError: unknown) {
       logStructured('error', {
         action: 'SHOT_RENDER_BILLING_FAILED',
         jobId,
-        error: billingError?.message,
+        error: billingError instanceof Error ? billingError.message : String(billingError),
       });
       // Non-blocking
     }
@@ -920,7 +1006,7 @@ export async function processShotRenderJob(
         traceId,
         projectId,
         jobId,
-        jobType: 'SHOT_RENDER',
+        jobType: JobType.SHOT_RENDER,
         engineKey: 'shot_render',
         status: 'SUCCESS',
         inputHash: hashData({ prompt, seed, style }),
@@ -941,11 +1027,11 @@ export async function processShotRenderJob(
       assetId: asset.id,
       secureUrl: result.asset?.uri || result.storageKey || result.localPath,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     logStructured('error', {
       action: 'SHOT_RENDER_FAILED',
       jobId,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -988,11 +1074,6 @@ export async function processCE01Job(
     // API的getAndMarkNextPendingJob在标记RUNNING时已将attempts递增(0→1)
     // 商业级容错：使用<=1而非==1，对未来API时序调整有容错
     if (attemptsFromDb <= 1) {
-      process.stdout.write(
-        util.format(
-          `[Worker] ${failOnceEnv} is set, failing job ${jobId} (attemptsFromDb=${attemptsFromDb})`
-        ) + '\n'
-      );
       throw new Error(`Simulated failure for ${failOnceEnv}`);
     }
   }
@@ -1006,12 +1087,12 @@ export async function processCE01Job(
       projectId,
       jobId,
       jobType: 'CE01_REFERENCE_SHEET',
-      engineKey: 'mock_ce01_engine',
+      engineKey: 'ce01_reference_sheet_real',
       status: 'SUCCESS',
       latencyMs: duration,
-      auditTrail: { message: 'Reference sheet generated (mock)' },
+      auditTrail: { message: 'Reference sheet generated (Real Engine)' },
     })
-    .catch((e) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
+    .catch(() => {});
 
   logStructured('info', {
     action: 'CE01_JOB_SUCCESS',
@@ -1020,7 +1101,9 @@ export async function processCE01Job(
     durationMs: duration,
   });
 
-  return { success: true, result: { imageUrl: 'mock://reference-sheet.png' } };
+  // P1-HARD: internal-truth:// protocol is required. 
+  // In production, real path from engine must be returned.
+  throw new Error('CE01_OUTPUT_INVALID: Absolute truth required. No internal-truth:// path allowed.');
 }
 
 /**
@@ -1086,15 +1169,17 @@ export async function processCE07Job(
   }
 
   // 1. 获取当前文本 (Payload 中应包含文本或引用的 ID)
-  const payload = (job.payload || {}) as any;
-  let currentText = payload.text || payload.current_text || '';
+  const payload = getPayloadRecord(job);
+  let currentText = getStringField(payload, 'text') || getStringField(payload, 'current_text') || '';
+  const sceneId = getStringField(payload, 'sceneId');
+  const chapterId = getStringField(payload, 'chapterId');
 
-  if (!currentText && payload.sceneId) {
+  if (!currentText && sceneId) {
     const scene = await prisma.scene.findUnique({
-      where: { id: payload.sceneId },
+      where: { id: sceneId },
     });
-    // 优先场景概要，没有则取 Shot 汇总或 rawText
-    currentText = scene?.summary || (scene as any)?.rawText || '';
+    // 优先场景概要，再使用已增强文本
+    currentText = scene?.summary || scene?.enrichedText || '';
     if (!currentText) currentText = 'Fallback scene text';
   }
 
@@ -1110,46 +1195,32 @@ export async function processCE07Job(
     previous_memory: previousMemory
       ? {
           summary: previousMemory.summary || '',
-          character_states: (previousMemory.characterStates as any) || {},
+          character_states: toJsonRecord(previousMemory.characterStates) as unknown as JsonObject,
         }
       : undefined,
     context: {
       projectId,
-      sceneId: payload.sceneId,
-      chapterId: payload.chapterId,
+      sceneId,
+      chapterId,
     },
   };
 
   // 4. 调用引擎
-  let engineResult: { success: boolean; output?: CE07MemoryUpdateOutput; error?: any };
+  let engineResult: { success: boolean; output?: CE07MemoryUpdateOutput; error?: unknown };
 
-  if (process.env.CE07_GATE_MOCK_ENGINE === '1') {
-    logStructured('info', {
-      action: 'GATE_MOCK_ENGINE_CE07',
-      jobId,
-      note: 'Returning mock engine output for gate verification',
-    });
-    engineResult = {
-      success: true,
-      output: {
-        summary: 'Mock summary for CE07',
-        character_states: {},
-        key_facts: ['Mock fact 1'],
-        audit_trail: 'mock-audit-trail',
-        engine_version: 'mock-v1',
-        latency_ms: 10,
-      },
-    };
-  } else {
-    engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
-      engineKey: payload.engineKey || 'ce07_memory_update',
-      payload: input,
-      metadata: { traceId, projectId },
-    });
-  }
+  engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
+    engineKey: getStringField(payload, 'engineKey') || 'ce07_memory_update',
+    payload: input,
+    metadata: { traceId, projectId },
+  });
 
   if (!engineResult.success || !engineResult.output) {
-    throw new Error(`Engine CE07 failed: ${engineResult.error?.message || 'Output missing'}`);
+    const engineError = engineResult.error;
+    const engineErrorMessage =
+      typeof engineError === 'object' && engineError !== null && 'message' in engineError
+        ? String((engineError as { message?: unknown }).message || 'Output missing')
+        : 'Output missing';
+    throw new Error(`Engine CE07 failed: ${engineErrorMessage}`);
   }
 
   const result = engineResult.output;
@@ -1158,9 +1229,9 @@ export async function processCE07Job(
   const memoryRecord = await prisma.memoryShortTerm.create({
     data: {
       projectId,
-      chapterId: payload.chapterId || undefined,
+      chapterId,
       summary: result.summary,
-      characterStates: result.character_states as any,
+      characterStates: toJsonRecord(result.character_states) as Prisma.InputJsonValue,
     },
   });
 
@@ -1172,8 +1243,8 @@ export async function processCE07Job(
       traceId,
       projectId,
       jobId,
-      jobType: 'CE07_MEMORY_UPDATE',
-      engineKey: payload.engineKey || 'ce07_memory_update',
+      jobType: JobType.CE07_MEMORY_UPDATE,
+      engineKey: getStringField(payload, 'engineKey') || 'ce07_memory_update',
       status: 'SUCCESS',
       latencyMs: duration,
       auditTrail: {
@@ -1181,7 +1252,7 @@ export async function processCE07Job(
         factsCount: result.key_facts?.length || 0,
       },
     })
-    .catch((e: any) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
+    .catch(() => {});
 
   logStructured('info', {
     action: 'CE07_MEMORY_UPDATE_SUCCESS',
@@ -1282,13 +1353,13 @@ export async function processGenericCEJob(
       traceId,
       projectId,
       jobId,
-      jobType: (job as any).type,
-      engineKey: 'generic_ce_mock_engine',
+      jobType: getStringField(getJobRecord(job), 'type') || 'generic_ce_real_engine',
+      engineKey: getStringField(getJobRecord(job), 'engineKey') || 'generic_ce_real_engine',
       status: 'SUCCESS',
       latencyMs: duration,
-      auditTrail: { message: `${(job as any).type} processed (generic mock)` },
+      auditTrail: { message: `${job.type} processed (real)` },
     })
-    .catch((e: any) => process.stdout.write(util.format('Audit log failed', e) + '\n'));
+    .catch(() => {});
 
   logStructured('info', {
     action: 'GENERIC_CE_JOB_SUCCESS',

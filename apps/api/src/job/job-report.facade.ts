@@ -227,14 +227,11 @@ export class JobReportFacade {
 
         if (assetKeys.length > 0) {
           // 2) SECURITY: 精确定位 binding（禁止 updateMany），并使用 merge 语义更新 metadata
-          const binding = await this.prisma.jobEngineBinding.findFirst({
-            where: {
-              jobId: updatedJob.id,
-              engineKey: 'character_visual',
-            },
+          const binding = await this.prisma.jobEngineBinding.findUnique({
+            where: { jobId: updatedJob.id },
           });
 
-          if (!binding) {
+          if (!binding || binding.engineKey !== 'character_visual') {
             this.logger.warn(
               `[CE01] No binding found for job ${updatedJob.id}, skipping asset binding`
             );
@@ -279,11 +276,19 @@ export class JobReportFacade {
           const frameKeys = rawFrameKeys.map((key: string) => this.normalizeStorageKey(key));
 
           if (frameKeys.length > 0) {
+            const project = await this.prisma.project.findUnique({
+              where: { id: updatedJob.projectId },
+              select: { ownerId: true },
+            });
+            const billingUserId = params.userId || project?.ownerId;
+            if (!billingUserId) {
+              throw new Error(`Billing userId is required for job ${updatedJob.id}`);
+            }
             await this.jobService.ensureVideoRenderJob(
               updatedJob.shotId,
               frameKeys,
               updatedJob.traceId || `trace-${updatedJob.id}`,
-              params.userId || 'system',
+              billingUserId,
               updatedJob.organizationId,
               updatedJob.isVerification || false // 继承 SHOT_RENDER 的验证标记
             );
@@ -353,9 +358,13 @@ export class JobReportFacade {
           where: { id: updatedJob.projectId },
           select: { ownerId: true },
         });
+        const billingUserId = project?.ownerId || params.userId;
+        if (!billingUserId) {
+          throw new Error(`Billing userId is required for job ${updatedJob.id}`);
+        }
 
         await this.costLedger.recordFromEvent({
-          userId: project?.ownerId || params.userId || 'system',
+          userId: billingUserId,
           projectId: updatedJob.projectId,
           jobId: updatedJob.id,
           jobType: updatedJob.type,

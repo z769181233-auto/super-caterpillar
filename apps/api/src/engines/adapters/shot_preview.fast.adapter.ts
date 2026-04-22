@@ -14,7 +14,7 @@ import { createHash } from 'crypto';
  * 1. Check Redis for cached result
  *    Key: preview:v1:<sha256(input+seed+style+size+steps)>
  * 2. If miss: Invoke ShotRenderRouter (preview=true)
- *    - Validate URL (no mock://)
+ *    - Validate URL (no forbidden internal prefixes)
  *    - Write to Redis (TTL 7 days)
  *    - Audit & Cost (engine=shot_preview)
  * 3. If hit:
@@ -91,10 +91,10 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
       if (String(result.status) === 'SUCCESS' && result.output) {
         const output = result.output as any;
 
-        // VALIDATION: No mock URLs allowed in REAL mode
+        // VALIDATION: No forbidden internal URLs allowed in REAL mode
         const url = output.url || output.assetUrl || '';
-        if (url.includes('http://mock') || url.includes('https://mock')) {
-          throw new Error(`REAL_MODE_VIOLATION: Generated URL contains mock domain: ${url}`);
+        if (url.includes('http://internal-dev') || url.includes('https://internal-dev')) {
+          throw new Error(`REAL_MODE_VIOLATION: Generated URL contains forbidden internal domain: ${url}`);
         }
         if (!url.startsWith('http') && !url.startsWith('file://')) {
           // Warn? Or Fail? User said "Must be http(s):// or file:// or canonical"

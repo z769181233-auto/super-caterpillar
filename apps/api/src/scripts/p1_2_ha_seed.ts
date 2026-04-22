@@ -1,6 +1,6 @@
 // apps/api/src/scripts/p1_2_ha_seed.ts
 import { PrismaClient } from 'database';
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import * as util from 'util';
@@ -79,10 +79,15 @@ async function main() {
   if (!killPid) {
     const pidGrep = process.env.WORKER_PID_GREP ?? `--workerId=${killWorkerId}`;
     try {
-      const cmd = `ps -ef | grep "${pidGrep}" | grep -v grep | head -1 | awk '{print $2}'`;
-      killPid = execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'] })
-        .toString()
-        .trim();
+      const ps = spawnSync('ps', ['-ef'], { encoding: 'utf8' });
+      if (ps.status === 0 && ps.stdout) {
+        const line = ps.stdout
+          .split('\n')
+          .find((row) => row.includes(pidGrep) && !row.includes('grep'));
+        if (line) {
+          killPid = line.trim().split(/\s+/)[1] ?? '';
+        }
+      }
     } catch {
       // ignore
     }

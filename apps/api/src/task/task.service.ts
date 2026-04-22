@@ -2,6 +2,13 @@ import { Injectable, NotFoundException, BadRequestException, Inject } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from 'database';
+import { randomUUID } from 'crypto';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 /**
  * Task Service
@@ -12,12 +19,33 @@ import { Prisma, TaskType as TaskTypeEnum, TaskStatus as TaskStatusEnum } from '
  */
 @Injectable()
 export class TaskService {
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService
-  ) {
-    console.log('[DEBUG_BOOT] TaskService constructor start');
-    console.log('[DEBUG_BOOT] TaskService constructor end');
+  ) {}
+
+  private isPrismaTimeout(error: unknown): boolean {
+    return isPrismaFallbackEligibleError(error);
+  }
+
+  private isCiOrGateContext(): boolean {
+    return isCiOrGateContextEnv();
+  }
+
+  private shouldAllowTaskPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_TASK_PG_FALLBACK === '1';
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-task',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
   }
 
   /**
@@ -37,20 +65,66 @@ export class TaskService {
     error?: string;
     traceId?: string; // Stage13-Final: Pipeline 级 traceId
   }) {
-    const task = await this.prisma.task.create({
-      data: {
-        organizationId: params.organizationId,
-        projectId: params.projectId,
-        type: params.type,
-        status: params.status ?? TaskStatusEnum.PENDING,
-        payload: params.payload,
-        attempts: params.attempts ?? 0,
-        maxRetry: params.maxRetry ?? 3,
-        retryCount: params.retryCount ?? 0,
-        error: params.error,
-        traceId: params.traceId, // Stage13-Final: Pipeline 级 traceId
-      },
-    });
+    const createWithPg = async () =>
+      this.withPgClient(async (client) => {
+        const id = randomUUID();
+        await client.query(
+          `
+            INSERT INTO "Task"
+              (id, "organizationId", "projectId", type, status, payload, attempts, "maxRetry", "retryCount", error, "traceId", "updatedAt")
+            VALUES
+              ($1, $2, $3, $4::"TaskType", $5::"TaskStatus", $6::jsonb, $7, $8, $9, $10, $11, NOW())
+            RETURNING id, "organizationId", "projectId", type, status
+          `,
+          [
+            id,
+            params.organizationId,
+            params.projectId,
+            params.type,
+            params.status ?? TaskStatusEnum.PENDING,
+            params.payload == null ? null : JSON.stringify(params.payload),
+            params.attempts ?? 0,
+            params.maxRetry ?? 3,
+            params.retryCount ?? 0,
+            params.error ?? null,
+            params.traceId ?? null,
+          ]
+        );
+
+        return {
+          id,
+          organizationId: params.organizationId,
+          projectId: params.projectId,
+          type: params.type,
+          status: params.status ?? TaskStatusEnum.PENDING,
+        };
+      });
+
+    let task;
+    try {
+      task = await this.prisma.task.create({
+        data: {
+          organizationId: params.organizationId,
+          projectId: params.projectId,
+          type: params.type,
+          status: params.status ?? TaskStatusEnum.PENDING,
+          payload: params.payload,
+          attempts: params.attempts ?? 0,
+          maxRetry: params.maxRetry ?? 3,
+          retryCount: params.retryCount ?? 0,
+          error: params.error,
+          traceId: params.traceId,
+        },
+      });
+    } catch (error) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowTaskPgFallback()) {
+        throw error;
+      }
+      task = await createWithPg();
+    }
 
     // 记录审计日志
     await this.auditLogService.record({

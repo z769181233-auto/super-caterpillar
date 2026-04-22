@@ -1,6 +1,7 @@
 // 前后端共享类型定义
 
 export * from './auth.dto';
+export * from './json';
 export * from './worker.dto';
 export * from './user.dto';
 // export * from './project.dto';

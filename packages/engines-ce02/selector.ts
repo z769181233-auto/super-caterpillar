@@ -36,7 +36,7 @@ export async function ce02Selector(
 }
 
 /**
- * CE02 引擎选择器类（兼容旧代码调用方式）
+ * CE02 引擎选择器类（保留类形态以适配现有调用方式）
  */
 export class CE02EngineSelector {
   async invoke(input: CE02IdentityLockInput): Promise<CE02IdentityLockOutput | null> {

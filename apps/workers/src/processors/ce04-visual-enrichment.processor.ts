@@ -7,6 +7,11 @@ import { config } from '@scu/config';
 import * as path from 'path';
 import * as fs from 'fs';
 
+const workerConfig = config as typeof config & {
+  storageRoot: string;
+  repoRoot: string;
+};
+
 export interface ProcessorResult {
   status: 'SUCCEEDED' | 'FAILED' | 'RETRYING';
   output?: any;
@@ -20,7 +25,7 @@ export async function processCE04VisualEnrichmentJob(
   const logger = context.logger || console;
   const comfy = new ComfyUIClient();
   const traceId = job.payload?.traceId;
-  let shotId = job.shotId || 'shot_unknown';
+  let shotId = job.shotId;
 
   try {
     // 1. Hydrate Context
@@ -30,14 +35,23 @@ export async function processCE04VisualEnrichmentJob(
     });
 
     if (!fullJob || !fullJob.shot) throw new Error(`Job ${job.id} or Shot not found`);
-    const jobOrgId = fullJob.organizationId || fullJob.shot.organizationId || 'org_unknown';
+    const jobOrgId = fullJob.organizationId || fullJob.shot.organizationId;
+    if (!jobOrgId) {
+      throw new Error(`[CE04] Organization ID is required for job ${job.id}`);
+    }
     const projectId = fullJob.projectId;
     const sceneId = fullJob.sceneId;
-    shotId = fullJob.shotId!;
+    shotId = fullJob.shotId ?? fullJob.shot?.id;
+    if (!shotId) {
+      throw new Error(`[CE04] Shot ID is required for job ${job.id}`);
+    }
 
     // 2. ComfyUI Image Generation (P1 + B2 Style Lock)
-    const basePrompt =
-      fullJob.shot.enrichedPrompt || (fullJob.shot.params as any)?.prompt || 'Cinematic scenery';
+    const shotParams = fullJob.shot.params as { prompt?: string } | null;
+    const basePrompt = fullJob.shot.enrichedPrompt || shotParams?.prompt;
+    if (!basePrompt) {
+      throw new Error(`[CE04] Missing shot prompt for job ${job.id}`);
+    }
     const stylePrompt = fullJob.project?.stylePrompt || '';
 
     // B2: Global Style Locking
@@ -47,9 +61,8 @@ export async function processCE04VisualEnrichmentJob(
       `[CE04] Generating keyframe via ComfyUI. Final Prompt: ${prompt.substring(0, 50)}...`
     );
 
-    const repoRoot = process.env.REPO_ROOT || path.resolve(process.cwd(), '../../');
     const templatePath = path.join(
-      repoRoot,
+      workerConfig.repoRoot,
       'packages/engines/shot_render/providers/templates/comfyui_text2img_sdxl.json'
     );
     if (!fs.existsSync(templatePath)) {
@@ -64,7 +77,7 @@ export async function processCE04VisualEnrichmentJob(
     const buffer = await comfy.generateImage(template);
 
     // Save to .data/storage/keyframes
-    const storageRoot = (config as any).storageRoot || process.env.STORAGE_ROOT || '.runtime';
+    const storageRoot = workerConfig.storageRoot;
     const keyframeDir = path.join(storageRoot, 'keyframes', projectId, shotId);
     if (!fs.existsSync(keyframeDir)) fs.mkdirSync(keyframeDir, { recursive: true });
 
@@ -112,7 +125,7 @@ export async function processCE04VisualEnrichmentJob(
         resourceType: 'shot',
         resourceId: shotId,
         action: 'ce04.visual_enrichment.success',
-        orgId: jobOrgId || 'default-org',
+        orgId: jobOrgId,
         details: {
           jobId: job.id,
           traceId,
@@ -124,17 +137,14 @@ export async function processCE04VisualEnrichmentJob(
 
     // 6. Spawn SHOT_RENDER
     const validPipelineRunId = pipelineRunId || fullJob.traceId || traceId || `run_${job.id}`;
+    const renderDedupeKey = `ce04_shot_render_${shotId}_${validPipelineRunId}`;
 
-    const existingRender = await prisma.shotJob.findFirst({
-      where: {
-        projectId,
-        shotId,
-        type: 'SHOT_RENDER',
-        payload: { path: ['pipelineRunId'], equals: validPipelineRunId },
-      },
+    const existingRenderByDedupe = await prisma.shotJob.findUnique({
+      where: { dedupeKey: renderDedupeKey },
+      select: { id: true },
     });
 
-    if (!existingRender) {
+    if (!existingRenderByDedupe) {
       await prisma.shotJob.create({
         data: {
           projectId,
@@ -144,6 +154,7 @@ export async function processCE04VisualEnrichmentJob(
           shotId: shotId,
           type: 'SHOT_RENDER',
           status: 'PENDING',
+          dedupeKey: renderDedupeKey,
           payload: {
             ...job.payload,
             sourceJobId: job.id,
@@ -164,39 +175,6 @@ export async function processCE04VisualEnrichmentJob(
     };
   } catch (error: any) {
     logger.error(`[CE04] Failed: ${error.message}`);
-    // P1-1: Emergency Fallback for Gate Verification
-    if (process.env.GATE_MODE === '1') {
-      logger.warn(`[CE04] GATE_MODE detected, providing mock success. shotId: ${shotId}`);
-
-      try {
-        await prisma.asset.create({
-          data: {
-            id: `gate-asset-${Date.now()}`,
-            type: AssetType.IMAGE,
-            storageKey: 'gate/mock_keyframe.png',
-            projectId: job.projectId || 'proj_unknown',
-            ownerId: shotId,
-            ownerType: AssetOwnerType.SHOT,
-            status: 'GENERATED',
-          },
-        });
-      } catch (e: any) {
-        if (e.code === 'P2002') {
-          logger.warn(`[CE04] Asset already exists for shotId=${shotId}`);
-        } else {
-          logger.error(`[CE04] Fallback asset creation error: ${e.message}`);
-        }
-      }
-
-      return {
-        status: 'SUCCEEDED',
-        output: {
-          keyframeKey: 'gate/mock_keyframe.png',
-          nextStep: 'SHOT_RENDER',
-          isMock: true,
-        },
-      };
-    }
     return {
       status: 'FAILED',
       error: error.message,

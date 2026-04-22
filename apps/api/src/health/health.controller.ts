@@ -1,11 +1,14 @@
 import { Controller, Get, Header } from '@nestjs/common';
 import { TextSafetyMetrics } from '../observability/text_safety.metrics';
 import { PrismaService } from '../prisma/prisma.service';
+import { withRuntimePgClient } from '../prisma/pg-runtime.util';
 import { RedisService } from '../redis/redis.service';
 import { JobStatus, JobType } from 'database';
 
 @Controller()
 export class HealthController {
+  private readonly readyProbeTimeoutMs = Number(process.env.HEALTH_READY_TIMEOUT_MS || '3000');
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService?: RedisService
@@ -13,12 +16,11 @@ export class HealthController {
 
   @Get('/health')
   health() {
-    const isStub = process.env.P9_B3_STUB_MODE === '1';
     return {
       ok: true,
       service: 'api',
-      mode: isStub ? 'stub' : 'real',
-      stub: isStub ? 1 : 0,
+      mode: 'real',
+      truth_seal: 'sealed',
       missing_envs: (process as any).missingEnvs || [],
       gate_mode: Number(process.env.GATE_MODE) || 0,
       ts: new Date().toISOString()
@@ -27,13 +29,12 @@ export class HealthController {
 
   @Get('/api/health')
   apiHealth() {
-    const isStub = process.env.P9_B3_STUB_MODE === '1';
     return {
       ok: true,
       service: 'api',
       status: 'ok',
-      mode: isStub ? 'stub' : 'real',
-      stub: isStub ? 1 : 0,
+      mode: 'real',
+      truth_seal: 'sealed',
       missing_envs: (process as any).missingEnvs || [],
       gate_mode: Number(process.env.GATE_MODE) || 0,
       ts: new Date().toISOString()
@@ -54,7 +55,17 @@ export class HealthController {
 
     // 检查数据库连接
     try {
-      await this.prisma.$queryRaw`SELECT 1`;
+      await withRuntimePgClient(
+        {
+          applicationName: 'super-caterpillar-api-health',
+          connectionTimeoutMs: this.readyProbeTimeoutMs,
+          queryTimeoutMs: this.readyProbeTimeoutMs,
+          statementTimeoutMs: this.readyProbeTimeoutMs,
+        },
+        async (client) => {
+          await client.query('SELECT 1');
+        }
+      );
       checks.database = true;
     } catch (error) {
       checks.database = false;

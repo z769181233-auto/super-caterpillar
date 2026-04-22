@@ -37,7 +37,7 @@ export default function UserInfo() {
         } else if (orgsData.length > 0) {
           setCurrentOrganizationId(orgsData[0].id);
         }
-      } catch (error: unknown) {
+      } catch {
         // 401 时自动跳转登录
         if (typeof window !== 'undefined') {
           router.push('/login');

@@ -51,14 +51,16 @@ export class TextSafetyService {
     'hacked',
   ];
 
-  // 灰名单（WARN）
+  // ReDoS Protection: Optimized regexes and input limits
   private readonly GREYLIST_PATTERNS = [
-    /微信[号id:：]?\s*[\w-]+/gi,
-    /QQ[号id:：]?\s*\d{5,}/gi,
-    /手机[号]?[：:]?\s*1[3-9]\d{9}/gi,
-    /[\w-.]+@[\w-]+\.\w+/gi, // email
+    /微信(?:号|id)?[:：\s]*[\w-]+/gi,
+    /QQ(?:号|id)?[:：\s]*\d{5,12}/gi,
+    /手机号?[:：\s]*1[3-9]\d{9}/gi,
+    /([\w-.]+)@([\w-]+\.)+[\w-]{2,4}/gi, // email
     /加我|私信|联系我|咨询我/gi,
   ];
+
+  private readonly MAX_REGEX_INPUT_LENGTH = 10000;
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -192,9 +194,9 @@ export class TextSafetyService {
 
       return outcome;
     } catch (error) {
-      // Fail-safe: 自动降级为 PASS
+      // Fail-closed: any internal error becomes BLOCK
       this.logger.error(
-        `TextSafetyService.sanitize FAILED, fallback to PASS. Error: ${error.message}`,
+        `TextSafetyService.sanitize FAILED, fallback to BLOCK. Error: ${error.message}`,
         error.stack
       );
 
@@ -212,13 +214,13 @@ export class TextSafetyService {
       }
 
       // Metrics
-      TextSafetyMetrics.recordDecision('PASS'); // Fail-safe counts as PASS for external flow
+      TextSafetyMetrics.recordDecision('BLOCK');
       TextSafetyMetrics.recordLatency(Date.now() - start);
 
       return {
-        decision: 'PASS',
-        riskLevel: 'low',
-        sanitizedText: inputText, // Return original text on failure (or maybe partially sanitized if we wanted to risk it, but original is safer here to avoid data loss)
+        decision: 'BLOCK',
+        riskLevel: 'critical',
+        sanitizedText: '',
         sanitizedDigest: 'FAILSAFE',
         flags: ['FAILSAFE_TRIGGERED'],
         reasons: ['Internal error during sanitization'],
@@ -243,8 +245,14 @@ export class TextSafetyService {
   private checkGreylist(text: string): string[] {
     const matches: string[] = [];
 
+    // ReDoS Mitigation: Only run regex on reasonable text length
+    const textToScan =
+      text.length > this.MAX_REGEX_INPUT_LENGTH
+        ? text.substring(0, this.MAX_REGEX_INPUT_LENGTH)
+        : text;
+
     for (const pattern of this.GREYLIST_PATTERNS) {
-      const found = text.match(pattern);
+      const found = textToScan.match(pattern);
       if (found && found.length > 0) {
         matches.push(found[0].substring(0, 20)); // 截断避免泄露
       }

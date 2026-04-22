@@ -12,16 +12,23 @@ import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { PublishedVideoService } from '../publish/published-video.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { FinancialSettlementService } from '../billing/financial-settlement.service';
 import { JobAuthOpsService } from './job-auth-ops.service';
 import { CreateJobDto } from './dto/create-job.dto';
-import { JobEngineBindingStatus } from 'database';
+import { JobEngineBindingStatus, ShotReviewStatus } from 'database';
 import { TaskService } from '../task/task.service';
 import { ProjectResolver } from '../common/project-resolver';
+import { PRODUCTION_MODE } from '@scu/config';
+import {
+    getRuntimeDbTimeoutMs,
+    isCiOrGateContextEnv,
+    isPrismaFallbackEligibleError,
+    withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobCreationOpsService {
     private readonly logger = new Logger(JobCreationOpsService.name);
+    private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
     constructor(
         @Inject(PrismaService) private readonly prisma: PrismaService,
@@ -43,12 +50,32 @@ export class JobCreationOpsService {
         private readonly publishedVideoService: PublishedVideoService,
         @Inject(EventEmitter2)
         private readonly eventEmitter: EventEmitter2,
-        @Inject(FinancialSettlementService)
-        private readonly financialSettlementService: FinancialSettlementService,
         @Inject(forwardRef(() => TaskService)) private readonly taskService: TaskService,
         @Inject(forwardRef(() => ProjectResolver)) private readonly projectResolver: ProjectResolver,
         private readonly jobAuthOps: JobAuthOpsService
     ) { }
+
+    private isPrismaTimeout(error: unknown): boolean {
+        return isPrismaFallbackEligibleError(error);
+    }
+
+    private isCiOrGateContext(): boolean {
+        return isCiOrGateContextEnv();
+    }
+
+    private shouldAllowJobCreationPgPath(): boolean {
+        return this.isCiOrGateContext() || process.env.FORCE_JOB_CREATION_PG_PATH === '1';
+    }
+
+    private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+        return withRuntimePgClient(
+            {
+                applicationName: 'super-caterpillar-api-job-creation',
+                queryTimeoutMs: this.prismaQueryTimeoutMs,
+            },
+            fn
+        );
+    }
 
     async create(
         shotId: string,
@@ -60,6 +87,7 @@ export class JobCreationOpsService {
         this.logger.log(
             `[JobCreationOps.create] START: type=${createJobDto.type} shotId=${shotId} orgId=${organizationId}`
         );
+        let createJobGraphViaPg: (() => Promise<any>) | null = null;
         try {
             // 0. dedupeKey 幂等检查
             if (createJobDto.dedupeKey) {
@@ -112,6 +140,10 @@ export class JobCreationOpsService {
                 throw new NotFoundException('Shot hierarchy is incomplete');
             }
 
+            if (createJobDto.type === 'SHOT_RENDER') {
+                await this.validateShotRenderReadiness(shot, !!createJobDto.isVerification);
+            }
+
             // 计费
             let requiredCredits = 0;
             if (createJobDto.type === 'VIDEO_RENDER') requiredCredits = 10;
@@ -148,9 +180,142 @@ export class JobCreationOpsService {
                         projectId: project.id,
                         type: 'SHOT_RENDER' as any,
                         status: 'PENDING' as any,
-                        payload: { shotId, jobType: createJobDto.type, ...createJobDto.payload },
+                        payload: {
+                            shotId,
+                            sceneId: scene.id,
+                            episodeId: episode.id,
+                            projectId: project.id,
+                            organizationId,
+                            jobType: createJobDto.type,
+                            ...createJobDto.payload,
+                        },
                     })
                 ).id;
+
+            const enrichedPayload = {
+                shotId,
+                sceneId: scene.id,
+                episodeId: episode.id,
+                projectId: project.id,
+                organizationId,
+                ...createJobDto.payload,
+            };
+
+            createJobGraphViaPg = async () => {
+                this.logger.log(
+                    `[JobCreationOps.createJobGraphViaPg] START shotId=${shotId} taskId=${finalTaskId} type=${createJobDto.type}`
+                );
+                const engineSelection = await this.jobEngineBindingService.selectEngineForJob(
+                    createJobDto.type as any
+                );
+                if (!engineSelection) {
+                    throw new BadRequestException(`No engine available for job type: ${createJobDto.type}`);
+                }
+                this.logger.log(
+                    `[JobCreationOps.createJobGraphViaPg] Engine selected shotId=${shotId} engineId=${engineSelection.engineId} engineKey=${engineSelection.engineKey} engineVersionId=${engineSelection.engineVersionId ?? 'null'}`
+                );
+
+                return this.withPgClient(async (client) => {
+                    await client.query('BEGIN');
+                    try {
+                        const createdJobId = randomUUID();
+                        this.logger.log(
+                            `[JobCreationOps.createJobGraphViaPg] Inserting shot_job id=${createdJobId} shotId=${shotId} taskId=${finalTaskId}`
+                        );
+                        await client.query(
+                            `
+                              INSERT INTO shot_jobs
+                                (id, "organizationId", "projectId", "episodeId", "sceneId", "shotId", "taskId",
+                                 type, status, priority, "maxRetry", "retryCount", attempts,
+                                 payload, "engineConfig", "traceId", is_verification, dedupe_key, "updatedAt")
+                              VALUES
+                                ($1, $2, $3, $4, $5, $6, $7,
+                                 $8::"JobType", $9::"JobStatus", $10, $11, $12, $13,
+                                 $14::jsonb, $15::jsonb, $16, $17, $18, NOW())
+                            `,
+                            [
+                                createdJobId,
+                                organizationId,
+                                project.id,
+                                episode.id,
+                                scene.id,
+                                shotId,
+                                finalTaskId,
+                                createJobDto.type,
+                                'PENDING',
+                                0,
+                                3,
+                                0,
+                                0,
+                                JSON.stringify(enrichedPayload),
+                                JSON.stringify(createJobDto.engineConfig ?? {}),
+                                createJobDto.traceId ?? null,
+                                createJobDto.isVerification || false,
+                                createJobDto.dedupeKey ?? null,
+                            ]
+                        );
+                        this.logger.log(
+                            `[JobCreationOps.createJobGraphViaPg] Inserted shot_job id=${createdJobId}`
+                        );
+
+                        this.logger.log(
+                            `[JobCreationOps.createJobGraphViaPg] Inserting job_engine_binding jobId=${createdJobId} engineId=${engineSelection.engineId}`
+                        );
+                        await client.query(
+                            `
+                              INSERT INTO job_engine_bindings
+                                (id, "jobId", "engineId", "engineVersionId", "engineKey", status, "boundAt", "createdAt", "updatedAt")
+                              VALUES
+                                ($1, $2, $3, $4, $5, $6::job_engine_binding_status, NOW(), NOW(), NOW())
+                            `,
+                            [
+                                randomUUID(),
+                                createdJobId,
+                                engineSelection.engineId,
+                                engineSelection.engineVersionId ?? null,
+                                engineSelection.engineKey,
+                                JobEngineBindingStatus.BOUND,
+                            ]
+                        );
+                        this.logger.log(
+                            `[JobCreationOps.createJobGraphViaPg] Inserted job_engine_binding jobId=${createdJobId}`
+                        );
+
+                        await client.query('COMMIT');
+                        this.logger.log(
+                            `[JobCreationOps.createJobGraphViaPg] COMMIT jobId=${createdJobId} shotId=${shotId}`
+                        );
+
+                        return {
+                            id: createdJobId,
+                            organizationId,
+                            projectId: project.id,
+                            episodeId: episode.id,
+                            sceneId: scene.id,
+                            shotId,
+                            taskId: finalTaskId,
+                            type: createJobDto.type as any,
+                            status: 'PENDING',
+                            traceId: createJobDto.traceId ?? null,
+                            isVerification: createJobDto.isVerification || false,
+                            dedupeKey: createJobDto.dedupeKey ?? null,
+                        };
+                    } catch (pgError) {
+                        await client.query('ROLLBACK');
+                        this.logger.error(
+                            `[JobCreationOps.createJobGraphViaPg] ROLLBACK shotId=${shotId} taskId=${finalTaskId}: ${pgError instanceof Error ? pgError.message : String(pgError)}`
+                        );
+                        throw pgError;
+                    }
+                });
+            };
+
+            if (this.shouldAllowJobCreationPgPath()) {
+                this.logger.warn(
+                    `[JobCreationOps.create] Using pg transaction path in CI/test/gate-compatible mode for shot ${shotId}`
+                );
+                return await createJobGraphViaPg();
+            }
 
             // 事务创建
             return await this.prisma.$transaction(async (tx) => {
@@ -166,7 +331,7 @@ export class JobCreationOpsService {
                         status: 'PENDING' as any,
                         priority: 0,
                         maxRetry: 3,
-                        payload: createJobDto.payload ?? {},
+                        payload: enrichedPayload,
                         engineConfig: createJobDto.engineConfig ?? {},
                         traceId: createJobDto.traceId,
                         isVerification: createJobDto.isVerification || false,
@@ -197,6 +362,13 @@ export class JobCreationOpsService {
             if (err instanceof NotFoundException || err instanceof BadRequestException || err instanceof UnprocessableEntityException || err instanceof ForbiddenException) {
                 throw err;
             }
+            if (this.isPrismaTimeout(err)) {
+                if (this.shouldAllowJobCreationPgPath() && createJobGraphViaPg) {
+                    this.logger.warn(`[JobCreationOps.create] Prisma degraded for shot ${shotId}; retrying via pg path in CI/test/gate-compatible mode: ${err.message}`);
+                    return await createJobGraphViaPg();
+                }
+                this.logger.warn(`[JobCreationOps.create] Prisma degraded in normal runtime for shot ${shotId}: ${err.message}`);
+            }
             this.logger.error(`JobCreationOps.create FAILED: ${err.message}`);
             throw err;
         }
@@ -209,22 +381,43 @@ export class JobCreationOpsService {
         isVerification: boolean = false
     ) {
         if (isVerification) return;
-        if (referenceSheetId === 'gate-mock-ref-id') return;
 
         if (!referenceSheetId) {
             throw new BadRequestException('referenceSheetId is required for SHOT_RENDER');
         }
-        const rs = await this.prisma.jobEngineBinding.findFirst({
-            where: {
-                id: referenceSheetId,
+        const rs = await this.prisma.jobEngineBinding.findUnique({
+            where: { id: referenceSheetId },
+            select: {
+                id: true,
                 job: {
-                    organizationId,
-                    projectId,
+                    select: {
+                        organizationId: true,
+                        projectId: true,
+                    },
                 },
             },
         });
-        if (!rs) {
+        if (!rs || rs.job.organizationId !== organizationId || rs.job.projectId !== projectId) {
             throw new ForbiddenException('Invalid referenceSheetId or cross-tenant access');
+        }
+    }
+
+    private async validateShotRenderReadiness(shot: any, isVerification: boolean): Promise<void> {
+        if (isVerification) {
+            return;
+        }
+
+        const sceneText = typeof shot?.scene?.enrichedText === 'string' ? shot.scene.enrichedText.trim() : '';
+        if (!sceneText) {
+            throw new BadRequestException('SHOT_RENDER requires analyzed scene content');
+        }
+
+        if (
+            PRODUCTION_MODE &&
+            shot?.reviewStatus !== ShotReviewStatus.APPROVED &&
+            shot?.reviewStatus !== ShotReviewStatus.FINALIZED
+        ) {
+            throw new ForbiddenException('SHOT_RENDER requires approved shot review in production');
         }
     }
 }

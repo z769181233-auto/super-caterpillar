@@ -1,3 +1,4 @@
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { Controller, Post, Get, UseGuards } from '@nestjs/common';
 import { JobWatchdogService } from './job-watchdog.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,6 +14,7 @@ import { JobStatus } from 'database';
  *
  * @see docs/_evidence/A3_TASK_COMPLETION_REPORT.md
  */
+@UseGuards(JwtOrHmacGuard)
 @Controller('api/ops/job-watchdog')
 export class JobWatchdogController {
   constructor(

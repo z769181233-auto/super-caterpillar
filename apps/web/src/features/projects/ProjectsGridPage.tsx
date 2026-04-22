@@ -9,34 +9,37 @@ import { useRequestState } from '@/hooks/useRequestState';
 import { ProjectsGrid } from './ProjectsGrid';
 import { ProjectsHeader } from './ProjectsHeader';
 
-// Mock hook for demonstration, replace with actual implementation later
-function useProjectsQuery() {
-  // Simulate loading for the template demo
-  return {
-    data: null,
-    loading: true,
-    error: null,
-    refetch: () => console.log('refetching...'),
-  };
-}
+import { getProjects } from './api';
+import { ProjectCardView } from './adapters';
+
+const projectGridRequestOptions = {
+  initialStatus: 'loading' as const,
+  isEmpty: (data: ProjectCardView[] | null) => !data || data.length === 0,
+};
 
 export function ProjectsGridPage() {
-  const query = useProjectsQuery();
-  const s = useRequestState<any>(null, {
-    initialStatus: 'loading',
-    isEmpty: (data) => !data || (Array.isArray(data) && data.length === 0),
-  });
+  const s = useRequestState<ProjectCardView[]>(null, projectGridRequestOptions);
+  const { setSuccess, setError } = s;
 
-  // Mocking the data flow for the template
   useEffect(() => {
-    const timer = setTimeout(() => {
-      // Uncomment to test different states
-      // s.setSuccess([]); // Empty state
-      // s.setError(new Error('API Timeout'), 'ERR_504_XYZ'); // Error state
-      s.setSuccess([{ id: '1', title: 'Example Project', status: 'active' }]); // OK state
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    let cancelled = false;
+
+    getProjects()
+      .then((data) => {
+        if (!cancelled) {
+          setSuccess(data);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setError, setSuccess]);
 
   return (
     <PageShell

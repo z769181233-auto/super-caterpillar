@@ -64,7 +64,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       },
       danger: {
         background: 'transparent',
-        color: 'var(--hsl-error)', // Using the legacy exception token allowed in SSOT
+        color: 'var(--hsl-error)', // Uses the explicitly allowed exception token from SSOT
         borderColor: 'hsla(var(--hsl-error), 0.3)',
       },
     };

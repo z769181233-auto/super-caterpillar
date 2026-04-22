@@ -2,8 +2,13 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { ProjectStructureTree } from '@scu/shared-types';
 
+type ProjectStructureTreeWithVideoState = ProjectStructureTree & {
+  isVideoGenerating?: boolean;
+  hasVideo?: boolean;
+};
+
 interface MainActionDispatcherProps {
-  project: ProjectStructureTree;
+  project: ProjectStructureTreeWithVideoState;
   onAnalyze: () => void;
   isAnalyzing: boolean;
   canAnalyze: boolean;
@@ -16,7 +21,7 @@ export const MainActionDispatcher: React.FC<MainActionDispatcherProps> = ({
   canAnalyze,
 }) => {
   const router = useRouter();
-  const { statusSummary, productionStatus, sourceType, projectId } = project;
+  const { statusSummary, projectId, isVideoGenerating, hasVideo } = project;
 
   // State 1: EMPTY (No Novel)
   // Logic: sourceType === 'NOVEL' but no analysis happened usually means we have source?
@@ -65,7 +70,7 @@ export const MainActionDispatcher: React.FC<MainActionDispatcherProps> = ({
 
   // 3. Video Generating (Global Video Job Running) (Override Analysis Done)
   // Passed via props as `isVideoGenerating`
-  if ((project as any).isVideoGenerating) {
+  if (isVideoGenerating) {
     return (
       <button
         disabled
@@ -79,7 +84,7 @@ export const MainActionDispatcher: React.FC<MainActionDispatcherProps> = ({
 
   // 4. Video Generated (Has Video) -> Watch
   // Passed via props as `hasVideo`
-  if ((project as any).hasVideo) {
+  if (hasVideo) {
     return (
       <button
         onClick={() => router.push(`/projects/${projectId}/video`)}

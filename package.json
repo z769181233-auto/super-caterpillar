@@ -8,13 +8,21 @@
   "description": "Super Caterpillar Universe — Monorepo (API / Web / Workers)",
   "pnpm": {
     "overrides": {
-      "next": "15.5.10",
+      "next": "16.2.1",
       "qs": "6.14.2",
-      "hono": "4.11.10",
-      "lodash": "^4.17.23",
-      "axios": "1.13.6",
-      "ajv": "8.17.1",
-      "glob": "13.0.6"
+      "hono": "4.12.8",
+      "@hono/node-server": "1.19.10",
+      "multer": "2.1.1",
+      "@eslint/eslintrc>ajv": "6.14.0",
+      "eslint>ajv": "6.14.0",
+      "lodash": "^4.17.21",
+      "axios": "^1.7.9",
+      "ajv": "8.18.0",
+      "glob": "13.0.6",
+      "file-type": "21.3.2",
+      "jsonwebtoken": "^9.0.2",
+      "flatted": "3.4.2",
+      "effect": "3.20.0"
     }
   },
   "scripts": {
@@ -52,7 +60,8 @@
     "gate:risk": "bash tools/audit/run_risk_pack_v1.sh",
     "gate:health": "bash tools/health/run_health_pack.sh",
     "gate:commercial": "bash tools/gate/run_commercial_seal.sh",
-    "build:web:cf": "turbo run build --filter=web"
+    "build:web:cf": "turbo run build --filter=web",
+    "dataset:review-policy-trace:ops": "node tools/dataset/run-review-policy-trace-ops.mjs"
   },
   "devDependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -64,7 +73,7 @@
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "@typescript-eslint/typescript-estree": "^8.56.1",
-    "ajv": "8.17.1",
+    "ajv": "8.18.0",
     "axios": "1.13.6",
     "glob": "13.0.6",
     "husky": "^9.1.7",

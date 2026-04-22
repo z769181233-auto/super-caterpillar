@@ -1,5 +1,7 @@
 FROM node:20.20.1-alpine AS base
-RUN npm install pnpm -g
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9.1.0 --activate
 
 FROM base AS builder
 WORKDIR /app
@@ -24,4 +26,3 @@ COPY --from=builder --chown=nest:nodejs /app/node_modules ./node_modules
 USER nest
 
 CMD ["node", "dist/main"]
-

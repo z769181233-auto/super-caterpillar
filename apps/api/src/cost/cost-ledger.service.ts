@@ -35,6 +35,12 @@ export class CostLedgerService {
     private readonly billingService: BillingService
   ) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   /**
    * P18-2-FIX: Robustly resolve jobId or dedupeKey from event
    */
@@ -113,10 +119,23 @@ export class CostLedgerService {
         return { deduped: false, amountDeducted: 0, status: 'BILLING_REJECTED_JOB_NOT_SUCCEEDED' };
       }
 
+      if (!job.organizationId) {
+        this.logger.error({
+          msg: 'BILLING_REJECTED_ORGANIZATION_ID_MISSING',
+          jobId: job.id,
+          projectId: e.projectId,
+        });
+        return {
+          deduped: false,
+          amountDeducted: 0,
+          status: 'BILLING_REJECTED_ORGANIZATION_ID_MISSING',
+        };
+      }
+
       await this.billingService.consumeCredits(
         e.projectId,
         e.userId,
-        job.organizationId || 'missing',
+        job.organizationId,
         e.costAmount,
         `BILLING_V3:${e.jobType}`,
         job.id
@@ -137,21 +156,45 @@ export class CostLedgerService {
   /**
    * 查询项目的所有成本记录
    */
-  async getProjectCosts(projectId: string) {
+  private async getAllProjectCosts(projectId: string) {
     return this.prisma.billingLedger.findMany({
       where: { projectId: projectId },
       orderBy: { createdAt: 'desc' },
     });
   }
 
+  async getProjectCosts(projectId: string, page = 1, pageSize = 50) {
+    const normalizedPage = Math.max(1, page);
+    const normalizedPageSize = Math.min(100, Math.max(1, pageSize));
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.billingLedger.findMany({
+        where: { projectId },
+        orderBy: { createdAt: 'desc' },
+        skip: (normalizedPage - 1) * normalizedPageSize,
+        take: normalizedPageSize,
+      }),
+      this.prisma.billingLedger.count({
+        where: { projectId },
+      }),
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: normalizedPage,
+        pageSize: normalizedPageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / normalizedPageSize)),
+      },
+    };
+  }
+
   /**
    * 获取项目成本汇总
    */
   async getProjectCostSummary(projectId: string) {
-    const rows = await this.prisma.billingLedger.findMany({
-      where: { projectId: projectId },
-    });
-    // amount is BigInt, cast to Number for legacy API response
+    const rows = await this.getAllProjectCosts(projectId);
+    // amount is BigInt; cast to Number for the current public response shape
     const total = rows.reduce((s, r) => s + Number(r.amount) / 100, 0);
 
     return {
@@ -166,11 +209,11 @@ export class CostLedgerService {
    * 按Job类型分组统计
    */
   async getCostByJobType(projectId: string) {
-    const costs = await this.getProjectCosts(projectId);
+    const costs = await this.getAllProjectCosts(projectId);
 
     const byType = costs.reduce(
       (acc, cost) => {
-        const type = cost.billingState || 'UNKNOWN';
+        const type = this.asNonEmptyString(cost.billingState) ?? 'MISSING_BILLING_STATE';
         if (!acc[type]) {
           acc[type] = { count: 0, total: 0 };
         }

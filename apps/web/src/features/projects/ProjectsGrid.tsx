@@ -5,7 +5,7 @@ import { ProjectCard } from './ProjectCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTranslations } from 'next-intl';
-import type { ProjectCardView } from './mock';
+import type { ProjectCardView } from './adapters';
 
 interface ProjectsGridProps {
   projects: ProjectCardView[];

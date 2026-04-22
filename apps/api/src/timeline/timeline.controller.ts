@@ -12,8 +12,9 @@ import { JobService } from '../job/job.service';
 import { JobType } from 'database';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('timeline')
 export class TimelineController {
   constructor(private readonly jobService: JobService) {}
@@ -23,7 +24,12 @@ export class TimelineController {
   async createPreview(@Body() body: any, @Req() req: any) {
     // 1. Validate Payload
     const { projectId, ...timelineData } = body;
-    if (!projectId) throw new BadRequestException('projectId is required');
+    if (!projectId || typeof projectId !== 'string') throw new BadRequestException('projectId is required and must be a string');
+    
+    // P1 Security: Prevent Path Traversal by white-listing projectId format
+    if (!/^[a-zA-Z0-9_\-]+$/.test(projectId)) {
+      throw new BadRequestException('Invalid projectId format (alphanumeric and underscores/hyphens only)');
+    }
     if (
       !timelineData.shots ||
       !Array.isArray(timelineData.shots) ||
@@ -48,7 +54,9 @@ export class TimelineController {
     // 3. Persist Timeline Data (Contract with Processor: expects file)
     // Path: .runtime/timelines/<projectId>/<uuid>.json
     const runtimeDir = path.resolve(process.cwd(), '.runtime');
-    const storageKeyRaw = `timelines/${projectId}/${randomUUID()}.json`;
+    // P0 Security: Break path traversal taint by taking basename of validated projectId
+    const safeProjectId = path.basename(projectId);
+    const storageKeyRaw = `timelines/${safeProjectId}/${randomUUID()}.json`;
     const absPath = path.join(runtimeDir, storageKeyRaw);
 
     try {

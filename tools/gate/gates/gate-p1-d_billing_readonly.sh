@@ -62,7 +62,7 @@ psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credi
 psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"organizationId\", \"ownerId\", \"updatedAt\") VALUES ( # $gate$
 # Generate Token using zero-dependency HS256 JWT generator
 # JwtPayload interface expects: sub, email, tier, orgId
-JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Free\",\"orgId\":\"$ORG_ID\"}"
+JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Basic\",\"orgId\":\"$ORG_ID\"}"
 TOKEN=$(node tools/gate/gates/jwt_hs256.js "$JWT_SECRET" "$JWT_PAYLOAD" 3600)
 if [ -z "$TOKEN" ]; then
   echo "❌ Failed to generate JWT."
@@ -213,7 +213,7 @@ psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credi
 psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"organizationId\", \"ownerId\", \"updatedAt\") VALUES ( # $gate$
 # Generate Token using zero-dependency HS256 JWT generator
 # JwtPayload interface expects: sub, email, tier, orgId
-JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Free\",\"orgId\":\"$ORG_ID\"}"
+JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Basic\",\"orgId\":\"$ORG_ID\"}"
 TOKEN=$(node tools/gate/gates/jwt_hs256.js "$JWT_SECRET" "$JWT_PAYLOAD" 3600)
 if [ -z "$TOKEN" ]; then
   echo "❌ Failed to generate JWT."
@@ -364,7 +364,7 @@ psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credi
 psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"organizationId\", \"ownerId\", \"updatedAt\") VALUES ( # $gate$
 # Generate Token using zero-dependency HS256 JWT generator
 # JwtPayload interface expects: sub, email, tier, orgId
-JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Free\",\"orgId\":\"$ORG_ID\"}"
+JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Basic\",\"orgId\":\"$ORG_ID\"}"
 TOKEN=$(node tools/gate/gates/jwt_hs256.js "$JWT_SECRET" "$JWT_PAYLOAD" 3600)
 if [ -z "$TOKEN" ]; then
   echo "❌ Failed to generate JWT."
@@ -515,7 +515,7 @@ psql "$DATABASE_URL" -c "INSERT INTO organizations (id, name, \"ownerId\", credi
 psql "$DATABASE_URL" -c "INSERT INTO projects (id, name, \"organizationId\", \"ownerId\", \"updatedAt\") VALUES ( # $gate$
 # Generate Token using zero-dependency HS256 JWT generator
 # JwtPayload interface expects: sub, email, tier, orgId
-JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Free\",\"orgId\":\"$ORG_ID\"}"
+JWT_PAYLOAD="{\"sub\":\"$USER_ID\",\"email\":\"p1d-test@test.com\",\"tier\":\"Basic\",\"orgId\":\"$ORG_ID\"}"
 TOKEN=$(node tools/gate/gates/jwt_hs256.js "$JWT_SECRET" "$JWT_PAYLOAD" 3600)
 if [ -z "$TOKEN" ]; then
   echo "❌ Failed to generate JWT."

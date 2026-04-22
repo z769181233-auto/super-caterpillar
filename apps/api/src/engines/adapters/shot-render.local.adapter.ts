@@ -3,11 +3,8 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import * as path from 'path';
 import * as fs from 'fs';
 import * as fsp from 'fs/promises';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import * as crypto from 'crypto';
-
-const execAsync = promisify(exec);
+import { execAsync } from '../../../../../packages/shared/os_exec';
 export class ShotRenderLocalAdapter implements EngineAdapter {
   public readonly name = 'shot_render_local';
   private readonly logger = new Logger(ShotRenderLocalAdapter.name);
@@ -88,9 +85,19 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
           this.logger.log(`[ShotRenderLocal] Generating placeholder image: ${placeholderPath}`);
           // Use ffmpeg to generate a simple solid color PNG
           try {
-            await execAsync(
-              `ffmpeg -f lavfi -i color=c=blue:s=1280x720:d=1 -vframes 1 "${placeholderPath}" -y`
-            );
+            const placeholderRes = await execAsync('ffmpeg', [
+              '-f',
+              'lavfi',
+              '-i',
+              'color=c=blue:s=1280x720:d=1',
+              '-vframes',
+              '1',
+              '-y',
+              placeholderPath,
+            ]);
+            if (placeholderRes.code !== 0) {
+              throw new Error(placeholderRes.stderr || 'placeholder ffmpeg failed');
+            }
           } catch (e: any) {
             this.logger.error(`[ShotRenderLocal] Failed to generate placeholder: ${e.message}`);
             throw new Error(`[ShotRenderLocal] Placeholder generation failed: ${e.message}`);
@@ -134,24 +141,45 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
           zoompanFilter = `zoompan=z='min(zoom+0.0015,1.15)':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=150:s=1920x1080:fps=30`;
       }
 
-      const ffmpegCmd = [
-        `ffmpeg -hide_banner -y`,
-        `-loop 1 -i "${sourceImagePath}"`,
-        `-f lavfi -i "anullsrc=r=44100:cl=stereo"`,
-        `-shortest`,
-        `-vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,${zoompanFilter}"`,
-        `-t 5`,
-        `-c:v libx264 -pix_fmt yuv420p -crf 18 -preset slow`,
-        `-c:a aac -b:a 192k`,
-        `"${absOutputPath}"`,
-      ].join(' ');
+      const ffmpegArgs = [
+        '-hide_banner',
+        '-y',
+        '-loop',
+        '1',
+        '-i',
+        sourceImagePath,
+        '-f',
+        'lavfi',
+        '-i',
+        'anullsrc=r=44100:cl=stereo',
+        '-shortest',
+        '-vf',
+        `scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,${zoompanFilter}`,
+        '-t',
+        '5',
+        '-c:v',
+        'libx264',
+        '-pix_fmt',
+        'yuv420p',
+        '-crf',
+        '18',
+        '-preset',
+        'slow',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '192k',
+        absOutputPath,
+      ];
 
-      this.logger.log(`[ShotRenderLocal] Executing FFmpeg: ${ffmpegCmd}`);
+      this.logger.log(`[ShotRenderLocal] Executing FFmpeg: ffmpeg ${ffmpegArgs.join(' ')}`);
 
-      await execAsync(ffmpegCmd, {
-        maxBuffer: 1024 * 1024 * 10, // 10MB Buffer
-        timeout: 60000, // 60s Timeout
+      const renderRes = await execAsync('ffmpeg', ffmpegArgs, {
+        timeoutMs: 60000,
       });
+      if (renderRes.code !== 0) {
+        throw new Error(renderRes.stderr || `ffmpeg exited with code ${renderRes.code}`);
+      }
 
       this.logger.log(`[ShotRenderLocal] FFmpeg execution completed.`);
 
@@ -164,9 +192,19 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
       }
 
       // Validation 2: Black frame detection
-      const blackDetectCmd = `ffmpeg -i "${absOutputPath}" -vf "blackdetect=d=0.1:pix_th=0.1" -f null - 2>&1`;
-      const { stderr } = await execAsync(blackDetectCmd);
-      if (stderr.includes('black_start:0') && stderr.includes('black_end:5')) {
+      const blackDetectRes = await execAsync('ffmpeg', [
+        '-i',
+        absOutputPath,
+        '-vf',
+        'blackdetect=d=0.1:pix_th=0.1',
+        '-f',
+        'null',
+        '-',
+      ]);
+      if (
+        blackDetectRes.stderr.includes('black_start:0') &&
+        blackDetectRes.stderr.includes('black_end:5')
+      ) {
         throw new Error(`[ShotRenderLocal] Black video detected! The entire output is black.`);
       }
 

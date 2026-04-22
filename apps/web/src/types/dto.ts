@@ -8,7 +8,7 @@ export interface JobDTO {
   engineKey?: string | null;
   projectId?: string | null;
   createdAt?: string | null;
-  result?: any;
+  result?: Record<string, unknown> | null;
 }
 
 export interface ListJobsResponse {

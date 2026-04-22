@@ -11,7 +11,6 @@ import {
 import { CE06EngineSelector } from '@scu/engines-ce06';
 import { CE06Input, CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
-import * as util from 'util';
 import * as fs from 'fs';
 import { Readable } from 'stream';
 import { parseNovelStream } from './processors/stream-parser';
@@ -35,14 +34,21 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
     timestamp: new Date().toISOString(),
     ...data,
   };
-  const logMessage = JSON.stringify(logEntry);
-  if (level === 'error') {
-    process.stderr.write(util.format(logMessage) + '\n');
-  } else if (level === 'warn') {
-    process.stdout.write(util.format(logMessage) + '\n');
-  } else {
-    process.stdout.write(util.format(logMessage) + '\n');
-  }
+  void logEntry;
+}
+
+interface FailFastError extends Error {
+  blockingReason?: string;
+  nextAction?: string;
+}
+
+function createMissingStructureMarkersError(): FailFastError {
+  const error = new Error(
+    'Novel analysis requires explicit chapter/episode markers; synthetic fallback structure is disabled'
+  ) as FailFastError;
+  error.blockingReason = 'NOVEL_STRUCTURE_MARKERS_MISSING';
+  error.nextAction = 'USE_CE06_OR_ADD_CHAPTER_MARKERS';
+  return error;
 }
 
 /**
@@ -51,13 +57,16 @@ function logStructured(level: 'info' | 'warn' | 'error', data: Record<string, an
  */
 export function basicTextSegmentation(
   rawText: string,
-  projectId: string
+  projectId: string,
+  options?: { allowSyntheticStructure?: boolean }
 ): AnalyzedProjectStructure {
   const lines = rawText.split(/\r?\n/);
+  const allowSyntheticStructure = options?.allowSyntheticStructure === true;
 
   const episodes: AnalyzedEpisode[] = [];
   let currentEpisode: AnalyzedEpisode | null = null;
   let currentScene: AnalyzedScene | null = null;
+  let detectedStructureMarker = false;
 
   let episodeIndex = 0;
   let sceneIndex = 0;
@@ -138,6 +147,7 @@ export function basicTextSegmentation(
 
     const episodeMatch = line.match(episodePattern) || line.match(seasonPattern);
     if (episodeMatch) {
+      detectedStructureMarker = true;
       // 新 Episode (忽略 Season 差异，直接作为 Episode)
       flushScene();
       flushEpisode();
@@ -166,51 +176,8 @@ export function basicTextSegmentation(
   flushScene();
   flushEpisode();
 
-  // 如果仍然一个 Episode 都没有，说明整本书没有标题，整体作为 1 集处理
-  if (episodes.length === 0 && rawText.trim()) {
-    const fallbackEpisode: AnalyzedEpisode = {
-      index: 1,
-      title: '默认剧集',
-      summary: '',
-      scenes: [],
-    };
-
-    const paragraphs = rawText.split(/\n\s*\n+/);
-    let fallbackSceneIndex = 0;
-    for (const para of paragraphs) {
-      const trimmed = para.trim();
-      if (!trimmed) continue;
-
-      fallbackSceneIndex += 1;
-      const scene: AnalyzedScene = {
-        index: fallbackSceneIndex,
-        title: `场景 ${fallbackSceneIndex}`,
-        summary: trimmed.slice(0, 50),
-        shots: [],
-      };
-
-      const sentences = trimmed.split(/(?<=[。！？!?])/);
-      let fallbackShotIndex = 0;
-      for (const sentence of sentences) {
-        const text = sentence.trim();
-        if (!text) continue;
-        fallbackShotIndex += 1;
-        scene.shots.push({
-          index: fallbackShotIndex,
-          title: `镜头 ${fallbackShotIndex}`,
-          summary: text.slice(0, 50),
-          text,
-        });
-      }
-
-      if (scene.shots.length > 0) {
-        fallbackEpisode.scenes.push(scene);
-      }
-    }
-
-    if (fallbackEpisode.scenes.length > 0) {
-      episodes.push(fallbackEpisode);
-    }
+  if (!detectedStructureMarker && rawText.trim() && !allowSyntheticStructure) {
+    throw createMissingStructureMarkersError();
   }
 
   let episodesCount = episodes.length;
@@ -399,7 +366,7 @@ export async function applyAnalyzedStructureToDatabase(
 
   // S3-B Fine-Tune: 使用事务确保原子性
   const executeInTransaction = async (tx: Prisma.TransactionClient) => {
-    const nSource = await tx.novel.findFirst({ where: { projectId } });
+    const nSource = await tx.novel.findUnique({ where: { projectId } });
     const hasEpisodes = episodes && episodes.length > 0;
 
     if (hasEpisodes) {
@@ -410,8 +377,8 @@ export async function applyAnalyzedStructureToDatabase(
       });
 
       for (const epData of episodes) {
-        const existingEp = await tx.episode.findFirst({
-          where: { projectId, index: epData.index },
+        const existingEp = await tx.episode.findUnique({
+          where: { projectId_index: { projectId, index: epData.index } },
         });
         let currentEp = existingEp
           ? await tx.episode.update({
@@ -432,8 +399,10 @@ export async function applyAnalyzedStructureToDatabase(
         else stats.created.episodes++;
 
         for (const sceneData of epData.scenes) {
-          const existingScene = await tx.scene.findFirst({
-            where: { projectId, episodeId: currentEp.id, sceneIndex: sceneData.index },
+          const existingScene = await tx.scene.findUnique({
+            where: {
+              episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
+            },
           });
           let currentScene = existingScene
             ? await tx.scene.update({
@@ -455,8 +424,8 @@ export async function applyAnalyzedStructureToDatabase(
 
           const shotsToCreate: any[] = [];
           for (const shotData of sceneData.shots) {
-            const existingShot = await tx.shot.findFirst({
-              where: { sceneId: currentScene.id, index: shotData.index },
+            const existingShot = await tx.shot.findUnique({
+              where: { sceneId_index: { sceneId: currentScene.id, index: shotData.index } },
             });
             const shotParams = { sourceText: shotData.text || '' };
             const shotBase = {
@@ -563,15 +532,6 @@ export async function applyAnalyzedStructureToDatabase(
       },
       orderBy: { index: 'asc' },
     });
-    console.log(
-      `[S3-B Debug] Found ${existingSeasons.length} existing seasons for project ${projectId} (Index search)`
-    );
-    if (existingSeasons.length > 0) {
-      console.log(
-        `[S3-B Debug] Season 0 ID: ${existingSeasons[0].id}, Index: ${existingSeasons[0].index}`
-      );
-    }
-
     // S3-B Fine-Tune: 记录结构对比日志
     logStructured('info', {
       action: 'STRUCTURE_COMPARISON_START',
@@ -631,8 +591,8 @@ export async function applyAnalyzedStructureToDatabase(
       }
       finalSeasons.push(createdSeason);
 
-      const nVolume = await tx.novelVolume.findFirst({
-        where: { projectId, index: season.index },
+      const nVolume = await tx.novelVolume.findUnique({
+        where: { projectId_index: { projectId, index: season.index } },
       });
       if (nVolume) {
         await tx.novelVolume.update({
@@ -1005,12 +965,6 @@ export function mapCE06OutputToProjectStructure(
   projectId: string,
   output: CE06NovelParsingOutput | CE06Output
 ): AnalyzedProjectStructure {
-  console.log('[S3-B Debug] mapCE06 Output Keys:', Object.keys(output || {}));
-  if ((output as any).seasons)
-    console.log('[S3-B Debug] Seasons length:', (output as any).seasons.length);
-  if ((output as any).volumes)
-    console.log('[S3-B Debug] Volumes length:', (output as any).volumes.length);
-
   const seasons: AnalyzedSeason[] = [];
   let sIndex = 1;
 
@@ -1062,7 +1016,6 @@ export function mapCE06OutputToProjectStructure(
   // Pre-process chunks if flat ScanChunk[]
   let volumes = (output as any).volumes || [];
   if (volumes.length > 0 && typeof volumes[0].volume_index === 'number' && !volumes[0].chapters) {
-    console.log('[S3-B Debug] Detected flat ScanChunk array. Grouping by volume...');
     const groupedVolumes = new Map<number, any>();
     for (const chunk of volumes) {
       if (!groupedVolumes.has(chunk.volume_index)) {
@@ -1077,9 +1030,9 @@ export function mapCE06OutputToProjectStructure(
         summary: '', // Scan phase doesn't have summary
         scenes: [
           {
-            // Create dummy scene to hold content if needed, but SCAN has no content?
+            // Create placeholder scene to hold content if needed, but SCAN has no content?
             // ScanChunk has start/end offset.
-            // We need to create a dummy scene OR fetch content?
+            // We need to create a placeholder scene OR fetch content?
             // Wait, SCAN phase output doesn't have CONTENT?
             // ce06RealEngine (SCAN) returns only metadata.
             // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."
@@ -1134,7 +1087,7 @@ export function mapCE06OutputToProjectStructure(
             shots: [],
           };
 
-          // S3-B Fix: Even in legacy volumes check for shots if present (rare but possible)
+          // S3-B Fix: Even in already-structured volumes, still honor embedded shots if present.
           if (
             (sc as any).shots &&
             Array.isArray((sc as any).shots) &&
@@ -1294,7 +1247,9 @@ async function processWithChunkMode(
 
   const llmProvider = process.env.ANTHROPIC_API_KEY ? 'anthropic' : 'openai';
   const llmModel =
-    llmProvider === 'anthropic' ? 'claude-3-5-sonnet-20241022' : 'gpt-4-turbo-preview';
+    llmProvider === 'anthropic'
+      ? 'claude-3-5-sonnet-20241022'
+      : process.env.OPENAI_MODEL || 'gpt-4o';
 
   const llmProcessor = new LLMBatchProcessor({
     provider: llmProvider as any,
@@ -1570,32 +1525,27 @@ export async function processNovelAnalysisJob(
 
       // 从 structure 中提取 billing_usage（如果有）
       const billingUsage = (structure as any).billing_usage;
+      const orgId = (job as any).organizationId;
 
       if (billingUsage && billingUsage.totalTokens > 0) {
-        await costLedger.recordCE06Billing({
+        if (!orgId) {
+          throw new Error(`[BILLING] Organization ID is required for job ${jobId}`);
+        }
+        await costLedger.recordEngineBilling({
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
           traceId: (job as any).traceId || `trace-${jobId}`,
           projectId,
           userId: (job as any).userId || 'system',
-          orgId: (job as any).organizationId || 'default-org',
+          orgId,
           attempt: (job as any).attempts ?? 1,
           engineKey: 'ce06_novel_parsing',
           billingUsage,
         });
       } else {
-        process.stdout.write(
-          util.format(
-            `[BILLING] ⚠️  Job ${jobId} missing billing_usage, skipping cost record (non-fatal)`
-          ) + '\n'
-        );
       }
     } catch (billingError: any) {
       // 计费失败不阻塞主流程
-      process.stderr.write(
-        util.format(`[BILLING] ❌ Failed to record cost for job ${jobId}:`, billingError.message) +
-          '\n'
-      );
     }
 
     // 返回统计信息，将写入 Job.output
@@ -1604,7 +1554,7 @@ export async function processNovelAnalysisJob(
       scenes_count: structure.stats.scenesCount,
       shots_count: structure.stats.shotsCount,
       episodes_count: structure.stats.episodesCount,
-      // For V3 Contract compatibility
+      // 保留 seasons 输出，兼容仍消费旧结构的调用方
       stats: structure.stats,
       cost_ledger_count: 1, // Assume 1 ledger record per analysis job
     };
@@ -1672,9 +1622,8 @@ async function getNovelContentStream(
   }
 
   // Fallback: Check project's latest novel
-  const latestNovel = await prisma.novel.findFirst({
+  const latestNovel = await prisma.novel.findUnique({
     where: { projectId },
-    orderBy: { createdAt: 'desc' },
   });
   if (latestNovel) {
     async function* generateChapters() {
@@ -1698,10 +1647,6 @@ async function getNovelContentStream(
     return Readable.from(generateChapters());
   }
 
-  interface FailFastError extends Error {
-    blockingReason?: string;
-    nextAction?: string;
-  }
   const error = new Error('Missing source text') as FailFastError;
   error.blockingReason = 'NO_SOURCE_TEXT';
   error.nextAction = 'PROVIDE_TEXT';

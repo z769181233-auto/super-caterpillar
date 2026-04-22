@@ -13,16 +13,45 @@ import { EngineConfigStoreService } from '../engine/engine-config-store.service'
 import { EngineRegistry } from '../engine/engine-registry.service';
 import { PRODUCTION_MODE } from '@scu/config';
 import { JobType, JobEngineBindingStatus } from 'database';
+import {
+  getRuntimeDbTimeoutMs,
+  isCiOrGateContextEnv,
+  isPrismaFallbackEligibleError,
+  withRuntimePgClient,
+} from '../prisma/pg-runtime.util';
 
 @Injectable()
 export class JobEngineBindingService {
   private readonly logger = new Logger(JobEngineBindingService.name);
+  private readonly prismaQueryTimeoutMs = getRuntimeDbTimeoutMs('query');
 
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(EngineConfigStoreService) private readonly engineConfigStore: EngineConfigStoreService,
     @Inject(EngineRegistry) private readonly engineRegistry: EngineRegistry
   ) {}
+
+  private isPrismaTimeout(error: unknown): boolean {
+    return isPrismaFallbackEligibleError(error);
+  }
+
+  private isCiOrGateContext(): boolean {
+    return isCiOrGateContextEnv();
+  }
+
+  private shouldAllowEngineBindingPgFallback(): boolean {
+    return this.isCiOrGateContext() || process.env.FORCE_ENGINE_BINDING_PG_FALLBACK === '1';
+  }
+
+  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
+    return withRuntimePgClient(
+      {
+        applicationName: 'super-caterpillar-api-engine-binding',
+        queryTimeoutMs: this.prismaQueryTimeoutMs,
+      },
+      fn
+    );
+  }
 
   /**
    * 根据 JobType 选择 Engine
@@ -40,21 +69,47 @@ export class JobEngineBindingService {
     }
 
     // Stage3-A: 根据 engineKey（即 code）查找 Engine，只选 isActive=true
-    const engine = await this.prisma.engine.findFirst({
-      where: {
-        engineKey, // Stage13: 使用 engineKey 字段查找
-        isActive: true,
-        enabled: true,
-      },
-    });
+    let engine: any;
+    try {
+      engine = await this.prisma.engine.findUnique({
+        where: { engineKey },
+      });
+    } catch (error) {
+      if (!this.isPrismaTimeout(error)) {
+        throw error;
+      }
+      if (!this.shouldAllowEngineBindingPgFallback()) {
+        this.logger.error(
+          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+        );
+        throw error;
+      }
+      this.logger.warn(
+        `[JobEngineBindingService.selectEngineForJob] Prisma degraded for ${engineKey}; using pg fallback`
+      );
+      engine = await this.withPgClient(async (client) => {
+        const result = await client.query(
+          `
+            SELECT id, code, "engineKey", mode, "defaultVersion"
+            FROM engines
+            WHERE "engineKey" = $1
+              AND "isActive" = true
+              AND enabled = true
+            LIMIT 1
+          `,
+          [engineKey]
+        );
+        return result.rows[0] ?? null;
+      });
+    }
 
-    if (!engine) {
+    if (!engine || engine.isActive !== true || engine.enabled !== true) {
       this.logger.warn(`No active engine found for engineKey: ${engineKey}, jobType: ${jobType}`);
       return null;
     }
 
     // PHASE-C: Zero-Bypass Gate (Stub physical block)
-    // 生产模式下只允许 http 模式的真实引擎，禁止 local/mock/default_*
+    // 生产模式下只允许 http 模式的真实引擎，禁止本地或非标引擎
     if (PRODUCTION_MODE) {
       const isStub = !engine.mode || engine.mode !== 'http';
       const isDefault = engine.code.startsWith('default_') || engineKey.startsWith('default_');
@@ -83,14 +138,48 @@ export class JobEngineBindingService {
     // 可选：选择特定版本（如果有默认版本）
     let engineVersionId: string | undefined;
     if (engine.defaultVersion) {
-      const version = await this.prisma.engineVersion.findFirst({
-        where: {
-          engineId: engine.id,
-          versionName: engine.defaultVersion,
-          enabled: true,
-        },
-      });
+      let version: any;
+      try {
+        version = await this.prisma.engineVersion.findUnique({
+          where: {
+            engineId_versionName: {
+              engineId: engine.id,
+              versionName: engine.defaultVersion,
+            },
+          },
+        });
+      } catch (error) {
+        if (!this.isPrismaTimeout(error)) {
+          throw error;
+        }
+        if (!this.shouldAllowEngineBindingPgFallback()) {
+          this.logger.error(
+            `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}, but pg fallback is disabled outside CI/test/gate unless FORCE_ENGINE_BINDING_PG_FALLBACK=1`
+          );
+          throw error;
+        }
+        this.logger.warn(
+          `[JobEngineBindingService.selectEngineForJob] Prisma degraded for engine version ${engine.defaultVersion}; using pg fallback`
+        );
+        version = await this.withPgClient(async (client) => {
+          const result = await client.query(
+            `
+              SELECT id
+              FROM engine_versions
+              WHERE "engineId" = $1
+                AND "versionName" = $2
+                AND enabled = true
+              LIMIT 1
+            `,
+            [engine.id, engine.defaultVersion]
+          );
+          return result.rows[0] ?? null;
+        });
+      }
       if (version) {
+        if (version.enabled !== true) {
+          return null;
+        }
         engineVersionId = version.id;
       }
     }

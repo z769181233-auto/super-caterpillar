@@ -1,6 +1,7 @@
-import { AssetOwnerType, AssetType } from 'database';
+import { AssetOwnerType, AssetStatus, AssetType, JobType } from 'database';
 import { config } from '@scu/config';
 import * as path from 'path';
+import { createHash } from 'crypto';
 import { promises as fsp } from 'fs';
 import { spawn } from 'child_process';
 import { ProcessorContext } from '../types/processor-context';
@@ -23,9 +24,11 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   if (!episodeId) {
     throw new Error(`[EpisodeRender] Missing episodeId in payload`);
   }
+  if (!projectId) {
+    throw new Error(`[EpisodeRender] Missing projectId in payload`);
+  }
 
-  const logger = ctx.logger || console;
-  logger.log(`[EpisodeRender] Processing episodeId=${episodeId} job=${job.id}`);
+  ctx.logger?.log?.(`[EpisodeRender] Processing episodeId=${episodeId} job=${job.id}`);
 
   // 1. Fetch Scenes in Order (Sort by sceneIndex)
   const scenes = await prisma.scene.findMany({
@@ -42,21 +45,21 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   const videoAssets = await prisma.asset.findMany({
     where: {
       ownerId: { in: sceneIds },
-      ownerType: AssetOwnerType.SCENE, // Matches enum
+      ownerType: AssetOwnerType.SCENE,
       type: AssetType.VIDEO,
-      status: 'GENERATED',
+      status: { in: [AssetStatus.GENERATED, AssetStatus.PUBLISHED] },
     },
   });
 
   // Map SceneID -> Asset
-  const assetMap = new Map<String, any>();
+  const assetMap = new Map<string, (typeof videoAssets)[number]>();
   videoAssets.forEach((a) => assetMap.set(a.ownerId, a));
 
   // 3. Validate Completeness
   const sceneVideoPaths: string[] = [];
   const missingScenes: string[] = [];
 
-  const storageRoot = (config as any).storageRoot;
+  const storageRoot = (config as unknown as { storageRoot: string }).storageRoot;
 
   for (const scene of scenes) {
     const asset = assetMap.get(scene.id);
@@ -93,7 +96,9 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   const outputPath = path.resolve(storageRoot, outputRelative);
   await ensureDir(path.dirname(outputPath));
 
-  logger.log(`[EpisodeRender] Concatenating ${sceneVideoPaths.length} scenes to ${outputPath}`);
+  ctx.logger?.log?.(
+    `[EpisodeRender] Concatenating ${sceneVideoPaths.length} scenes to ${outputPath}`
+  );
 
   const args = ['-f', 'concat', '-safe', '0', '-i', concatListPath, '-c', 'copy', '-y', outputPath];
 
@@ -108,14 +113,14 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
   });
 
   // 5. Persistence
-  // WORKAROUND: Use AssetOwnerType.SCENE for Episode Asset until schema migration
-
   const stat = await fsp.stat(outputPath);
+  const outputBuffer = await fsp.readFile(outputPath);
+  const checksum = createHash('sha256').update(outputBuffer).digest('hex');
 
   const asset = await prisma.asset.upsert({
     where: {
       ownerType_ownerId_type: {
-        ownerType: AssetOwnerType.SCENE, // Hack: Should be EPISODE
+        ownerType: AssetOwnerType.EPISODE,
         ownerId: episodeId,
         type: AssetType.VIDEO,
       },
@@ -127,7 +132,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
     },
     create: {
       projectId,
-      ownerType: AssetOwnerType.SCENE, // Hack
+      ownerType: AssetOwnerType.EPISODE,
       ownerId: episodeId,
       type: AssetType.VIDEO,
       storageKey: outputRelative,
@@ -141,7 +146,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
     where: { assetId: asset.id },
     update: {
       storageKey: outputRelative,
-      checksum: 'SKIP', // TODO
+      checksum,
       status: 'PUBLISHED',
     },
     create: {
@@ -149,7 +154,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
       episodeId,
       assetId: asset.id,
       storageKey: outputRelative,
-      checksum: 'SKIP',
+      checksum,
       status: 'PUBLISHED',
     },
   });
@@ -160,7 +165,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
       traceId,
       projectId,
       jobId: job.id,
-      jobType: 'EPISODE_RENDER' as any,
+      jobType: JobType.EPISODE_RENDER,
       engineKey: 'episode_assembler',
       status: 'SUCCESS',
       auditTrail: {
@@ -171,7 +176,7 @@ export async function processEpisodeRenderJob(ctx: ProcessorContext) {
         sizeBytes: stat.size,
       },
     })
-    .catch((e) => console.error('Audit failed', e));
+    .catch(() => {});
 
   return {
     status: 'SUCCEEDED',

@@ -1,0 +1,373 @@
+name: Review Policy Trace Ops Nightly
+
+on:
+  schedule:
+    - cron: '20 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: review-policy-trace-ops
+  cancel-in-progress: false
+
+jobs:
+  review-policy-trace-ops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REVIEW_POLICY_TRACE_SKIP_EXPORT: ${{ vars.REVIEW_POLICY_TRACE_SKIP_EXPORT }}
+      REVIEW_POLICY_TRACE_PAGES_BASE_URL: ${{ vars.REVIEW_POLICY_TRACE_PAGES_BASE_URL }}
+      REVIEW_POLICY_TRACE_ALERT_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_ALERT_WEBHOOK_URL }}
+      REVIEW_POLICY_TRACE_SLACK_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_SLACK_WEBHOOK_URL }}
+      REVIEW_POLICY_TRACE_DISCORD_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_DISCORD_WEBHOOK_URL }}
+      REVIEW_POLICY_TRACE_TEAMS_WEBHOOK_URL: ${{ secrets.REVIEW_POLICY_TRACE_TEAMS_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.1.0
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20.20.1'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Prepare database runtime artifacts
+        if: env.REVIEW_POLICY_TRACE_SKIP_EXPORT != 'true'
+        run: |
+          set -euo pipefail
+          pnpm --filter database prisma:generate
+          pnpm --filter database build
+
+      - name: Run review policy trace ops
+        run: |
+          set -euo pipefail
+          OPS_ARGS=()
+          if [ "${REVIEW_POLICY_TRACE_SKIP_EXPORT:-}" = "true" ]; then
+            OPS_ARGS+=(--skip-export)
+          fi
+
+          set +e
+          pnpm dataset:review-policy-trace:ops "${OPS_ARGS[@]}"
+          OPS_EXIT=$?
+          set -e
+
+          STATUS_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json"
+          SUMMARY_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_summary.md"
+          TREND_PANEL_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_trend_panel.md"
+          GOVERNANCE_OVERVIEW_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_governance_overview.md"
+          GOVERNANCE_DASHBOARD_HTML_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_governance_dashboard.html"
+          PORTAL_APP_HTML_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_portal_app.html"
+          CONSUMER_INDEX_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_index.json"
+          CONSUMER_BUNDLE_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_bundle.json"
+          CONSUMER_FEED_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_feed.json"
+          DISTRIBUTION_CHANNELS_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_distribution_channels.json"
+          LATEST_POINTER_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_latest_pointer.json"
+          ATOM_FEED_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_atom_feed.xml"
+          STATUS_BADGE_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_status_badge.json"
+          HOSTED_SITE_DIR="apps/api/storage/exports/film_ir_dataset/review_policy_trace_pages"
+
+          if [ ! -f "$STATUS_PATH" ]; then
+            echo "Missing status file: $STATUS_PATH" >&2
+            exit 1
+          fi
+
+          if [ ! -f "$SUMMARY_PATH" ]; then
+            echo "Missing summary file: $SUMMARY_PATH" >&2
+            exit 1
+          fi
+
+          echo "### Review Policy Trace Ops" >> "$GITHUB_STEP_SUMMARY"
+          cat "$SUMMARY_PATH" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$TREND_PANEL_PATH" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "$TREND_PANEL_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$GOVERNANCE_OVERVIEW_PATH" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            cat "$GOVERNANCE_OVERVIEW_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$GOVERNANCE_DASHBOARD_HTML_PATH" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Governance dashboard artifact: $GOVERNANCE_DASHBOARD_HTML_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$PORTAL_APP_HTML_PATH" ]; then
+            echo "Portal app artifact: $PORTAL_APP_HTML_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$CONSUMER_INDEX_PATH" ]; then
+            echo "Consumer index artifact: $CONSUMER_INDEX_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$CONSUMER_BUNDLE_PATH" ]; then
+            echo "Consumer bundle artifact: $CONSUMER_BUNDLE_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$CONSUMER_FEED_PATH" ]; then
+            echo "Consumer feed artifact: $CONSUMER_FEED_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$DISTRIBUTION_CHANNELS_PATH" ]; then
+            echo "Distribution channels artifact: $DISTRIBUTION_CHANNELS_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$LATEST_POINTER_PATH" ]; then
+            echo "Latest pointer artifact: $LATEST_POINTER_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$ATOM_FEED_PATH" ]; then
+            echo "Atom feed artifact: $ATOM_FEED_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$STATUS_BADGE_PATH" ]; then
+            echo "Status badge artifact: $STATUS_BADGE_PATH" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -d "$HOSTED_SITE_DIR" ]; then
+            echo "Hosted site bundle: $HOSTED_SITE_DIR" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          exit "$OPS_EXIT"
+
+      - name: Evaluate review policy trace alerts
+        if: always()
+        run: |
+          set -euo pipefail
+          STATUS_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json"
+
+          node <<'EOF'
+          const fs = require('node:fs');
+          const status = JSON.parse(fs.readFileSync(process.env.STATUS_PATH, 'utf8'));
+          const alerts = Array.isArray(status.alerts) ? status.alerts : [];
+          const failAlerts = alerts.filter((alert) => alert.severity === 'fail');
+          const warnAlerts = alerts.filter((alert) => alert.severity === 'warn');
+
+          for (const alert of warnAlerts) {
+            console.log(`::warning title=Review Policy Trace Alert::${alert.key}: ${alert.message} (current=${alert.current}, threshold=${alert.threshold})`);
+          }
+
+          for (const alert of failAlerts) {
+            console.log(`::error title=Review Policy Trace Failure::${alert.key}: ${alert.message} (current=${alert.current}, threshold=${alert.threshold})`);
+          }
+
+          if (warnAlerts.length > 0 || failAlerts.length > 0) {
+            console.log('### Review Policy Trace Alerts');
+            console.log('');
+            for (const alert of [...failAlerts, ...warnAlerts]) {
+              console.log(`- [${alert.severity.toUpperCase()}] ${alert.key}: ${alert.message} (current=${alert.current}, threshold=${alert.threshold})`);
+            }
+          }
+
+          if (failAlerts.length > 0 || status.status === 'FAIL') {
+            process.exitCode = 1;
+          }
+          EOF
+        env:
+          STATUS_PATH: apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json
+
+      - name: Send external review policy trace notification
+        if: always()
+        run: |
+          set -euo pipefail
+          PAYLOAD_PATH="apps/api/storage/exports/film_ir_dataset/review_policy_trace_notification_payload.json"
+
+          if [ ! -f "$PAYLOAD_PATH" ]; then
+            echo "Missing notification payload: $PAYLOAD_PATH" >&2
+            exit 1
+          fi
+
+          node <<'EOF'
+          const fs = require('node:fs');
+
+          (async () => {
+            const webhookUrl = process.env.REVIEW_POLICY_TRACE_ALERT_WEBHOOK_URL;
+            const slackWebhookUrl = process.env.REVIEW_POLICY_TRACE_SLACK_WEBHOOK_URL;
+            const discordWebhookUrl = process.env.REVIEW_POLICY_TRACE_DISCORD_WEBHOOK_URL;
+            const teamsWebhookUrl = process.env.REVIEW_POLICY_TRACE_TEAMS_WEBHOOK_URL;
+            const payload = JSON.parse(fs.readFileSync(process.env.PAYLOAD_PATH, 'utf8'));
+            const shouldNotify = payload.alert_status !== 'PASS' || payload.status === 'FAIL';
+            const requests = [];
+
+            if (!shouldNotify) {
+              console.log('No warn/fail alerts present; skipping external notification.');
+              return;
+            }
+
+            if (webhookUrl) {
+              requests.push(
+                fetch(webhookUrl, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    text: `[review_policy_trace] ${payload.alert_status}/${payload.status} @ ${payload.checkedAt}`,
+                    payload,
+                  }),
+                }).then(async (response) => {
+                  if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Generic webhook responded with ${response.status}: ${text}`);
+                  }
+                }),
+              );
+            }
+
+            if (slackWebhookUrl) {
+              requests.push(
+                fetch(slackWebhookUrl, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    text: payload.channels?.slack_webhook?.text ?? `[review_policy_trace] ${payload.alert_status}/${payload.status}`,
+                    attachments: [
+                      {
+                        color: payload.alert_status === 'FAIL' ? '#d92d20' : '#f79009',
+                        fields: [
+                          {
+                            title: 'Status',
+                            value: `${payload.alert_status}/${payload.status}`,
+                            short: true,
+                          },
+                          {
+                            title: 'Checked At',
+                            value: payload.checkedAt,
+                            short: true,
+                          },
+                          {
+                            title: 'Trace Rows',
+                            value: String(payload.metrics?.trace_row_count ?? 'n/a'),
+                            short: true,
+                          },
+                          {
+                            title: 'Timeline Events',
+                            value: String(payload.metrics?.timeline_event_count ?? 'n/a'),
+                            short: true,
+                          },
+                        ],
+                      },
+                    ],
+                  }),
+                }).then(async (response) => {
+                  if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Slack webhook responded with ${response.status}: ${text}`);
+                  }
+                }),
+              );
+            }
+
+            if (discordWebhookUrl) {
+              requests.push(
+                fetch(discordWebhookUrl, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    content: payload.channels?.discord_webhook?.content ?? `[review_policy_trace] ${payload.alert_status}/${payload.status}`,
+                  }),
+                }).then(async (response) => {
+                  if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Discord webhook responded with ${response.status}: ${text}`);
+                  }
+                }),
+              );
+            }
+
+            if (teamsWebhookUrl) {
+              requests.push(
+                fetch(teamsWebhookUrl, {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify({
+                    '@type': 'MessageCard',
+                    '@context': 'https://schema.org/extensions',
+                    summary: payload.channels?.teams_webhook?.summary ?? `[review_policy_trace] ${payload.alert_status}/${payload.status}`,
+                    themeColor: payload.alert_status === 'FAIL' ? 'D92D20' : 'F79009',
+                    title: payload.channels?.teams_webhook?.title ?? `[review_policy_trace] ${payload.alert_status}/${payload.status}`,
+                    sections: [
+                      {
+                        facts: [
+                          { name: 'Status', value: `${payload.alert_status}/${payload.status}` },
+                          { name: 'Checked At', value: payload.checkedAt },
+                          { name: 'Trace Rows', value: String(payload.metrics?.trace_row_count ?? 'n/a') },
+                          { name: 'Timeline Events', value: String(payload.metrics?.timeline_event_count ?? 'n/a') },
+                        ],
+                      },
+                    ],
+                  }),
+                }).then(async (response) => {
+                  if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`Teams webhook responded with ${response.status}: ${text}`);
+                  }
+                }),
+              );
+            }
+
+            if (requests.length === 0) {
+              console.log('No external webhook secrets configured; skipping external notification.');
+              return;
+            }
+
+            await Promise.all(requests);
+            console.log('External review policy trace notification sent.');
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          EOF
+        env:
+          PAYLOAD_PATH: apps/api/storage/exports/film_ir_dataset/review_policy_trace_notification_payload.json
+
+      - name: Upload review policy trace artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: review-policy-trace-ops
+          path: |
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_analysis.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_diff.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_alerts.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_governance_dashboard.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_governance_dashboard.html
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_portal_app.html
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_governance_overview.md
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_notification_payload.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_threshold_matrix.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_bundle.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_index.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_consumer_feed.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_distribution_channels.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_latest_pointer.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_atom_feed.xml
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_status_badge.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_pages
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_summary.md
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_ops_status.json
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_history.jsonl
+            apps/api/storage/exports/film_ir_dataset/review_policy_trace_trend_panel.md
+
+      - name: Upload GitHub Pages bundle
+        if: always() && vars.REVIEW_POLICY_TRACE_ENABLE_PAGES_DEPLOY == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/api/storage/exports/film_ir_dataset/review_policy_trace_pages
+
+  deploy-review-policy-trace-pages:
+    if: always() && vars.REVIEW_POLICY_TRACE_ENABLE_PAGES_DEPLOY == 'true'
+    needs: review-policy-trace-ops
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -6,6 +6,11 @@ import * as mammoth from 'mammoth';
 import EPub from 'epub2';
 import * as chardet from 'chardet';
 import * as iconv from 'iconv-lite';
+import {
+  isWithinNovelUploadRoot,
+  NOVEL_UPLOAD_ROOT,
+  resolveNovelUploadPath,
+} from './novel-upload-path.util';
 
 interface ParsedChapter {
   title: string;
@@ -29,39 +34,53 @@ export interface ParsedNovel {
 @Injectable()
 export class FileParserService {
   private readonly logger = new Logger(FileParserService.name);
+  private readonly MAX_PARSE_INPUT_LENGTH = 10000000; // 10MB limit for regex operations
+  private readonly TITLE_SANITIZE_REGEX = /[\(\（]\d+[\)\）]$|[-_]\s*副本$/;
+  private readonly AUTHOR_EXTRACT_REGEX = /作者[：:]\s*(.+)/;
+  private readonly ALLOWED_UPLOAD_DIR = NOVEL_UPLOAD_ROOT;
+
+  private isPathSafe(filePath: string): boolean {
+    return isWithinNovelUploadRoot(filePath);
+  }
   /**
    * 从文本中解析章节（简单规则：按 "第X章" 分割）
    * @param text 原始文本
    * @returns 章节列表
    */
   parseChaptersFromText(text: string): Array<{ title: string; content: string }> {
-    const chapters: Array<{ title: string; content: string }> = [];
-
-    // 匹配 "第X章" 或 "第一章" 等格式
-    const chapterPattern =
-      /(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?=第[一二三四五六七八九十\d]+章|$)/gs;
-    let match: RegExpExecArray | null;
-    let lastIndex = 0;
-
-    while ((match = chapterPattern.exec(text)) !== null) {
-      // 提取章节标题和内容
-      const fullMatch = match[0];
-      const titleMatch = fullMatch.match(/^(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?:\n|$)/);
-      const title = titleMatch ? titleMatch[1].trim() : `第${chapters.length + 1}章`;
-      const content = fullMatch.substring(titleMatch ? titleMatch[0].length : 0).trim();
-
-      if (content.length > 0) {
-        chapters.push({ title, content });
-      }
-      lastIndex = match.index + fullMatch.length;
+    // ReDoS Mitigation: Input length safeguard
+    if (text.length > this.MAX_PARSE_INPUT_LENGTH) {
+      this.logger.warn(`Input text too large for regex parsing: ${text.length}`);
+      return [{ title: 'Full Text (Safety Skip)', content: text.substring(0, 1000) }];
     }
 
-    // 如果没有找到章节标记，将整个文本作为一个章节
+    const chapters: Array<{ title: string; content: string }> = [];
+
+    // P1 Security: Avoid lookahead regex which is prone to ReDoS. 
+    // Use a simple split-and-process approach instead.
+    const parts = text.split(/(?=第[一二三四五六七八九十\d]+章[：:])/g);
+
+    for (const part of parts) {
+      const trimmedPart = part.trim();
+      if (!trimmedPart) continue;
+
+      const titleMatch = trimmedPart.match(/^(第[一二三四五六七八九十\d]+章[：:]\s*.+?)(?:\n|$)/);
+      if (titleMatch) {
+        const title = titleMatch[1].trim();
+        const content = trimmedPart.substring(titleMatch[0].length).trim();
+        chapters.push({ title, content });
+      } else if (chapters.length === 0) {
+        // Handle text before the first chapter
+        chapters.push({ title: '前言/第一章', content: trimmedPart });
+      } else {
+        // Append orphaned text to last chapter
+        chapters[chapters.length - 1].content += '\n\n' + trimmedPart;
+      }
+    }
+
+    // Default to a single chapter if nothing split
     if (chapters.length === 0 && text.trim().length > 0) {
-      chapters.push({
-        title: '第1章',
-        content: text.trim(),
-      });
+      chapters.push({ title: '第1章', content: text.trim() });
     }
 
     return chapters;
@@ -73,16 +92,16 @@ export class FileParserService {
    * @param fileType 文件类型
    * @param fileName 原始文件名（用于提取作品名）
    */
-  async parseFile(filePath: string, fileType: string, fileName?: string): Promise<ParsedNovel> {
+  async parseFile(storedFileKey: string, fileType: string, fileName?: string): Promise<ParsedNovel> {
     switch (fileType.toLowerCase()) {
       case 'txt':
-        return this.parseTxt(filePath, fileName);
+        return this.parseTxt(storedFileKey, fileName);
       case 'docx':
-        return this.parseDocx(filePath, fileName);
+        return this.parseDocx(storedFileKey, fileName);
       case 'epub':
-        return this.parseEpub(filePath);
+        return this.parseEpub(storedFileKey);
       case 'md':
-        return this.parseMarkdown(filePath, fileName);
+        return this.parseMarkdown(storedFileKey, fileName);
       default:
         throw new BadRequestException(`Unsupported file type: ${fileType}`);
     }
@@ -98,11 +117,10 @@ export class FileParserService {
     // 去除扩展名
     const nameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
 
-    // 去除常见后缀（如：_v1, -副本, (1) 等）
+    // ReDoS Mitigation: Pre-sanitize with simpler patterns
     const cleaned = nameWithoutExt
-      .replace(/[_\-]\s*v?\d+$/i, '') // 去除 _v1, -1 等
-      .replace(/[\(（]\d+[\)）]$/, '') // 去除 (1), （1）等
-      .replace(/\s*[-_]\s*副本$/, '') // 去除 -副本
+      .replace(/[_\-]\s*v?\d+$/i, '') 
+      .replace(this.TITLE_SANITIZE_REGEX, '')
       .trim();
 
     return cleaned || undefined;
@@ -135,7 +153,7 @@ export class FileParserService {
 
       // 提取作者：支持 "作者：" 格式
       if (!metadata.author) {
-        const authorMatch = trimmed.match(/作者[：:]\s*(.+)/);
+        const authorMatch = trimmed.match(this.AUTHOR_EXTRACT_REGEX);
         if (authorMatch) {
           metadata.author = authorMatch[1].trim();
         }
@@ -155,11 +173,16 @@ export class FileParserService {
    * 按章节标题拆分（支持多种章节格式）
    * 自动识别编码，统一转换为 UTF-8
    */
-  private async parseTxt(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    this.logger.log(`Parsing TXT file: ${filePath}`);
+  private async parseTxt(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
+    this.logger.log(`Parsing TXT file: ${safePath}`);
 
     // 读取文件为 Buffer（必须用 Buffer，不能直接用 utf-8）
-    const buffer = await fs.readFile(filePath);
+    // P0 Security: Ensure path is safe before reading
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+    const buffer = await fs.readFile(safePath);
     this.logger.log(`File size: ${buffer.length} bytes`);
 
     // 使用 chardet 检测编码
@@ -309,8 +332,12 @@ export class FileParserService {
    * 解析 DOCX 文件
    * 识别一级标题作为章节
    */
-  private async parseDocx(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const result = await mammoth.extractRawText({ path: filePath });
+  private async parseDocx(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+    const result = await mammoth.extractRawText({ path: safePath });
     const content = result.value;
 
     // 简单处理：按段落拆分，识别一级标题
@@ -382,9 +409,14 @@ export class FileParserService {
    * 解析 EPUB 文件
    * 读取 metadata 和章节列表
    */
-  private async parseEpub(filePath: string): Promise<ParsedNovel> {
+  private async parseEpub(storedFileKey: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+
     return new Promise((resolve, reject) => {
-      const epub = new EPub(filePath);
+      const epub = new EPub(safePath);
 
       epub.on('end', async () => {
         try {
@@ -453,8 +485,13 @@ export class FileParserService {
    * 解析 Markdown 文件
    * 按一级标题（#）拆分章节
    */
-  private async parseMarkdown(filePath: string, fileName?: string): Promise<ParsedNovel> {
-    const content = await fs.readFile(filePath, 'utf-8');
+  private async parseMarkdown(storedFileKey: string, fileName?: string): Promise<ParsedNovel> {
+    const safePath = resolveNovelUploadPath(storedFileKey);
+    // P0 Security: Ensure path is safe before reading
+    if (!this.isPathSafe(safePath)) {
+      throw new BadRequestException('Security violation: Attempt to read outside upload directory');
+    }
+    const content = await fs.readFile(safePath, 'utf-8');
     const lines = content.split('\n');
 
     const chapters: ParsedChapter[] = [];

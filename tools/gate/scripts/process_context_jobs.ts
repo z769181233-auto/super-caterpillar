@@ -1,0 +1,77 @@
+import * as util from 'util';
+
+function log(msg: string) {
+  process.stdout.write(util.format(msg) + '\n');
+}
+
+async function main() {
+  const jobIds = process.argv.slice(2).filter(Boolean);
+  if (jobIds.length === 0) {
+    throw new Error('Usage: tsx tools/gate/scripts/process_context_jobs.ts <jobId> [jobId...]');
+  }
+
+  // Avoid recursively starting the internal interval worker inside this helper.
+  process.env.ENABLE_INTERNAL_JOB_WORKER = 'false';
+  process.env.JOB_WORKER_ENABLED = 'false';
+  process.env.IGNORE_ENV_FILE = process.env.IGNORE_ENV_FILE || 'true';
+  process.env.NODE_ENV = process.env.NODE_ENV || 'staging';
+  process.env.ENGINE_DEFAULT = process.env.ENGINE_DEFAULT || 'ce06_novel_parsing';
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'gate-ci-jwt-secret';
+  process.env.JWT_REFRESH_SECRET =
+    process.env.JWT_REFRESH_SECRET || 'gate-ci-jwt-refresh-secret';
+  process.env.API_SECRET_KEY =
+    process.env.API_SECRET_KEY || 'gate-ci-api-secret-key-32-characters-min';
+  process.env.HMAC_SECRET_KEY =
+    process.env.HMAC_SECRET_KEY || 'gate-ci-hmac-secret-key-32-characters-min';
+  process.env.DISABLE_REDIS = process.env.DISABLE_REDIS || 'true';
+  process.env.REDIS_URL = process.env.REDIS_URL || 'disabled';
+  process.env.API_PORT = process.env.API_PORT || '3000';
+  process.env.API_HOST = process.env.API_HOST || '127.0.0.1';
+
+  log('[GATE_DRIVER] bootstrap start');
+  const [{ NestFactory }, { AppModule }, { JobService }, { PrismaService }] = await Promise.all([
+    import('@nestjs/core'),
+    import('../../../apps/api/src/app.module'),
+    import('../../../apps/api/src/job/job.service'),
+    import('../../../apps/api/src/prisma/prisma.service'),
+  ]);
+  log('[GATE_DRIVER] imports loaded');
+
+  log('[GATE_DRIVER] creating app context');
+  const app = await NestFactory.createApplicationContext(AppModule, {
+    logger: ['error', 'warn'],
+  });
+  log('[GATE_DRIVER] app context ready');
+
+  try {
+    log('[GATE_DRIVER] resolving services');
+    const jobService = app.get(JobService);
+    const prisma = app.get(PrismaService);
+    log('[GATE_DRIVER] services resolved');
+
+    for (const jobId of jobIds) {
+      log(`[GATE_DRIVER] processing job ${jobId}`);
+      await jobService.processJob(jobId);
+
+      const job = await prisma.shotJob.findUnique({
+        where: { id: jobId },
+        select: { id: true, status: true, lastError: true },
+      });
+
+      if (!job) {
+        throw new Error(`Job not found after processing: ${jobId}`);
+      }
+
+      log(
+        `[GATE_DRIVER] job=${job.id} status=${job.status} lastError=${job.lastError ?? '<none>'}`
+      );
+    }
+  } finally {
+    await app.close();
+  }
+}
+
+main().catch((error) => {
+  process.stderr.write(`${error?.stack || error?.message || String(error)}\n`);
+  process.exit(1);
+});

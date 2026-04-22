@@ -1,12 +1,24 @@
 import axios from 'axios';
-import crypto from 'crypto';
+import { webcrypto } from 'crypto';
 import { env } from '@scu/config';
 
-export function sign(payload: string) {
-  return crypto
-    .createHmac('sha256', env.workerApiSecret || '')
-    .update(payload)
-    .digest('hex');
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+const textEncoder = new TextEncoder();
+let signingKeyPromise: Promise<NodeCryptoKey> | null = null;
+
+export async function sign(payload: string): Promise<string> {
+  if (!signingKeyPromise) {
+    signingKeyPromise = webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(env.workerApiSecret || ''),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+  }
+  const signingKey = await signingKeyPromise;
+  const signature = await webcrypto.subtle.sign('HMAC', signingKey, textEncoder.encode(payload));
+  return Buffer.from(signature).toString('hex');
 }
 
 export const http = axios.create({

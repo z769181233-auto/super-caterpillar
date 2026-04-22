@@ -1,4 +1,4 @@
-import { PrismaClient, ShotReviewStatus } from 'database';
+import { AssetOwnerType, AssetType, JobType, PrismaClient, ShotReviewStatus } from 'database';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 import { spawn } from 'child_process';
@@ -8,20 +8,38 @@ import * as path from 'path';
 import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ChildProcess } from 'child_process';
-import * as util from 'util';
 import { config } from '@scu/config';
 
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 const activeProcesses = new Set<ChildProcess>();
+const workerConfig = config as typeof config & { storageRoot: string };
+
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getStringArrayField(source: JsonRecord, key: string): string[] {
+  const value = source[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+function getRecordField(source: JsonRecord, key: string): JsonRecord | undefined {
+  const value = source[key];
+  return isRecord(value) ? value : undefined;
+}
 
 export function cleanupVideoRenderProcesses() {
-  process.stdout.write(
-    util.format(`[VideoRender] Cleaning up ${activeProcesses.size} active processes...`) + '\n'
-  );
   for (const cp of activeProcesses) {
     try {
       cp.kill('SIGKILL');
-    } catch (e) { }
+    } catch (e) {}
   }
   activeProcesses.clear();
 }
@@ -45,17 +63,21 @@ export async function processVideoRenderJob(
   const jobStartTime = Date.now();
   const jobId = job.id;
   const traceId = job.traceId || `trace-${jobId}`;
-  const payload = job.payload as any;
-  const pipelineRunId = payload.pipelineRunId;
+  const payload = isRecord(job.payload) ? job.payload : {};
+  const pipelineRunId = getStringField(payload, 'pipelineRunId');
+  const projectId = getStringField(payload, 'projectId') ?? job.projectId;
 
   // 1. Root & Storage Resolver
-  const storageRoot = (config as any).storageRoot;
+  const storageRoot = workerConfig.storageRoot;
   const storage = new LocalStorageAdapter(storageRoot);
 
   // 2. Shot Ownership & Approval Gate
-  const shotId = payload?.shotId;
+  const shotId = getStringField(payload, 'shotId');
   if (!shotId && !pipelineRunId)
     throw new Error(`[VIDEO_RENDER] shotId or pipelineRunId is required.`);
+  if (!projectId) {
+    throw new Error('[VIDEO_RENDER] projectId is required');
+  }
 
   if (PRODUCTION_MODE && shotId) {
     const shot = await prisma.shot.findUnique({
@@ -74,9 +96,8 @@ export async function processVideoRenderJob(
   }
 
   // 3. Frame Aggregation logic
-  let frameKeys = (payload.frameKeys as string[]) || [];
+  let frameKeys = getStringArrayField(payload, 'frameKeys');
   if (pipelineRunId && frameKeys.length === 0) {
-    console.log(`[Stage1] Aggregating frames for pipelineRunId: ${pipelineRunId}`);
     const renderJobs = await prisma.shotJob.findMany({
       where: {
         payload: { path: ['pipelineRunId'], equals: pipelineRunId },
@@ -87,13 +108,23 @@ export async function processVideoRenderJob(
       orderBy: { createdAt: 'asc' },
     });
     frameKeys = renderJobs
-      .map((j) => (j.result as any)?.storageKey || (j.result as any)?.imageKey)
-      .filter(Boolean);
+      .map((j) => {
+        const result = isRecord(j.result) ? j.result : undefined;
+        return result
+          ? getStringField(result, 'storageKey') || getStringField(result, 'imageKey')
+          : undefined;
+      })
+      .filter((key): key is string => typeof key === 'string');
     if (frameKeys.length === 0)
       throw new Error(`No frames found for pipelineRunId: ${pipelineRunId}`);
   }
 
   if (frameKeys.length === 0) throw new Error('No frame keys provided');
+
+  const ownerId = shotId || pipelineRunId;
+  if (!ownerId) {
+    throw new Error('[VIDEO_RENDER] ownerId is required');
+  }
 
   // 4. Workspace Preparation
   const workspaceDir = path.resolve(process.cwd(), 'workspace', jobId);
@@ -103,35 +134,30 @@ export async function processVideoRenderJob(
 
   try {
     // 5. Build FFmpeg Logic
-    const fps = payload.fps || 24;
+    const fps = typeof payload.fps === 'number' ? payload.fps : 24;
     const cmd = 'ffmpeg';
     let args: string[] = [];
 
     // Helper to resolve paths from multiple locations (Fix for mixed storage roots)
     const resolveAssetPath = async (key: string) => {
-      console.log(`[ResolvePath] Resolving key: ${key}. CWD: ${process.cwd()}`);
       // 1. Try Storage Root
       const p1 = storage.getAbsolutePath(key);
       if (await fileExists(p1)) {
-        console.log(`[ResolvePath] Found at Storage Root: ${p1}`);
         return p1;
       }
 
       // 2. Try Repo Root (for apps/workers/.runtime assets)
       const p2 = path.resolve(process.cwd(), '../../', key);
       if (await fileExists(p2)) {
-        console.log(`[ResolvePath] Found at Repo Root: ${p2}`);
         return p2;
       }
 
       // 3. Try CWD relative
       const p3 = path.resolve(process.cwd(), key);
       if (await fileExists(p3)) {
-        console.log(`[ResolvePath] Found at CWD: ${p3}`);
         return p3;
       }
 
-      console.log(`[ResolvePath] FAILED to find file. Defaulting to: ${p1}`);
       return p1; // Default to storage path even if missing
     };
 
@@ -201,11 +227,13 @@ export async function processVideoRenderJob(
     }
 
     // PLAN-3: Audio Mixing Logic
-    const audioTrack = payload.audioTrack;
+    const audioTrack = getRecordField(payload, 'audioTrack');
     if (audioTrack) {
-      console.log(`[VIDEO_RENDER] Found audio track: ${JSON.stringify(audioTrack)}`);
       // Resolve Audio Path (support storageKey or direct path)
-      const audioKey = audioTrack.storageKey || audioTrack.mixed || audioTrack.path;
+      const audioKey =
+        getStringField(audioTrack, 'storageKey') ||
+        getStringField(audioTrack, 'mixed') ||
+        getStringField(audioTrack, 'path');
       if (audioKey) {
         const audioPath = await resolveAssetPath(audioKey);
         if (await fileExists(audioPath)) {
@@ -222,14 +250,11 @@ export async function processVideoRenderJob(
 
           // Ensure audio codec
           args.push('-c:a', 'aac');
-        } else {
-          console.warn(`[VIDEO_RENDER] Audio file not found at: ${audioPath}`);
         }
       }
     }
 
     // 6. Spawn FFmpeg
-    console.log(`[VIDEO_RENDER] Executing: ${cmd} ${args.join(' ')}`);
     await new Promise<void>((resolve, reject) => {
       const proc = spawn(cmd, args);
       activeProcesses.add(proc);
@@ -251,16 +276,16 @@ export async function processVideoRenderJob(
     const asset = await prisma.asset.upsert({
       where: {
         ownerType_ownerId_type: {
-          ownerType: 'SHOT',
-          ownerId: shotId || pipelineRunId,
-          type: 'VIDEO',
+          ownerType: AssetOwnerType.SHOT,
+          ownerId,
+          type: AssetType.VIDEO,
         },
       },
       create: {
-        projectId: job.projectId || 'system',
-        ownerType: 'SHOT',
-        ownerId: shotId || pipelineRunId,
-        type: 'VIDEO',
+        projectId,
+        ownerType: AssetOwnerType.SHOT,
+        ownerId,
+        type: AssetType.VIDEO,
         status: 'GENERATED',
         storageKey: 'temp/pending',
         checksum: checksum,
@@ -291,7 +316,6 @@ export async function processVideoRenderJob(
     if (!(await fileExists(hlsDir))) await ensureDir(hlsDir);
     const hlsOutput = path.join(hlsDir, 'master.m3u8');
 
-    console.log(`[VIDEO_RENDER] Generating HLS...`);
     await new Promise<void>((resolve, reject) => {
       // Simple HLS: Split into 10s segments
       const args = [
@@ -344,9 +368,9 @@ export async function processVideoRenderJob(
     await apiClient
       .postAuditLog({
         traceId,
-        projectId: job.projectId || 'system',
+        projectId,
         jobId,
-        jobType: 'VIDEO_RENDER',
+        jobType: JobType.VIDEO_RENDER,
         engineKey: 'ffmpeg',
         status: 'SUCCESS',
         latencyMs: latency,
@@ -384,17 +408,17 @@ export async function processVideoRenderJob(
 
       // Write ffprobe evidence
       await fsp.writeFile(ffprobeAbs, ffprobeOut, 'utf-8');
-      console.log(`[VIDEO_RENDER] ffprobe evidence stored: ${ffprobeAbs}`);
-    } catch (e: any) {
+    } catch (e: unknown) {
       // ✅ Real Baseline: ffprobe must exist, so fail hard.
-      throw new Error(`[VIDEO_RENDER] ffprobe evidence generation failed: ${e.message}`);
+      throw new Error(
+        `[VIDEO_RENDER] ffprobe evidence generation failed: ${e instanceof Error ? e.message : String(e)}`
+      );
     }
 
     // 7.2 Publish (Stage-1 Real Baseline)
     const shouldPublish = payload?.publish === true;
     if (shouldPublish) {
-      const projectId = payload.projectId || job.projectId;
-      const episodeId = payload.episodeId;
+      const episodeId = getStringField(payload, 'episodeId');
       if (!projectId || !episodeId) {
         throw new Error(`[VIDEO_RENDER] publish=true but missing projectId/episodeId`);
       }
@@ -433,9 +457,6 @@ export async function processVideoRenderJob(
         data: { status: 'PUBLISHED' },
       });
 
-      console.log(
-        `[VIDEO_RENDER] PublishedVideo set to PUBLISHED: projectId=${projectId} episodeId=${episodeId} pipelineRunId=${pipelineRunId} dedupeKey=${dedupeKey}`
-      );
     }
 
     // 9. Return Result

@@ -1,4 +1,4 @@
-import { calculateTotalCredits, getModelPrice } from '@scu/billing/model-price-table';
+import { calculateTotalCredits, getModelPrice, DURATION_PRICE_TABLE } from '@scu/billing/model-price-table';
 import { costLedgerRecordsTotal } from '@scu/observability';
 import type { EngineBillingUsage } from '@scu/engines-ce06';
 import { ApiClient } from '../api-client';
@@ -74,9 +74,11 @@ export class CostLedgerService {
       finalCost = cost;
     } else if (totalTokens > 0 && billingUsage?.model) {
       finalCost = calculateTotalCredits(totalTokens, billingUsage.model);
+    } else {
+      // P1: Add duration-based pricing
+      finalCost += (gpuSeconds * DURATION_PRICE_TABLE.GPU_SECOND);
+      finalCost += (cpuSeconds * DURATION_PRICE_TABLE.CPU_SECOND);
     }
-    // TODO: Add pricing logic for gpuSeconds/cpuSeconds if not provided in 'cost'
-    // For now, we assume caller or PricingRouter provides 'cost' for time-based metrics
 
     // Idempotency Key Strategy: runId:engineKey or jobId (fallback)
     const idempotencyKey =
@@ -171,43 +173,4 @@ export class CostLedgerService {
     }
   }
 
-  /**
-   * Deprecated/Wrapper methods for backward compatibility
-   */
-  async recordGenericBilling(params: {
-    jobId: string;
-    jobType: string;
-    traceId: string;
-    projectId: string;
-    userId: string;
-    orgId: string;
-    attempt?: number;
-    billingUsage: EngineBillingUsage;
-  }): Promise<void> {
-    // Map to new generic method
-    return this.recordEngineBilling({
-      ...params,
-      engineKey: 'generic', // Default fallback
-    });
-  }
-
-  async recordCE06Billing(params: any) {
-    // P0 Hotfix: Use correct engineKey instead of 'generic'
-    return this.recordEngineBilling({
-      ...params,
-      engineKey: params.engineKey || 'ce06_novel_parsing',
-    });
-  }
-
-  async recordCE03Billing(params: any) {
-    return this.recordGenericBilling(params);
-  }
-
-  async recordCE04Billing(params: any) {
-    return this.recordGenericBilling(params);
-  }
-
-  async recordShotRenderBilling(params: any) {
-    return this.recordGenericBilling(params);
-  }
 }

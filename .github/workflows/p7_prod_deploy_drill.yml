@@ -3,6 +3,9 @@ name: p7-prod-deploy-drill
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   p7-prod-deploy-drill:
     runs-on: ubuntu-latest
@@ -12,12 +15,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup Node 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20.20.1'
           cache: 'pnpm'
@@ -44,7 +48,7 @@ jobs:
           bash tools/run_p7_prod_deploy_drill.sh
 
       - name: Upload P7 evidence artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: p7_prod_deploy_drill_evidence
           path: /tmp/p7_prod_deploy_drill_evidence

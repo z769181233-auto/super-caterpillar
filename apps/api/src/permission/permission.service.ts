@@ -12,6 +12,59 @@ import {
 export class PermissionService {
   private readonly logger = new Logger(PermissionService.name);
 
+  private getFallbackRolePermissions(roleName: string): string[] {
+    const normalized = roleName.trim().toUpperCase();
+    switch (normalized) {
+      case 'OWNER':
+      case 'ADMIN':
+        return [
+          SystemPermissions.AUTH,
+          SystemPermissions.PROJECT_CREATE,
+          SystemPermissions.NOVEL_UPLOAD,
+          SystemPermissions.NOVEL_READ,
+          SystemPermissions.NOVEL_UPDATE,
+          SystemPermissions.STRUCTURE_READ,
+          SystemPermissions.BILLING_VIEW,
+          SystemPermissions.BILLING_MANAGE,
+          SystemPermissions.MODEL_USE_BASE,
+          ProjectPermissions.PROJECT_READ,
+          ProjectPermissions.PROJECT_WRITE,
+          ProjectPermissions.PROJECT_UPDATE,
+          ProjectPermissions.PROJECT_GENERATE,
+          ProjectPermissions.PROJECT_REVIEW,
+          ProjectPermissions.PROJECT_PUBLISH,
+          ProjectPermissions.PROJECT_DELETE,
+        ];
+      case 'CREATOR':
+      case 'EDITOR':
+        return [
+          SystemPermissions.AUTH,
+          SystemPermissions.PROJECT_CREATE,
+          SystemPermissions.NOVEL_UPLOAD,
+          SystemPermissions.NOVEL_READ,
+          SystemPermissions.NOVEL_UPDATE,
+          SystemPermissions.STRUCTURE_READ,
+          SystemPermissions.BILLING_VIEW,
+          SystemPermissions.MODEL_USE_BASE,
+          ProjectPermissions.PROJECT_READ,
+          ProjectPermissions.PROJECT_WRITE,
+          ProjectPermissions.PROJECT_UPDATE,
+          ProjectPermissions.PROJECT_GENERATE,
+          ProjectPermissions.PROJECT_REVIEW,
+        ];
+      case 'VIEWER':
+        return [
+          SystemPermissions.AUTH,
+          SystemPermissions.NOVEL_READ,
+          SystemPermissions.STRUCTURE_READ,
+          SystemPermissions.BILLING_VIEW,
+          ProjectPermissions.PROJECT_READ,
+        ];
+      default:
+        return [];
+    }
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly cache: PermissionCache
@@ -59,7 +112,22 @@ export class PermissionService {
       })
       .catch(() => []);
 
-    const perms = Array.from(new Set(rolePerms.map((rp: any) => rp.permission.key))) as string[];
+    const dbPerms = rolePerms.map((rp: any) => rp.permission.key) as string[];
+    const fallbackPerms =
+      dbPerms.length === 0
+        ? Array.from(
+            new Set(
+              Array.from(roleNames).flatMap((roleName) => this.getFallbackRolePermissions(roleName)),
+            ),
+          )
+        : [];
+    const perms = Array.from(new Set([...dbPerms, ...fallbackPerms])) as string[];
+
+    if (dbPerms.length === 0 && fallbackPerms.length > 0) {
+      this.logger.warn(
+        `[PERM_FALLBACK] userId=${userId} contextOrg=${contextOrgId ?? 'N/A'} roles=[${Array.from(roleNames).join(',')}] perms=[${fallbackPerms.join(',')}]`,
+      );
+    }
 
     await this.cache.setUserPerms(cacheKey, perms);
     return perms;

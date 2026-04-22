@@ -58,22 +58,6 @@
       "enabled": true
     },
     {
-      "engineKey": "http_mock_novel_analysis",
-      "adapterName": "http",
-      "adapterType": "http",
-      "httpConfig": {
-        "baseUrl": "http://localhost:19000",
-        "path": "/invoke",
-        "timeoutMs": 5000,
-        "authMode": "none"
-      },
-      "modelInfo": {
-        "modelName": "mock-novel-analysis",
-        "version": "test"
-      },
-      "enabled": true
-    },
-    {
       "engineKey": "http_real_novel_analysis",
       "adapterName": "http",
       "adapterType": "http",

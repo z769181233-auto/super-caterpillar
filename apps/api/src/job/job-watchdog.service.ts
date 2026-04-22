@@ -1,6 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { isDatabaseUnavailableError } from '../prisma/pg-runtime.util';
 import { JobStatus, JobType } from 'database';
 import { env } from '@scu/config';
 
@@ -17,11 +18,16 @@ export class JobWatchdogService {
   private readonly workerHeartbeatTimeoutMs: number;
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {
-    console.log('[DEBUG_BOOT] JobWatchdogService constructor start');
     // P2 修复：统一使用 packages/config 的配置
     this.jobTimeoutMs = (env as any).jobWatchdogTimeoutMs ?? 3600000;
     this.workerHeartbeatTimeoutMs = env.workerHeartbeatTimeoutMs || 30000;
-    console.log('[DEBUG_BOOT] JobWatchdogService constructor end');
+  }
+
+  private shouldSkipForDatabaseUnavailability(error: any): boolean {
+    if (process.env.NODE_ENV === 'production') {
+      return false;
+    }
+    return isDatabaseUnavailableError(error);
   }
 
   /**
@@ -187,6 +193,12 @@ export class JobWatchdogService {
         `[JobWatchdog] Recovery completed: ${recoveredCount} recovered, ${failedCount} failed`
       );
     } catch (error) {
+      if (this.shouldSkipForDatabaseUnavailability(error)) {
+        this.logger.warn(
+          `[JobWatchdog] Skipping recovery scan in non-production due to database unavailability: ${error.message}`
+        );
+        return;
+      }
       // P0 修复：生产日志禁止输出 stack
       const isProd = process.env.NODE_ENV === 'production';
       if (isProd) {

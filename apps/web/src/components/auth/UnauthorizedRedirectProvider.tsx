@@ -24,11 +24,6 @@ function isUnauthorizedError(err: unknown): boolean {
   return msg === 'Unauthorized' || msg.includes('Unauthorized');
 }
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __scu_onUnauthorized: undefined | ((from?: string) => void);
-}
-
 export default function UnauthorizedRedirectProvider() {
   const router = useRouter();
   const pathname = usePathname();

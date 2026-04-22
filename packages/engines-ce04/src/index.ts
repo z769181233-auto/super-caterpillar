@@ -23,7 +23,7 @@ export type CE04Output = {
 
 export class CE04EngineSelector {
     async invoke(input: CE04Input): Promise<CE04Output> {
-        return { ok: true, engine: "ce04-stub", input } as any;
+        throw new Error("CE04_STUB_REMOVED: Round 4 Sealing active. Use ce04RealEngine instead.");
     }
 }
 

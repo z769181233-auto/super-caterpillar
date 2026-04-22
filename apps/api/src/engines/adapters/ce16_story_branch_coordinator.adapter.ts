@@ -54,17 +54,9 @@ export class CE16StoryBranchCoordinatorAdapter implements EngineAdapter {
   }
 
   private async processLogic(payload: any): Promise<any> {
-    const branchId = payload.branchId || 'main';
-
-    return {
-      branchId,
-      consistencyCheck: true,
-      forkPoints: [{ id: 'fork_001', trigger: 'decision_a', resolution: 'branch_a_stable' }],
-      paradoxRiskScore: 0.02,
-      meta: {
-        engineVersion: 'ce16-stub-v1.0',
-        timestamp: new Date().toISOString(),
-      },
-    };
+    if (process.env.NODE_ENV === 'production' && process.env.GATE_MODE !== '1') {
+      throw new Error(`[ENGINE_UNAVAILABLE] CE16 Story Branch Coordinator implementation required.`);
+    }
+    throw new Error('[STUB_ERROR] CE16 Story Branch Coordinator is a STUB; real implementation missing.');
   }
 }

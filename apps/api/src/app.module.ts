@@ -14,7 +14,6 @@ import { JobModule } from './job/job.module';
 import { JobWorkerModule } from './job/job-worker.module';
 import { WorkerModule } from './worker/worker.module';
 import { OrchestratorModule } from './orchestrator/orchestrator.module';
-import { AutofillModule } from './autofill/autofill.module';
 import { NovelImportModule } from './novel-import/novel-import.module';
 import { EngineModule } from './engines/engine.module';
 import { EngineAdminModule } from './engine-admin/engine-admin.module';
@@ -34,6 +33,7 @@ import { AssetModule } from './asset/asset.module';
 import { MemoryModule } from './memory/memory.module';
 import { ShotDirectorModule } from './shot-director/shot-director.module';
 import { CEPipelineModule } from './ce-pipeline/ce-pipeline.module';
+import { FilmIRModule } from './film-ir/film-ir.module'; // ★ P1: Film IR 导演层模块
 import { HealthModule } from './health/health.module';
 import { OpsModule } from './ops/ops.module';
 import { AdminModule } from './admin/admin.module';
@@ -96,7 +96,6 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
 
     WorkerModule,
     OrchestratorModule,
-    AutofillModule,
     NovelImportModule,
     EngineModule,
     EngineAdminModule,
@@ -113,6 +112,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     AssetModule, // CE09: Media Security API
     MemoryModule, // CE07/CE08: Story Memory API
     ShotDirectorModule, // CE05: Director Control API
+    FilmIRModule,       // ★ P1: Film IR 导演中间语言模块
     CEPipelineModule, // P2-3: CE DAG Pipeline (CE06→CE03→CE04)
     TimelineModule, // CE11: Timeline Preview API
     QualityModule, // 质量指标写入模块（QualityMetricsWriter）

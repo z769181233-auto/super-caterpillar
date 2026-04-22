@@ -25,7 +25,9 @@ export class BudgetGuard implements CanActivate {
     const user = request.user;
     const organizationId = request.apiKeyOwnerOrgId || user?.organizationId;
 
-    if (!organizationId) return true;
+    if (!organizationId) {
+      throw new ForbiddenException('Organization context required for budget check');
+    }
 
     const { ratio, level } = await this.budgetService.getBudgetStatus(organizationId);
 

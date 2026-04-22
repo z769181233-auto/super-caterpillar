@@ -1,7 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { AuditInsightService } from './audit-insight.service';
 import { NovelInsightResponse, JobAuditResponse } from './audit-insight.dto';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('audit-insight')
 export class AuditInsightController {
   constructor(private readonly auditInsightService: AuditInsightService) {}

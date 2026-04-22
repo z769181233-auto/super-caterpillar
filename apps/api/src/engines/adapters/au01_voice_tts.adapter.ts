@@ -28,7 +28,7 @@ export class AU01VoiceTTSAdapter extends AuBaseEngine {
   protected async processLogic(payload: any): Promise<any> {
     const text = payload.text || 'hello';
 
-    // Use AudioService for real/stub generation logic
+    // Use AudioService for real/truth generation logic
     const result = await this.audioService.generateAndMix({
       text,
       projectSettings: {

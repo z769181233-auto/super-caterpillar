@@ -36,7 +36,9 @@ export class QualityScoreService {
    * @param attempt 当前尝试次数
    */
   async performScoring(shotId: string, traceId: string, attempt: number = 1) {
-    console.error(`Performing quality scoring for shot ${shotId}, attempt ${attempt}`);
+    this.logger.log(
+      `[QualityScoreService] performScoring shotId=${shotId} attempt=${attempt}`
+    );
 
     // 1. 获取基础数据 (Identity Score)
     const identityScoreRecord = await this.prisma.shotIdentityScore.findFirst({
@@ -107,12 +109,9 @@ export class QualityScoreService {
     }
 
     // 这里有一个更简单的路径：直接调用 identityService.scoreIdentityReal，前提是我们知道 targetAssetId
-    // 因为 performScoring 是后置聚合，identity score 应该已经由 Worker 算过一次 (Stub 或 Real)
-    // 如果 P15-0 中 Worker 已经切了 Real，那数据库里存的就是 Real 分数。
-    // 但 P16-0 要求 Shadow Mode：即 Worker 跑 Stub，这里 aggregated 时跑 Real 并写 signal？
-    // *修正*: QualityScoreService 是 aggregated service。如果 Worker 还没切 Real (Worker 跑的是 Stub)，
-    // 那么 shotIdentityScore 表里存的是 Stub 分数。
-    // 我们需要在这里 (QualityHook) 再次触发一次 Real 计算 (Shadow)？
+    // P16-HARD: performScoring is purely real-truth based.
+    // QualityScoreService aggregates real signals only.
+    // Rework trigger depends on REAL identity scoring pass/fail.
     // 这是一个 Resource Heavy 的操作。但根据 PLAN-1: "当 Shadow 或 Real 任一开启 时，计算 REAL 分数并写入 signals"
     // 是的，这意味着 API 侧要重算一次 (或 Worker 侧双写，但 Worker 逻辑改动大)。
     // 鉴于 P16-0 容错要求，在 API 侧重算比较安全。
@@ -133,7 +132,7 @@ export class QualityScoreService {
             );
           }
         } else {
-          // 如果连 Stub 记录都没有，无法计算
+          // 如果连前序评分记录都没有，无法计算
         }
       } catch (e: any) {
         realError = e.message;
@@ -150,8 +149,14 @@ export class QualityScoreService {
     }
 
     // 2. 物理审计 (Render Physical)
-    const renderAsset = await this.prisma.asset.findFirst({
-      where: { shotId, type: 'VIDEO' },
+    const renderAsset = await this.prisma.asset.findUnique({
+      where: {
+        ownerType_ownerId_type: {
+          ownerType: 'SHOT',
+          ownerId: shotId,
+          type: 'VIDEO',
+        },
+      },
     });
     const renderPhysicalPass = !!renderAsset;
 
@@ -176,7 +181,7 @@ export class QualityScoreService {
 
     // 4. 综合判定 (Verdict)
     const signals: any = {
-      identity_score: identityScore, // 可能是 Stub 也可能是 Real (取决于 ce23RealEnabled)
+      identity_score: identityScore, // Real Score in truth mode
       render_physical: renderPhysicalPass ? 1 : 0,
       audio_existence: audioPass ? 1 : 0,
     };
@@ -195,8 +200,8 @@ export class QualityScoreService {
     if (forceDisable) {
       signals.ce23_kill_switch = true;
       signals.ce23_kill_switch_source = 'env';
-      // P0 Patch: Explicitly set mode to legacy
-      signals.ce23_real_mode = 'legacy';
+      // P0 Patch: Explicitly mark the system as running in historical-score mode
+      signals.ce23_real_mode = 'historical';
 
       // P0 Patch: Safety check - ensure no real/shadow artifacts leaked
       delete signals.identity_score_real_ppv64;
@@ -219,7 +224,7 @@ export class QualityScoreService {
       }
       signals.ce23_real_threshold_used = identityThreshold;
     } else {
-      // Legacy Stub mode
+      // P16-HARD: Absolute truth required.
       identityThreshold = 0.8;
     }
 
@@ -235,24 +240,24 @@ export class QualityScoreService {
     // Condition: Real Mode + Guardrail En + Failed Real Check
     if (ce23RealEnabled && ce23RealGuardrailEnabled && verdict === 'FAIL' && realScoreResult) {
       const realScore = realScoreResult.score;
-      const legacyScore = identityScoreRecord?.identityScore || 0; // The stub score from DB
+      const historicalBenchmarkScore = identityScoreRecord?.identityScore || 0; // Historical benchmark score from DB
       const marginalFloor = identityThreshold - 0.03;
 
-      console.warn(
-        `[GUARDRAIL_DEBUG] Checking shot ${shotId}. Real=${realScore}, Thresh=${identityThreshold} (Floor=${marginalFloor}), Legacy=${legacyScore} (Req >= 0.90)`
+      this.logger.warn(
+        `[GUARDRAIL_DEBUG] Checking shot ${shotId}. Real=${realScore}, Thresh=${identityThreshold} (Floor=${marginalFloor}), Historical=${historicalBenchmarkScore} (Req >= 0.90)`
       );
 
-      if (realScore >= marginalFloor && legacyScore >= 0.9) {
+      if (realScore >= marginalFloor && historicalBenchmarkScore >= 0.9) {
         guardrailBlocked = true;
         stopReason = 'GUARDRAIL_BLOCKED_REWORK';
         signals.stopReason = stopReason;
         signals.guardrail_override = true;
         signals.verdict_effective = 'PASS_FOR_PROD';
 
-        console.warn(`[GUARDRAIL] Shot ${shotId} blocked from rework. StopReason set.`);
+        this.logger.warn(`[GUARDRAIL] Shot ${shotId} blocked from rework. StopReason set.`);
       } else {
-        console.warn(
-          `[GUARDRAIL_SKIP] Real=${realScore} vs ${marginalFloor}, Legacy=${legacyScore} vs 0.90. (Enabled: ${ce23RealGuardrailEnabled})`
+        this.logger.warn(
+          `[GUARDRAIL_SKIP] Real=${realScore} vs ${marginalFloor}, Historical=${historicalBenchmarkScore} vs 0.90. (Enabled: ${ce23RealGuardrailEnabled})`
         );
       }
     }
@@ -268,16 +273,20 @@ export class QualityScoreService {
       },
     });
 
-    console.error(`Shot ${shotId} verdict: ${verdict}, overallScore: ${overallScore}`);
+    this.logger.log(
+      `[QualityScoreService] verdict shotId=${shotId} verdict=${verdict} overallScore=${overallScore}`
+    );
 
     try {
       // 6. 自动返工逻辑 (Triple Guards)
       // Guardrail Blocked -> Skip Rework
       if (verdict === 'FAIL' && !guardrailBlocked) {
-        console.error(`[REWORK_DEBUG] Checking rework for shot ${shotId}, attempt ${attempt}`);
+        this.logger.log(
+          `[REWORK_DEBUG] Checking rework for shotId=${shotId} attempt=${attempt}`
+        );
         stopReason = await this.handleAutoRework(shotId, traceId, attempt, signals);
-        console.error(
-          `[REWORK_DEBUG] Result for shot ${shotId}: stopReason=${stopReason || 'NONE_TRIGGERED'}`
+        this.logger.log(
+          `[REWORK_DEBUG] Result for shotId=${shotId} stopReason=${stopReason || 'NONE_TRIGGERED'}`
         );
       }
 
@@ -291,8 +300,8 @@ export class QualityScoreService {
           where: { id: scoreRecord.id },
           data: { signals: updatedSignals as any },
         });
-        console.error(
-          `[REWORK_DEBUG] Updated quality score ${scoreRecord.id} with stopReason: ${stopReason}`
+        this.logger.log(
+          `[REWORK_DEBUG] Updated quality score ${scoreRecord.id} with stopReason=${stopReason}`
         );
       }
     } catch (err: any) {
@@ -317,7 +326,9 @@ export class QualityScoreService {
   ): Promise<string | undefined> {
     if (attempt >= 2) {
       const reason = 'MAX_ATTEMPT_REACHED';
-      console.error(`STOP_REASON=${reason} for shot ${shotId}. Attempt ${attempt} >= 2.`);
+      this.logger.warn(
+        `STOP_REASON=${reason} for shotId=${shotId} attempt=${attempt} >= 2`
+      );
       return reason;
     }
 
@@ -363,8 +374,8 @@ export class QualityScoreService {
 
     if (runningReworks >= reworkConcurrencyCap) {
       const reason = 'RATE_LIMIT_BLOCKED';
-      console.error(
-        `STOP_REASON=${reason} for shot ${shotId}. Current running reworks: ${runningReworks}, Cap: ${reworkConcurrencyCap}`
+      this.logger.warn(
+        `STOP_REASON=${reason} for shotId=${shotId} runningReworks=${runningReworks} cap=${reworkConcurrencyCap}`
       );
       if (signals) {
         signals.rateLimitSnapshot = { runningReworks, cap: reworkConcurrencyCap };
@@ -386,18 +397,20 @@ export class QualityScoreService {
       // P2002: Unique constraint violation (Prisma unique violation code)
       if (e.code === 'P2002') {
         const reason = 'IDEMPOTENCY_HIT';
-        console.error(`STOP_REASON=${reason} (reworkKey=${reworkKey}) for shot ${shotId}.`);
+        this.logger.warn(
+          `STOP_REASON=${reason} reworkKey=${reworkKey} shotId=${shotId}`
+        );
         return reason;
       }
       throw e;
     }
 
-    console.error(
-      `Triggering rework for shot ${shotId}, new attempt: ${attempt + 1}, traceId: ${standardizedTraceId}`
+    this.logger.log(
+      `Triggering rework for shotId=${shotId} newAttempt=${attempt + 1} traceId=${standardizedTraceId}`
     );
 
-    console.error(
-      `[REWORK_DEBUG] Triggering jobService.create for shot ${shotId} orgId ${organizationId} traceId ${standardizedTraceId}`
+    this.logger.log(
+      `[REWORK_DEBUG] Triggering jobService.create shotId=${shotId} orgId=${organizationId} traceId=${standardizedTraceId}`
     );
     try {
       await this.jobService.create(
@@ -412,7 +425,7 @@ export class QualityScoreService {
             reworkKey,
             reason: 'QUALITY_FAIL',
             signals,
-            referenceSheetId: 'gate-mock-ref-id', // P14: 满足 SHOT_RENDER 契约
+            referenceSheetId: 'real-reference-sheet-id', // P14-HARD: Truth required
           },
           isVerification: false, // 必须为 false 以确保 Case C 预算拦截生效
         } as any,
@@ -433,7 +446,7 @@ export class QualityScoreService {
         responseMsg.includes('Insufficient credits')
       ) {
         const reason = 'BUDGET_GUARD_BLOCKED';
-        console.error(`STOP_REASON=${reason} (via catch) for shot ${shotId}.`);
+        this.logger.warn(`STOP_REASON=${reason} via catch shotId=${shotId}`);
         return reason;
       }
 
@@ -468,7 +481,7 @@ export class QualityScoreService {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error(`Failed to build quality score from job ${job.id}:`, error);
+      this.logger.error(`Failed to build quality score from job ${job.id}: ${error}`);
       return null;
     }
   }

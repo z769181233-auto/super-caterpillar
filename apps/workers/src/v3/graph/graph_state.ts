@@ -103,7 +103,6 @@ export async function snapshotScene(params: {
 }): Promise<void> {
   const { prisma, sceneId, snapshot } = params;
 
-  console.log(`[GRAPH-DEBUG] Updating snapshot for scene ${sceneId}`);
   await (prisma as any).scene.update({
     where: { id: sceneId },
     data: {

@@ -46,7 +46,7 @@ export class QuotaGuard implements CanActivate {
 
     if (!organizationId) {
       this.logger.warn('QuotaGuard: No organizationId found in request');
-      return true; // 允许通过，由后续权限逻辑处理或报错
+      throw new ForbiddenException('Organization context required for quota check');
     }
 
     // 2. 额度检查

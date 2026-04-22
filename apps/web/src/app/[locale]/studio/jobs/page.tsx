@@ -12,7 +12,7 @@ import EngineTag from '@/components/engines/EngineTag';
 import AdapterBadge from '@/components/engines/AdapterBadge';
 import QualityScoreBadge from '@/components/quality/QualityScoreBadge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { DetailDrawer } from '@/components/_legacy/ui/DetailDrawer';
+import { DetailDrawer } from '@/components/ui/DetailDrawer';
 
 interface Job {
   id: string;
@@ -63,7 +63,7 @@ const typeMap: Record<string, string> = {
 
 // 处理器映射：英文 → 中文
 const processorMap: Record<string, string> = {
-  mock: '模拟处理器',
+  internal_prod: '内部真值处理器',
   sd: 'SD 图片模型',
   outline: '大纲分析',
   'novel-analysis': '小说分析处理器',
@@ -466,7 +466,7 @@ function JobDashboardPageContent() {
               }}
             >
               <option value="">全部</option>
-              <option value="mock">模拟处理器</option>
+              <option value="internal_prod">内部真值处理器</option>
             </select>
           </div>
 

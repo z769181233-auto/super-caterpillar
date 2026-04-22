@@ -54,12 +54,18 @@ import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { UnprocessableEntityException } from '@nestjs/common';
+import {
+  isWithinNovelUploadRoot,
+  NOVEL_UPLOAD_ROOT,
+  resolveNovelUploadPath,
+  unlinkNovelUploadPath,
+} from './novel-upload-path.util';
 
 @Controller('projects/:projectId/novel')
 @UseGuards(JwtOrHmacGuard, PermissionsGuard)
 export class NovelImportController {
   private readonly logger = new Logger(NovelImportController.name);
-  private readonly uploadDir = path.join(process.cwd(), 'uploads', 'novels');
+  private readonly uploadDir = NOVEL_UPLOAD_ROOT;
   private readonly SHREDDER_THRESHOLD_CHARACTERS = 1000000;
 
   constructor(
@@ -80,7 +86,11 @@ export class NovelImportController {
     @Inject(TextSafetyService) private readonly textSafetyService: TextSafetyService
   ) {
     // 确保上传目录存在
-    fs.mkdir(this.uploadDir, { recursive: true }).catch(console.error);
+    fs.mkdir(this.uploadDir, { recursive: true }).catch((err) => {
+      this.logger.error(
+        `[NovelImportController] Failed to create upload dir: ${err instanceof Error ? err.message : String(err)}`
+      );
+    });
   }
 
   /**
@@ -127,13 +137,26 @@ export class NovelImportController {
     }
   }
 
+  private async ensureProjectHasNoExistingNovelSource(projectId: string): Promise<void> {
+    const existingNovel = await this.prisma.novel.findUnique({
+      where: { projectId },
+      select: { id: true, title: true },
+    });
+
+    if (existingNovel) {
+      throw new ConflictException(
+        `该项目已存在小说源（${existingNovel.title || existingNovel.id}）。请使用新项目导入，或后续接入重导入流程。`
+      );
+    }
+  }
+
   @Post('import-file')
   @RequireSignature() // CE10: 高成本接口，强制签名验证
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
         destination: (req, file, cb) => {
-          const uploadDir = path.join(process.cwd(), 'uploads', 'novels');
+          const uploadDir = NOVEL_UPLOAD_ROOT;
           fs.mkdir(uploadDir, { recursive: true })
             .then(() => cb(null, uploadDir))
             .catch((err) => cb(err, uploadDir));
@@ -174,14 +197,17 @@ export class NovelImportController {
     @Req() request: Request
   ) {
     if (!file) throw new BadRequestException('File is required');
-    if (!organizationId) throw new ForbiddenException('No organization context');
-    await this.projectService.checkOwnership(projectId, user.userId);
 
     const fileExt = path.extname(file.originalname).toLowerCase().substring(1);
-    const filePath = file.path;
+    const storedFileKey = path.basename(file.filename);
+    const filePath = resolveNovelUploadPath(storedFileKey);
     const traceId = randomUUID();
 
     try {
+      if (!organizationId) throw new ForbiddenException('No organization context');
+      await this.projectService.checkOwnership(projectId, user.userId);
+      await this.ensureProjectHasNoExistingNovelSource(projectId);
+
       // 1. 预创建核心记录 (SSOT)
       const initialTitle =
         importNovelFileDto.title ||
@@ -221,7 +247,7 @@ export class NovelImportController {
           projectId,
           organizationId,
           user.userId,
-          filePath,
+          storedFileKey,
           file.originalname,
           traceId
         );
@@ -253,7 +279,11 @@ export class NovelImportController {
       }
 
       // 2. 普通解析路径
-      const parsed = await this.fileParserService.parseFile(filePath, fileExt, file.originalname);
+      // P0 Security: Ensure filepath is normalized and inside standard upload dir to prevent path injection
+      if (!isWithinNovelUploadRoot(filePath)) {
+        throw new ForbiddenException('Access denied: File outside upload directory');
+      }
+      const parsed = await this.fileParserService.parseFile(storedFileKey, fileExt, file.originalname);
 
       // 安全审查
       await this.performSafetyCheck(parsed.rawText, {
@@ -372,7 +402,7 @@ export class NovelImportController {
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      if (filePath) await fs.unlink(filePath).catch(() => {});
+      if (storedFileKey) await unlinkNovelUploadPath(storedFileKey).catch(() => {});
       if (error instanceof UnprocessableEntityException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
@@ -388,22 +418,88 @@ export class NovelImportController {
   ) {
     if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
+    await this.ensureProjectHasNoExistingNovelSource(projectId);
 
     const rawText = importNovelDto.rawText || importNovelDto.content || '';
     if (!rawText) throw new BadRequestException('小说内容不能为空');
 
     const traceId = randomUUID();
     const title = importNovelDto.title || 'Direct Import ' + new Date().toISOString();
+    let tempFileKey: string | undefined;
 
-    // P0-S4: Massive Text Guard (Shredder)
-    if (rawText.length > this.SHREDDER_THRESHOLD_CHARACTERS) {
-      this.logger.log(
-        `[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`
-      );
+    try {
+      const analysisJob = await this.prisma.novelAnalysisJob.create({
+        data: {
+          projectId,
+          jobType: 'ANALYZE_ALL',
+          status: 'PENDING',
+        },
+      });
 
-      const tempFileName = `direct-import-${Date.now()}.txt`;
-      const tempPath = path.join(this.uploadDir, tempFileName);
-      await fs.writeFile(tempPath, rawText);
+      // P0-S4: Massive Text Guard (Shredder)
+      if (rawText.length > this.SHREDDER_THRESHOLD_CHARACTERS) {
+        this.logger.log(
+          `[Stage 4] Large text import detected (${rawText.length} chars), offloading to Shredder.`
+        );
+
+        tempFileKey = `direct-import-${Date.now()}.txt`;
+        const tempPath = path.join(this.uploadDir, tempFileKey);
+        await fs.writeFile(tempPath, rawText);
+
+        const novelSource = await this.prisma.novel.create({
+          data: {
+            projectId,
+            organizationId,
+            title,
+            author: importNovelDto.author || 'Unknown',
+            status: 'PARSING',
+            metadata: { importType: 'TEXT', traceId, originalFileName: tempFileKey },
+          },
+        });
+
+        const result = await this.novelImportService.triggerShredderWorkflow(
+          novelSource.id,
+          projectId,
+          organizationId,
+          user.userId,
+          tempFileKey,
+          tempFileKey,
+          traceId
+        );
+
+        await this.prisma.novelAnalysisJob.update({
+          where: { id: analysisJob.id },
+          data: {
+            novelSourceId: novelSource.id,
+            progress: {
+              message: 'Massive text detected, Shredder Scan started',
+              jobId: result.jobId,
+              taskId: result.taskId,
+              mode: 'SHREDDER',
+            },
+          },
+        });
+
+        return {
+          success: true,
+          data: {
+            jobId: result.jobId,
+            taskId: result.taskId,
+            novelSourceId: result.novelSourceId,
+            mode: 'SHREDDER',
+            analysisJobId: analysisJob.id,
+          },
+          message: 'Massive text detected, Shredder scanning started',
+        };
+      }
+
+      // 普通文本导入路径
+      await this.performSafetyCheck(rawText, {
+        projectId,
+        userId: user.userId,
+        organizationId,
+        traceId,
+      });
 
       const novelSource = await this.prisma.novel.create({
         data: {
@@ -411,114 +507,87 @@ export class NovelImportController {
           organizationId,
           title,
           author: importNovelDto.author || 'Unknown',
+          characterCount: rawText.length,
           status: 'PARSING',
-          metadata: { importType: 'TEXT', traceId, originalFileName: tempFileName },
         },
       });
 
-      const result = await this.novelImportService.triggerShredderWorkflow(
-        novelSource.id,
-        projectId,
+      // 创建 V3.0 结构：Volume -> Chapter -> Scene
+      const volume = await this.prisma.novelVolume.create({
+        data: { projectId, novelSourceId: novelSource.id, index: 1, title: '默认卷' },
+      });
+
+      const chapters = this.fileParserService.parseChaptersFromText(rawText);
+      const savedChapterIds = [];
+      for (let i = 0; i < chapters.length; i++) {
+        const ch = chapters[i];
+        const savedChapter = await this.prisma.novelChapter.create({
+          data: {
+            novelSourceId: novelSource.id,
+            volumeId: volume.id,
+            index: i + 1,
+            title: ch.title,
+            rawContent: ch.content,
+          },
+        });
+        await this.prisma.scene.create({
+          data: { chapterId: savedChapter.id, projectId, sceneIndex: 1, title: 'Scene 1' },
+        });
+        savedChapterIds.push(savedChapter.id);
+      }
+
+      const task = await this.taskService.create({
         organizationId,
+        projectId,
+        type: 'NOVEL_ANALYSIS',
+        status: 'PENDING',
+        traceId,
+      });
+
+      const job = await this.jobService.createNovelAnalysisJob(
+        {
+          type: JobTypeEnum.NOVEL_ANALYSIS as any,
+          payload: {
+            projectId,
+            novelSourceId: novelSource.id,
+            taskId: task.id,
+            traceId,
+            title,
+            chapterCount: chapters.length,
+          },
+        },
         user.userId,
-        tempPath,
-        tempFileName,
-        traceId
+        organizationId,
+        task.id,
+        undefined,
+        request.ip || (request.headers['x-forwarded-for'] as string),
+        request.headers['user-agent']
       );
+
+      await this.prisma.novelAnalysisJob.update({
+        where: { id: analysisJob.id },
+        data: {
+          novelSourceId: novelSource.id,
+          progress: { message: 'Job created', jobId: job.id, taskId: task.id },
+        },
+      });
 
       return {
         success: true,
         data: {
-          jobId: result.jobId,
-          taskId: result.taskId,
-          novelSourceId: result.novelSourceId,
-          mode: 'SHREDDER',
-        },
-        message: 'Massive text detected, Shredder scanning started',
-      };
-    }
-
-    // 普通文本导入路径
-    await this.performSafetyCheck(rawText, {
-      projectId,
-      userId: user.userId,
-      organizationId,
-      traceId,
-    });
-
-    const novelSource = await this.prisma.novel.create({
-      data: {
-        projectId,
-        organizationId,
-        title,
-        author: importNovelDto.author || 'Unknown',
-        characterCount: rawText.length,
-        status: 'PARSING',
-      },
-    });
-
-    // 创建 V3.0 结构：Volume -> Chapter -> Scene
-    const volume = await this.prisma.novelVolume.create({
-      data: { projectId, novelSourceId: novelSource.id, index: 1, title: '默认卷' },
-    });
-
-    const chapters = this.fileParserService.parseChaptersFromText(rawText);
-    const savedChapterIds = [];
-    for (let i = 0; i < chapters.length; i++) {
-      const ch = chapters[i];
-      const savedChapter = await this.prisma.novelChapter.create({
-        data: {
-          novelSourceId: novelSource.id,
-          volumeId: volume.id,
-          index: i + 1,
-          title: ch.title,
-          rawContent: ch.content,
-        },
-      });
-      await this.prisma.scene.create({
-        data: { chapterId: savedChapter.id, projectId, sceneIndex: 1, title: 'Scene 1' },
-      });
-      savedChapterIds.push(savedChapter.id);
-    }
-
-    const task = await this.taskService.create({
-      organizationId,
-      projectId,
-      type: 'NOVEL_ANALYSIS',
-      status: 'PENDING',
-      traceId,
-    });
-
-    const job = await this.jobService.createNovelAnalysisJob(
-      {
-        type: JobTypeEnum.NOVEL_ANALYSIS as any,
-        payload: {
-          projectId,
-          novelSourceId: novelSource.id,
+          jobId: job.id,
           taskId: task.id,
-          traceId,
-          title,
+          analysisJobId: analysisJob.id,
+          novelSourceId: novelSource.id,
           chapterCount: chapters.length,
         },
-      },
-      user.userId,
-      organizationId,
-      task.id,
-      undefined,
-      request.ip || (request.headers['x-forwarded-for'] as string),
-      request.headers['user-agent']
-    );
-
-    return {
-      success: true,
-      data: {
-        jobId: job.id,
-        taskId: task.id,
-        novelSourceId: novelSource.id,
-        chapterCount: chapters.length,
-      },
-      message: 'Novel imported, analysis job created',
-    };
+        message: 'Novel imported, analysis job created',
+      };
+    } catch (error: any) {
+      if (tempFileKey) await unlinkNovelUploadPath(tempFileKey).catch(() => {});
+      if (error instanceof UnprocessableEntityException) throw error;
+      throw new BadRequestException(error.message || 'Import failed');
+    }
   }
 
   @Get('jobs')
@@ -591,11 +660,19 @@ export class NovelImportController {
     if (!organizationId) throw new ForbiddenException('No organization context');
     await this.projectService.checkOwnership(projectId, user.userId);
 
-    const novelSource = await this.prisma.novel.findFirst({
+    const novelSource = await this.prisma.novel.findUnique({
       where: { projectId },
-      orderBy: { createdAt: 'desc' },
     });
     if (!novelSource) throw new NotFoundException('找不到小说源');
+
+    const analysisJob = await this.prisma.novelAnalysisJob.create({
+      data: {
+        projectId,
+        novelSourceId: novelSource.id,
+        jobType: body.chapterId ? 'ANALYZE_CHAPTER' : 'ANALYZE_ALL',
+        status: 'PENDING',
+      },
+    });
 
     const task = await this.taskService.create({
       organizationId,
@@ -623,9 +700,16 @@ export class NovelImportController {
       request.headers['user-agent']
     );
 
+    await this.prisma.novelAnalysisJob.update({
+      where: { id: analysisJob.id },
+      data: {
+        progress: { message: 'Analysis started', jobId: job.id, taskId: task.id },
+      },
+    });
+
     return {
       success: true,
-      data: { jobId: job.id, taskId: task.id },
+      data: { jobId: job.id, taskId: task.id, analysisJobId: analysisJob.id },
       message: 'Analysis started',
     };
   }

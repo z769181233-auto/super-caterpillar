@@ -16,7 +16,7 @@ export type ReaderPanelProps = {
   t: TFunc;
 };
 
-export function ReaderPanel({ shot, loading, onOpenEvidence, t }: ReaderPanelProps) {
+export function ReaderPanel({ shot, loading, onOpenEvidence: _onOpenEvidence, t }: ReaderPanelProps) {
   const [selectedRevisionId, setSelectedRevisionId] = React.useState<string | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);

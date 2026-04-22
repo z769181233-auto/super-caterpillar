@@ -26,7 +26,6 @@ import { BudgetGuard } from '../auth/guards/budget.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CurrentOrganization } from '../auth/decorators/current-organization.decorator';
 import { AuthenticatedUser } from '@scu/shared-types';
-import { Public } from '../auth/decorators/public.decorator';
 import { CreateJobDto } from './dto/create-job.dto';
 import { ReportJobDto } from './dto/report-job.dto';
 import { ListJobsDto } from './dto/list-jobs.dto';
@@ -37,6 +36,10 @@ import { AuditLogService } from '../audit-log/audit-log.service';
 import { CapacityGateService } from '../capacity/capacity-gate.service';
 import { Request, Response } from 'express';
 import { randomUUID } from 'crypto';
+import { Permissions } from '../auth/permissions.decorator';
+import { PermissionsGuard } from '../auth/permissions.guard';
+import { ProjectPermissions } from '../permission/permission.constants';
+import { UnauthorizedException } from '@nestjs/common';
 
 @Controller()
 @UseGuards(JwtOrHmacGuard)
@@ -57,15 +60,14 @@ export class JobController {
   ) {}
 
   @Get('debug-key/:key')
-  @Public()
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  @UseGuards(PermissionsGuard)
   async debugKey(@Param('key') key: string): Promise<any> {
     const prisma = (this.jobService as any).prisma;
     const record = await prisma.apiKey.findUnique({ where: { key } });
     const count = await prisma.project.count();
     return {
       found: !!record,
-      key,
-      dbUrlEnv: process.env.DATABASE_URL,
       projectCount: count,
       record: record ? { id: record.id, status: record.status } : null,
     };
@@ -82,8 +84,13 @@ export class JobController {
     @Res({ passthrough: true }) res: Response
   ): Promise<any> {
     const u = (req as any).user;
-    // Fix: Handle HMAC/Worker mode where u might be null
-    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+    const effectiveUserId = u?.userId || (req as any).apiKeyId;
+    if (!effectiveUserId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!organizationId) {
+      throw new BadRequestException('Organization context required');
+    }
 
     // P1-1: API Backpressure Check
     const { env: scuEnv } = await import('@scu/config');
@@ -149,7 +156,13 @@ export class JobController {
     @Req() req: Request
   ): Promise<any> {
     const u = (req as any).user;
-    const effectiveUserId = u?.userId || (req as any).apiKeyId || 'system-worker';
+    const effectiveUserId = u?.userId || (req as any).apiKeyId;
+    if (!effectiveUserId) {
+      throw new UnauthorizedException('Authentication required');
+    }
+    if (!organizationId) {
+      throw new BadRequestException('Organization context required');
+    }
 
     if (createJobDto.projectId) {
       // 适配 JobType

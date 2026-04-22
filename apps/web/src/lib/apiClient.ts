@@ -1,13 +1,11 @@
-// apps/web/src/lib/apiClient.ts
-// 后端基础地址，优先使用 NEXT_PUBLIC_API_URL，默认 http://localhost:3000
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-
 import {
   ProjectSceneGraph,
-  NovelAnalysisStatus,
   ProjectOverviewDTO,
   ProjectStructureTree,
 } from '@scu/shared-types';
+import { API_ORIGIN } from '@/lib/api-base';
+
+const API_BASE_URL = API_ORIGIN;
 
 export type UnauthorizedError = Error & { status: 401; code: 'UNAUTHORIZED' };
 
@@ -121,7 +119,7 @@ export const projectApi = {
     throw new Error('Invalid response format');
   },
 
-  async getProjectSceneGraph(projectId: string) {
+  async getProjectSceneGraph(projectId: string): Promise<ProjectSceneGraph | undefined> {
     const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/scene-graph`, {
       credentials: 'include',
     });
@@ -531,7 +529,7 @@ export const organizationApi = {
 // Auth API
 export const authApi = {
   async login(email: string, password: string) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/login`, {
+    const res = await fetchWithAuth(`/api/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -553,7 +551,7 @@ export const authApi = {
   },
 
   async logout() {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/logout`, {
+    const res = await fetchWithAuth(`/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -566,7 +564,7 @@ export const authApi = {
   },
 
   async register(email: string, password: string) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/auth/register`, {
+    const res = await fetchWithAuth(`/api/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -589,11 +587,17 @@ export const authApi = {
 };
 
 export const novelImportApi = {
-  async importNovelFile(projectId: string, file: File): Promise<ImportNovelResultDTO> {
+  async importNovelFile(
+    projectId: string,
+    file: File,
+    meta?: { title?: string; author?: string }
+  ): Promise<ImportNovelResultDTO> {
     const formData = new FormData();
     formData.append('file', file);
+    if (meta?.title) formData.append('title', meta.title);
+    if (meta?.author) formData.append('author', meta.author);
 
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/import-file`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import-file`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
@@ -613,9 +617,9 @@ export const novelImportApi = {
 
   async importNovel(
     projectId: string,
-    payload: { novelName: string; author: string; fileUrl: string }
+    payload: { title?: string; novelName?: string; author?: string; fileUrl?: string; rawText?: string; content?: string }
   ): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/import`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -635,7 +639,7 @@ export const novelImportApi = {
   },
 
   async analyzeNovel(projectId: string): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/analyze`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/analyze`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -653,7 +657,7 @@ export const novelImportApi = {
   },
 
   async getNovelJobs(projectId: string): Promise<JobDTO[]> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects/${projectId}/novel/jobs`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/jobs`, {
       method: 'GET',
       credentials: 'include',
     });
@@ -681,10 +685,8 @@ export const novelImportApi = {
 import type {
   WorkerStatsDTO,
   OrchestratorStatsDTO,
-  ListJobsResponse,
   JobDTO,
   ProjectDTO,
-  ProjectDetailDTO,
   ImportNovelResultDTO,
 } from '@/types/dto';
 
@@ -933,11 +935,6 @@ export const engineApi = {
     if (!res.ok) throw new Error(`Failed to fetch engines: ${res.status}`);
     const json = await res.json();
     return json?.data ?? json;
-  },
-
-  // Alias for backward compatibility
-  async listEngines() {
-    return engineApi.getEngines();
   },
 
   async syncEngines() {

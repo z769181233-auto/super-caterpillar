@@ -28,7 +28,7 @@ DELETE FROM \"users\" WHERE id = 'smoke-user';
 echo "[Step 1] Seeding User, Project & Org Data..."
 PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d scu <<SQL
 INSERT INTO "users" (id, email, "passwordHash", "userType", role, tier, "createdAt", "updatedAt")
-VALUES ('smoke-user', 'smoke@example.com', 'dummy_hash', 'individual', 'VIEWER', 'Free', NOW(), NOW())
+VALUES ('smoke-user', 'smoke@example.com', 'dummy_hash', 'individual', 'VIEWER', 'Basic', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO "organizations" (id, name, "ownerId", slug, "createdAt", "updatedAt")

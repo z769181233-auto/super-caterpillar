@@ -5,7 +5,7 @@ import { ShotRenderReplicateAdapter } from './shot-render.replicate.adapter';
 import { ShotRenderLocalAdapter } from './shot-render.local.adapter';
 import { ShotRenderComfyuiAdapter } from './shot-render.comfyui.adapter';
 import { ShotRenderMpsAdapter } from './shot-render.mps.adapter';
-import { MockEngineAdapter } from '../../engine/adapters/mock-engine.adapter';
+// EngineAdapter REMOVED
 import { CharacterService } from '../../character/character.service';
 import { FusionAdapter } from './fusion.adapter';
 import { createHash } from 'crypto';
@@ -14,7 +14,7 @@ import { VG08AdvancedLightingAdapter } from './vg08_advanced_lighting.adapter';
 import { CE13PacingAnalyzerAdapter } from './ce13_pacing_analyzer.adapter';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * Shot Render Router Adapter (Commercial Grade - Explicit Selection)
@@ -24,7 +24,7 @@ import { execSync } from 'child_process';
  * - Env-based routing: SHOT_RENDER_PROVIDER (replicate | comfyui | local)
  * - Default: replicate
  * - Audit trail includes: providerSelected, modelId, selectionReason
- * - No silent fallback to mock://
+ * - No silent fallback to forbidden internal protocols
  */
 @Injectable()
 export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
@@ -58,7 +58,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     // Since I can't easily edit EngineModule safely right now, I'll rely on lazy resolution via ModuleRef.
   }
 
-  private mockAdapter: MockEngineAdapter | undefined; // Lazy loaded
+  // Adapter REMOVED
   private characterService: CharacterService | undefined; // Lazy loaded
 
   async onModuleInit() {
@@ -68,13 +68,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
   private ensureDependencies() {
     // These should be resolved via ModuleRef ONLY if for some reason they aren't injected,
     // but we'll remove the read-only assignments and rely on injection.
-    if (!this.mockAdapter) {
-      try {
-        this.mockAdapter = this.moduleRef.get(MockEngineAdapter, { strict: false });
-      } catch (e) {
-        /* silent fail */
-      }
-    }
+    // Registry resolution REMOVED
     if (!this.characterService) {
       try {
         this.characterService = this.moduleRef.get(CharacterService, { strict: false });
@@ -103,9 +97,6 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const { provider, reason } = this.selectProvider();
     const adapter = this.getAdapter(provider);
 
-    this.logger.log(
-      `[ShotRenderRouter] [DEBUG] process.env.SHOT_RENDER_PROVIDER=${process.env.SHOT_RENDER_PROVIDER}`
-    );
     this.logger.log(`[ShotRenderRouter] Selected provider: ${provider} (reason: ${reason})`);
 
     // [STELLAR-ESTHETIC-ORCHESTRATION]
@@ -242,7 +233,7 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       };
 
       // 4. Week 2: Real Engine Provenance Kit (收口点)
-      if (process.env.ENGINE_REAL === '1' && provider !== 'mock') {
+      if (process.env.ENGINE_REAL === '1') {
         await this.generateProvenanceKit(input, result, provider);
       }
     }
@@ -295,12 +286,18 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     const bytes = fs.statSync(targetMp4).size;
     let duration = renderMeta.duration_s || 2.0;
     try {
-      const durStr = execSync(
-        `ffprobe -v error -show_entries format=duration -of default=nw=1:nk=1 "${targetMp4}"`
-      )
-        .toString()
-        .trim();
-      duration = parseFloat(durStr);
+      const durRes = await execAsync('ffprobe', [
+        '-v',
+        'error',
+        '-show_entries',
+        'format=duration',
+        '-of',
+        'default=nw=1:nk=1',
+        targetMp4,
+      ]);
+      if (durRes.code === 0) {
+        duration = parseFloat(durRes.stdout.trim());
+      }
     } catch (e) {
       /* fallback */
     }
@@ -393,18 +390,13 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
    * NO SILENT FALLBACK: If replicate selected but token missing, THROW.
    */
   private selectProvider(): {
-    provider: 'replicate' | 'local' | 'comfyui' | 'mock' | 'local_mps' | 'fusion';
+    provider: 'replicate' | 'local' | 'comfyui' | 'local_mps' | 'fusion';
     reason: string;
   } {
     const isGateOrCi = process.env.GATE_MODE === '1' || process.env.CI === 'true';
     const envProvider = (process.env.SHOT_RENDER_PROVIDER || (isGateOrCi ? 'local' : 'replicate')).toLowerCase() as any;
     const engineMode = process.env.ENGINE_MODE || 'development';
 
-    if (engineMode === 'production' && envProvider === 'mock') {
-      throw new Error(
-        'PRODUCTION_SAFETY_ERROR: SHOT_RENDER_PROVIDER=mock is not allowed in ENGINE_MODE=production'
-      );
-    }
 
     if (envProvider === 'local') {
       return { provider: 'local', reason: `Explicit SHOT_RENDER_PROVIDER=${envProvider}` };
@@ -422,24 +414,8 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       return { provider: 'fusion', reason: 'Explicit SHOT_RENDER_PROVIDER=fusion' };
     }
 
-    if (envProvider === 'mock') {
-      return { provider: 'mock', reason: 'Explicit SHOT_RENDER_PROVIDER=mock (Gate Mode)' };
-    }
-
-    if (envProvider === 'replicate') {
-      if (!process.env.REPLICATE_API_TOKEN?.trim()) {
-        throw new Error(
-          'JOB_CONFIG_INVALID: REPLICATE_API_TOKEN missing while SHOT_RENDER_PROVIDER=replicate. Production forbids silent fallback to mock/demo.'
-        );
-      }
-      return { 
-        provider: 'replicate', 
-        reason: (process.env.SHOT_RENDER_PROVIDER ? 'Explicit' : 'Default') + ' SHOT_RENDER_PROVIDER=replicate' 
-      };
-    }
-
     throw new Error(
-      `JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Valid: replicate, comfyui, local, mock, fusion`
+      `JOB_CONFIG_INVALID: Unknown SHOT_RENDER_PROVIDER="${envProvider}". Hardened truth only. Valid: replicate, comfyui, local, local_mps, fusion`
     );
   }
 
@@ -448,8 +424,6 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
       return this.replicateAdapter;
     } else if (provider === 'comfyui') {
       return this.comfyuiAdapter;
-    } else if (provider === 'mock') {
-      return this.mockAdapter!;
     } else if (provider === 'local_mps') {
       return this.mpsAdapter;
     } else if (provider === 'fusion') {

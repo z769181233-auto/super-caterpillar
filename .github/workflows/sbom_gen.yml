@@ -16,16 +16,17 @@ jobs:
     name: sbom
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
+          persist-credentials: false
           submodules: false # 明确关闭子模块以规避 apps/fusion-engine 导致的 128 报错。认识。
 
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 9.1.0
           run_install: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 20.20.1
           cache: 'pnpm'
@@ -44,7 +45,7 @@ jobs:
         run: |
           jq '.bomFormat' sbom.cdx.json | grep -q CycloneDX && echo "SBOM valid: CycloneDX format confirmed" || exit 1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: sbom-cyclonedx
           path: sbom.cdx.json

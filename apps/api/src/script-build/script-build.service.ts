@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
 @Injectable()
 export class ScriptBuildService {
+  private readonly logger = new Logger(ScriptBuildService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async getOutline(buildId: string) {
@@ -87,7 +89,9 @@ export class ScriptBuildService {
           })) || [],
       };
     } catch (error) {
-      console.error('[ScriptBuildService.getOutline] ERROR:', error);
+      this.logger.error(
+        `[ScriptBuildService.getOutline] ERROR: ${error instanceof Error ? error.message : String(error)}`
+      );
       throw error;
     }
   }

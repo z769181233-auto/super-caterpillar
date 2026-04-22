@@ -12,6 +12,31 @@ export interface ProcessorResult {
 }
 import { CE01ProtocolAdapter } from '../adapters/ce01-protocol.adapter';
 
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function asNonEmptyString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function asRecordArray(value: unknown): JsonRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
 /**
  * CE06 Novel Parsing Processor (V1.3.1: 母引擎收口 + 管线串联)
  * 严格通过 EngineHubClient 调用引擎，确保审计链路完整
@@ -22,11 +47,9 @@ export async function processCE06NovelParsingJob(
   const { prisma, job, apiClient } = context;
   const logger = context.logger || console;
 
-  console.log(`\n!!! [CE06-ENTRY] JobId: ${job.id} !!!`);
-  console.log(`[CE06-ENTRY] Payload Type: ${typeof job.payload}`);
+  logger.log(`[CE06-ENTRY] JobId=${job.id}`);
   if (job.payload) {
-    console.log(`[CE06-ENTRY] Payload keys: ${Object.keys(job.payload)}`);
-    console.log(`[CE06-ENTRY] Payload string length: ${JSON.stringify(job.payload).length}`);
+    logger.log(`[CE06-ENTRY] Payload keys=${Object.keys(job.payload).join(',')}`);
   }
 
   const engineHub = new EngineHubClient(apiClient);
@@ -84,11 +107,11 @@ async function executeScanJob(
     }
   }
 
-  console.log(`[CE06-DEBUG] JobId: ${job.id}, PayloadKeys: ${Object.keys(payload)}`);
+  logger.log(`[CE06-DEBUG] JobId=${job.id} PayloadKeys=${Object.keys(payload).join(',')}`);
   if (rawText) {
-    console.log(`[CE06-DEBUG] rawText found, length: ${rawText.length}`);
+    logger.log(`[CE06-DEBUG] rawText length=${rawText.length}`);
   } else {
-    console.log(`[CE06-DEBUG] rawText is missing or empty!`);
+    logger.warn('[CE06-DEBUG] rawText missing or empty');
   }
 
   if (!rawText) throw new Error('SCAN phase requires raw_text');
@@ -127,18 +150,17 @@ async function executeScanJob(
     },
   });
 
-  console.log(`[CE06-SCAN] engineHub.invoke SUCCESS: ${engineResult.success}`);
+  logger.log(`[CE06-SCAN] engineHub.invoke success=${engineResult.success}`);
   if (!engineResult.success) {
-    console.log(`[CE06-SCAN] engineHub.invoke ERROR: ${JSON.stringify(engineResult.error)}`);
+    logger.warn('[CE06-SCAN] engineHub.invoke returned error');
   }
 
   if (!engineResult.success) {
     throw new Error(`SCAN failed: ${engineResult.error?.message}`);
   }
 
-  const novelSource = await prisma.novel.findFirst({
+  const novelSource = await prisma.novel.findUnique({
     where: { projectId },
-    orderBy: { createdAt: 'desc' },
   });
   if (!novelSource) throw new Error('NovelSource not found');
 
@@ -192,7 +214,7 @@ async function executeScanJob(
           phase: 'CHUNK_PARSE',
           chapterId: chapter.id,
           raw_text: rawText.substring(chunk.start_offset, chunk.end_offset), // extract from loaded rawText
-          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // P6-0 Fix: Backwards compatibility
+          rawText: rawText.substring(chunk.start_offset, chunk.end_offset), // 兼容仍读取 rawText 的旧下游
           traceId,
           projectId,
           pipelineRunId: job.payload?.pipelineRunId,
@@ -279,7 +301,6 @@ async function executeChunkParseJob(
 
   // V3.0 Phase 2: Protocol Adapter (Bible -> Internal)
   // Already normalized at top-level
-  // console.log('[CE06_DEBUG] Chunk Parse Payload:', JSON.stringify(job.payload));
 
   // Step 1: CE06 解析 (raw_text + context_injection)
   const ce06Result = await engineHub.invoke({
@@ -308,7 +329,9 @@ async function executeChunkParseJob(
     throw new Error(`CE06 CHUNK_PARSE failed: ${ce06Result.error?.message}`);
   }
 
-  const scenes = (ce06Result.output as any).scenes || [];
+  const scenes = asRecordArray((ce06Result.output as JsonRecord | undefined)?.scenes).filter(
+    (scene) => asNonEmptyString(scene.raw_text) !== undefined
+  );
   logger.log(`[CE06-PARSE] Received ${scenes.length} scenes from engine output`);
 
   // Step 2: 写入 raw_text 并串联 CE03/CE04
@@ -316,6 +339,12 @@ async function executeChunkParseJob(
     for (let i = 0; i < scenes.length; i++) {
       const sc = scenes[i];
       const sceneIndex = i + 1;
+      const rawText = asNonEmptyString(sc.raw_text);
+      const title = asNonEmptyString(sc.title) ?? `Scene ${sceneIndex}`;
+
+      if (!rawText) {
+        throw new Error(`[CE06-PARSE] Scene ${sceneIndex} missing raw_text`);
+      }
 
       // 先写入基础数据
       const scene = await tx.scene.upsert({
@@ -325,35 +354,16 @@ async function executeChunkParseJob(
           projectId,
           episodeId: chapter.episode?.id,
           sceneIndex,
-          title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
-          enrichedText: sc.raw_text || '',
+          title: `${title} [${traceId}]`,
+          enrichedText: rawText,
         },
         update: {
           projectId,
           episodeId: chapter.episode?.id,
-          title: (sc.title || `Scene ${sceneIndex}`) + ` [${traceId}]`,
-          enrichedText: sc.raw_text || '',
+          title: `${title} [${traceId}]`,
+          enrichedText: rawText,
         },
       });
-
-      // Step 2.1: Ensure Default Shot exists (Gap Fix for SHOT_RENDER)
-      let defaultShot = await tx.shot.findFirst({
-        where: { sceneId: scene.id, index: 1 },
-      });
-
-      if (!defaultShot) {
-        defaultShot = await tx.shot.create({
-          data: {
-            sceneId: scene.id,
-            organizationId,
-            index: 1,
-            type: 'DEFAULT',
-            durationSeconds: 3,
-            renderStatus: 'PENDING',
-            title: `Shot 1 [${traceId}]`,
-          },
-        });
-      }
 
       // V3.0 P0-2: projectId is not a column in novel_scenes table
       // Removed projectId update logic
@@ -364,13 +374,12 @@ async function executeChunkParseJob(
         engineKey: 'ce03_visual_density',
         engineVersion: 'v1.0',
         payload: {
-          structured_text: sc.raw_text || '',
+          structured_text: rawText,
           traceId,
           pipelineRunId,
-          shotId: defaultShot.id,
           model: payload.model, // Passthrough model
         },
-        metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
+        metadata: { traceId, sceneId: scene.id },
       });
 
       let densityScore = 0.5; // 默认值
@@ -384,22 +393,23 @@ async function executeChunkParseJob(
         engineKey: 'ce04_visual_enrichment',
         engineVersion: 'v1.0',
         payload: {
-          structured_text: sc.raw_text || '',
+          structured_text: rawText,
           style_prompt: project?.stylePrompt,
           style_guide: project?.styleGuide,
           traceId,
           pipelineRunId,
-          shotId: defaultShot.id,
           model: payload.model, // Passthrough model
         },
-        metadata: { traceId, sceneId: scene.id, shotId: defaultShot.id },
+        metadata: { traceId, sceneId: scene.id },
       });
 
-      let enrichedText = sc.raw_text || '';
+      let enrichedText = rawText;
       if (ce04Result.success) {
         const ce04Output = ce04Result.output as any;
         enrichedText =
-          ce04Output?.enriched_text || ce04Output?.enriched_prompt || sc.raw_text || '';
+          asNonEmptyString(ce04Output?.enriched_text) ??
+          asNonEmptyString(ce04Output?.enriched_prompt) ??
+          rawText;
       }
 
       // Step 5: 更新完整数据
@@ -412,19 +422,27 @@ async function executeChunkParseJob(
       });
 
       // V3.0 P0-2: 写入场景的 graph_state_snapshot
-      // 从 CE06 输出提取角色状态（若无则使用默认）
-      const sceneCharacters: CharacterState[] = (sc.characters || []).map((char: any) => ({
-        id: char.id || `char_${char.name}`,
-        name: char.name || '未知角色',
-        status: char.status || 'normal',
-        appearance: {
-          clothing: char.appearance?.clothing || '普通服饰',
-          hair: char.appearance?.hair || '普通发型',
-        },
-        items: char.items || [],
-        injuries: char.injuries || [],
-        location: char.location || '未知位置',
-      }));
+      const sceneCharacters: CharacterState[] = asRecordArray(sc.characters)
+        .map((char) => {
+          const name = asNonEmptyString(char.name);
+          if (!name) {
+            return null;
+          }
+          const appearance = isRecord(char.appearance) ? char.appearance : {};
+          return {
+            id: asNonEmptyString(char.id) ?? `char_${name}`,
+            name,
+            status: asNonEmptyString(char.status) ?? 'normal',
+            appearance: {
+              clothing: asNonEmptyString(appearance.clothing) ?? '',
+              hair: asNonEmptyString(appearance.hair) ?? '',
+            },
+            items: asStringArray(char.items),
+            injuries: asStringArray(char.injuries),
+            location: asNonEmptyString(char.location) ?? '',
+          };
+        })
+        .filter((char): char is CharacterState => char !== null);
 
       await snapshotScene({
         prisma: tx,
@@ -440,24 +458,28 @@ async function executeChunkParseJob(
     // V3.0 P0-2: 提取并更新章节级角色状态到 memory_short_term
     const allCharacters: CharacterState[] = [];
     for (const sc of scenes) {
-      if (sc.characters) {
-        for (const char of sc.characters) {
-          const existingChar = allCharacters.find((c) => c.id === (char.id || `char_${char.name}`));
+      for (const char of asRecordArray(sc.characters)) {
+          const name = asNonEmptyString(char.name);
+          if (!name) {
+            continue;
+          }
+          const charId = asNonEmptyString(char.id) ?? `char_${name}`;
+          const existingChar = allCharacters.find((c) => c.id === charId);
           if (!existingChar) {
+            const appearance = isRecord(char.appearance) ? char.appearance : {};
             allCharacters.push({
-              id: char.id || `char_${char.name}`,
-              name: char.name || '未知角色',
-              status: char.status || 'normal',
+              id: charId,
+              name,
+              status: asNonEmptyString(char.status) ?? 'normal',
               appearance: {
-                clothing: char.appearance?.clothing || '普通服饰',
-                hair: char.appearance?.hair || '普通发型',
+                clothing: asNonEmptyString(appearance.clothing) ?? '',
+                hair: asNonEmptyString(appearance.hair) ?? '',
               },
-              items: char.items || [],
-              injuries: char.injuries || [],
-              location: char.location || '未知位置',
+              items: asStringArray(char.items),
+              injuries: asStringArray(char.injuries),
+              location: asNonEmptyString(char.location) ?? '',
             });
           }
-        }
       }
     }
 

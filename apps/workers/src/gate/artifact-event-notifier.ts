@@ -39,9 +39,7 @@ export class ArtifactEventNotifier {
     this.eventQueue.push(fullEvent);
 
     // 立即尝试处理（非阻塞）
-    this.processQueue().catch((err) => {
-      console.error('[ArtifactEventNotifier] 处理队列失败:', err.message);
-    });
+    this.processQueue().catch(() => {});
   }
 
   /**
@@ -84,12 +82,7 @@ export class ArtifactEventNotifier {
     // await this.callWebhook(event);
 
     // 当前实现：仅记录日志（生产环境应选择合适的通知方式）
-    console.log('[ArtifactEventNotifier] 事件发布:', {
-      eventId: event.eventId,
-      jobId: event.jobId,
-      artifactType: event.artifactType,
-      artifactDir: event.artifactDir,
-    });
+    void event;
   }
 
   /**

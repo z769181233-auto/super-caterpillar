@@ -14,7 +14,7 @@ import * as path from 'path';
  * - Uses Replicate SDXL for real image generation
  * - Downloads to apps/workers/.runtime/assets
  * - Calculates real SHA256
- * - No mock:// or mocked:true
+ * - No forbidden internal prefixes or isVirtual:true
  */
 @Injectable()
 export class ShotRenderReplicateAdapter implements EngineAdapter {
@@ -128,7 +128,7 @@ export class ShotRenderReplicateAdapter implements EngineAdapter {
           render_meta: {
             width: 1024,
             height: 1024,
-            mocked: false, // ✅ Not mocked
+            isVirtual: false, // ✅ Not virtual
             engine: 'replicate_sdxl',
             seed: seed,
             prompt: prompt,

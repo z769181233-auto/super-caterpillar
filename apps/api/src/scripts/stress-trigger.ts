@@ -27,7 +27,9 @@ async function main() {
     });
   }
 
-  let season = await prisma.season.findFirst({ where: { projectId: project.id } });
+  let season = await prisma.season.findUnique({
+    where: { projectId_index: { projectId: project.id, index: 1 } },
+  });
   if (!season) {
     season = await prisma.season.create({ data: { title: 'S1', index: 1, projectId: project.id } });
   }

@@ -11,7 +11,7 @@
  * 4. 每 10 秒发送 heartbeat (POST /api/workers/:workerId/heartbeat)
  */
 
-import { createHmac, randomBytes, createHash } from 'crypto';
+import { randomBytes, createHash, randomInt, webcrypto } from 'crypto';
 import * as util from 'util';
 
 console.log('API_BASE_URL(raw)=', JSON.stringify(process.env.API_BASE_URL));
@@ -22,8 +22,11 @@ if (!baseUrl) {
 }
 const API_BASE_URL = baseUrl;
 const API_KEY = process.env.API_KEY || '';
-const API_SECRET = process.env.API_SECRET || '';
+const API_HMAC_KEY = process.env.API_SECRET || '';
 const WORKER_ID = process.env.WORKER_ID || 'minimal-worker-001';
+const textEncoder = new TextEncoder();
+type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
+let signingKeyPromise: Promise<NodeCryptoKey> | null = null;
 
 /**
  * 生成随机 nonce
@@ -40,22 +43,32 @@ function buildMessage(apiKey: string, nonce: string, timestamp: string, body: st
 }
 
 /**
- * 计算 HMAC-SHA256 签名
+ * 计算 HMAC-SHA256 签名 (Sign Message)
+ * P1 Security: This is for API Authentication, NOT a password hash.
  */
-function computeSignature(secret: string, message: string): string {
-  const hmac = createHmac('sha256', secret);
-  hmac.update(message);
-  return hmac.digest('hex');
+async function computeSignature(hmac_api_auth_key: string, message: string): Promise<string> {
+  if (!signingKeyPromise) {
+    signingKeyPromise = webcrypto.subtle.importKey(
+      'raw',
+      textEncoder.encode(hmac_api_auth_key),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+  }
+  const key = await signingKeyPromise;
+  const signature = await webcrypto.subtle.sign('HMAC', key, textEncoder.encode(message));
+  return Buffer.from(signature).toString('hex');
 }
 
 /**
  * 生成 HMAC 认证头
  */
-function generateHmacHeaders(body: string = '') {
+async function generateHmacHeaders(body: string = '') {
   const nonce = generateNonce();
   const timestamp = Math.floor(Date.now() / 1000).toString();
   const message = buildMessage(API_KEY, nonce, timestamp, body);
-  const signature = computeSignature(API_SECRET, message);
+  const signature = await computeSignature(API_HMAC_KEY, message);
 
   return {
     'X-Api-Key': API_KEY,
@@ -73,7 +86,7 @@ function generateHmacHeaders(body: string = '') {
 async function httpRequest(method: string, path: string, body?: any): Promise<any> {
   const url = `${API_BASE_URL}${path}`;
   const bodyStr = body ? JSON.stringify(body) : '';
-  const headers = generateHmacHeaders(bodyStr);
+  const headers = await generateHmacHeaders(bodyStr);
 
   const response = await fetch(url, {
     method,
@@ -184,11 +197,10 @@ async function processJob(job: any): Promise<void> {
     await reportJobRunning(jobId);
 
     // 2. 模拟执行（sleep 2~5 秒）
-    const durationMs = 2000 + Math.random() * 3000;
+    // Generate a random duration between 2000ms and 5000ms using unbiased random
+    const durationMs = 2000 + randomInt(0, 3000);
     process.stdout.write(
-      util.format(
-        `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...`
-      ) + '\n'
+      `[${new Date().toISOString()}] ⏳ Executing job ${jobId} (${Math.round(durationMs)}ms)...\n`
     );
     await new Promise((resolve) => setTimeout(resolve, durationMs));
 

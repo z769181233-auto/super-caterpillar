@@ -99,6 +99,7 @@ async function buildShortTermMemory(params: {
       },
       index: chapterIndex - 1,
     },
+    orderBy: { createdAt: 'desc' },
   });
 
   if (!prevChapter?.summary) {

@@ -1,4 +1,4 @@
-import { JobType, AssetOwnerType, AssetType, PrismaClient } from 'database';
+import { JobType, AssetOwnerType, AssetStatus, AssetType, PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
 import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
@@ -33,12 +33,11 @@ export interface TimelinePreviewParams {
 export async function processTimelinePreviewJob({ prisma, job, apiClient }: TimelinePreviewParams) {
   const startTime = Date.now();
   const { timelineStorageKey, pipelineRunId } = job.payload;
-  const traceId = job.traceId || `trace - ${Date.now()} `;
+  const traceId = job.traceId || `trace-${Date.now()}`;
   const projectId = job.projectId;
+  const organizationId = job.organizationId;
 
   const timelineAbsPath = path.resolve(process.cwd(), '.runtime', timelineStorageKey);
-  console.log(`[TimelinePreview][${traceId}] Loading timeline from: ${timelineAbsPath} `);
-
   // 0. Load Timeline Data
   if (!(await fileExists(timelineAbsPath))) {
     throw new Error(`[TimelinePreview] Timeline file not found: ${timelineAbsPath} `);
@@ -46,6 +45,16 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
   // Safe read timeline JSON (Limit 10MB)
   const timelineJson = await readFileUnderLimit(timelineAbsPath, 10 * 1024 * 1024);
   const timeline: TimelineData = JSON.parse(timelineJson);
+
+  if (!projectId) {
+    throw new Error('[TimelinePreview] Missing projectId');
+  }
+  if (!organizationId) {
+    throw new Error('[TimelinePreview] Missing organizationId');
+  }
+  if (!timeline.sceneId) {
+    throw new Error('[TimelinePreview] Missing sceneId in timeline');
+  }
 
   // Validation
   if (timeline.shots.length < 1) {
@@ -77,8 +86,6 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
   // Stage 1: Per-Shot MP4 Generation (Reuse valid Assets or Generate)
   for (const shot of timeline.shots) {
-    console.log(`[TimelinePreview] Stage 1: Processing shotId = ${shot.shotId} `);
-
     const shotOutputPath = path.join(tempMp4Dir, `shot_${shot.shotId}.mp4`);
 
     // SSOT Check: Check DB for existing valid Asset (Formal Render)
@@ -92,10 +99,13 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       },
     });
 
-    if (existingAsset && existingAsset.status === 'GENERATED') {
+    if (
+      existingAsset &&
+      (existingAsset.status === AssetStatus.GENERATED ||
+        existingAsset.status === AssetStatus.PUBLISHED)
+    ) {
       const fullPath = path.resolve(process.cwd(), '.runtime', existingAsset.storageKey);
       if (await fileExists(fullPath)) {
-        console.log(`[TimelinePreview] Reusing existing Asset for shotId = ${shot.shotId}`);
         shotMp4Paths.push(fullPath);
         continue;
       }
@@ -144,10 +154,41 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
   const tracks = timeline.audio?.tracks || [];
   const hasDucking = tracks.some((t) => t.ducking);
   const forcePathB = hasTransitions || tracks.length > 1 || hasDucking;
+  const directorTimelineSummary = {
+    hasTransitions,
+    audioMode: timeline.audio?.mode || null,
+    audioMasterPriority: timeline.audio?.masterPriority || null,
+    bgmGain:
+      typeof timeline.audio?.bgmGain === 'number' ? timeline.audio.bgmGain : null,
+    ruleSetVersions: timeline.shots
+      .map((shot) => shot.directorPlan?.ruleSetVersion)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    matchedRuleIds: timeline.shots.flatMap((shot) =>
+      Array.isArray(shot.directorPlan?.matchedRules)
+        ? shot.directorPlan.matchedRules
+            .map((rule) => rule?.id)
+            .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        : [],
+    ),
+    coverageRoles: timeline.shots
+      .map((shot) => shot.directorPlan?.coverageRole)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    transitionHints: timeline.shots
+      .map((shot) => shot.directorPlan?.transitionHint)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    rhythmStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.editingRhythmStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    soundStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.soundStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    silenceStrategies: timeline.shots
+      .map((shot) => shot.directorPlan?.silenceStrategy)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+  };
 
   if (!forcePathB) {
     // Path A: Simple Concat
-    console.log(`[TimelinePreview][Path A] Simple Concat(Demuxer / Copy)`);
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
 
     const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
@@ -164,7 +205,6 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
   } else {
     // Path B: Advanced Composition
-    console.log(`[TimelinePreview][Path B] Advanced Composition(Mixing & Ducking)`);
     const complexArgs: string[] = [];
 
     shotMp4Paths.forEach((p) => complexArgs.push('-i', p));
@@ -295,20 +335,24 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
 
   // Stage 4: Trigger CE09_MEDIA_SECURITY with AssetId
   // Unified Entry Point
-  await prisma.shotJob.create({
-    data: {
+  const ce09DedupeKey = `ce09_${pipelineRunId}_${asset.id}`;
+  await prisma.shotJob.upsert({
+    where: { dedupeKey: ce09DedupeKey },
+    update: {},
+    create: {
+      dedupeKey: ce09DedupeKey,
       type: JobType.CE09_MEDIA_SECURITY,
-      organizationId: job.organizationId || timeline.organizationId,
-      projectId: job.projectId || timeline.projectId,
+      organizationId,
+      projectId,
       episodeId: job.episodeId || timeline.episodeId,
       sceneId: job.sceneId || timeline.sceneId,
-      shotId: timeline.shots[0].shotId, // Optional, for legacy query compatibility
+      shotId: timeline.shots[0].shotId, // 可选，兼容仍按 shotId 查询的旧入口
       payload: {
         assetId: asset.id, // Primary Entry Point
         videoAssetStorageKey: finalOutputRelative, // Legacy/Backup
         pipelineRunId,
         traceId,
-        projectId: job.projectId || timeline.projectId,
+        projectId,
       },
     },
   });
@@ -323,13 +367,18 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       assetId: asset.id,
       storageKey: finalOutputRelative,
       metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
+      directorTimelineSummary,
     },
-    audit: { action: 'ce11.timeline_preview.success', sceneId: timeline.sceneId, traceId },
+    audit: {
+      action: 'ce11.timeline_preview.success',
+      sceneId: timeline.sceneId,
+      traceId,
+      directorTimelineSummary,
+    },
   };
 }
 
 async function runFfmpeg(args: string[], label: string) {
-  console.log(`[FFmpeg ${label}]Executing: ffmpeg ${args.join(' ')} `);
   return new Promise<void>((resolve, reject) => {
     const child = spawn('ffmpeg', args);
     let output = '';

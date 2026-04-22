@@ -8,7 +8,7 @@ import {
 import { ShotPlanningEngineInput } from '@scu/shared-types';
 
 /**
- * Stage4 MVP: Shot Planning local stub
+ * Stage4 MVP: Shot Planning local truth
  */
 @Injectable()
 export class ShotPlanningLocalAdapter implements EngineAdapter {

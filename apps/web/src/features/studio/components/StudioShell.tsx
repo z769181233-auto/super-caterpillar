@@ -36,7 +36,7 @@ type Props = {
 
 export function StudioShell(props: Props) {
   const { summary, tree, insights, selectedShot, loadingShot } = props;
-  const [locale, setLocale] = React.useState<Locale>('zh');
+  const [locale] = React.useState<Locale>('zh');
   const t = useMemo(() => createT(locale), [locale]);
 
   const [evidence, setEvidence] = React.useState<EvidenceState>({ open: false });
@@ -226,7 +226,7 @@ export function StudioShell(props: Props) {
             tree={tree}
             onSelectShot={props.onSelectShot}
             // To be connected to AutoFocus soon
-            onSelectScene={(id) => {}}
+            onSelectScene={(_id) => {}}
             t={t}
             q={searchQuery}
             onQChange={setSearchQuery}

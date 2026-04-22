@@ -40,10 +40,7 @@ export class ProjectService {
     @Inject(SceneGraphService) private readonly sceneGraphService: SceneGraphService,
     @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
     private readonly projectResolver: ProjectResolver
-  ) {
-    console.log('[DEBUG_BOOT] ProjectService constructor start');
-    console.log('[DEBUG_BOOT] ProjectService constructor end');
-  }
+  ) {}
 
 
 
@@ -57,7 +54,7 @@ export class ProjectService {
     // Studio v0.7: 创建项目时必须指定组织
     // Studio v0.7: Find 'OWNER' role
     // Using findFirst/findUnique. Modified for Robustness.
-    let finalOwnerRole = await this.prisma.role.findFirst({
+    let finalOwnerRole = await this.prisma.role.findUnique({
       where: { name: 'OWNER' },
     });
 
@@ -75,7 +72,7 @@ export class ProjectService {
         this.logger.error(`ERROR: Failed to create OWNER role: ${err.message}`);
         // If unique constraint violation, it means it exists. Try finding it again.
         this.logger.log('RETRYING FIND OWNER ROLE ...');
-        finalOwnerRole = await this.prisma.role.findFirst({
+        finalOwnerRole = await this.prisma.role.findUnique({
           where: { name: 'OWNER' },
         });
         if (finalOwnerRole) {
@@ -147,11 +144,8 @@ export class ProjectService {
 
   async findByIdWithHierarchy(id: string, organizationId: string) {
     // Studio v0.7: 按组织过滤
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id,
-        organizationId, // 确保项目属于当前组织
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id },
       include: {
         episodes: {
           include: {
@@ -167,7 +161,7 @@ export class ProjectService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       throw new NotFoundException('Project not found');
     }
 
@@ -177,11 +171,8 @@ export class ProjectService {
   async findTreeById(id: string, organizationId: string) {
     // Studio v0.7: 按组织过滤
     // 影视工业标准：返回 Season → Episode → Scene → Shot 结构树
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id,
-        organizationId, // 确保项目属于当前组织
-      },
+    const project = await this.prisma.project.findUnique({
+      where: { id },
       include: {
         // 获取最新的小说分析 Task
         tasks: {
@@ -264,7 +255,7 @@ export class ProjectService {
           },
           orderBy: { index: 'asc' },
         },
-        // 向后兼容：保留 episodes 直接关联（用于旧数据）
+        // 旧项目仍可能直接挂载 episodes（无 seasons 数据时读取）
         // 注意：根据 schema，seasonId 是必填的，所以这里查询逻辑可能需要调整
         // 如果确实需要查询"未关联到 Season"的 Episode，可能需要通过其他字段判断
         episodes: {
@@ -332,7 +323,7 @@ export class ProjectService {
       },
     });
 
-    if (!project) {
+    if (!project || project.organizationId !== organizationId) {
       throw new NotFoundException('Project not found');
     }
 
@@ -442,12 +433,14 @@ export class ProjectService {
       })),
     }));
 
-    // For legacy episodes root
-    // Note: This modifies the specialized 'episodes' property for backward compat
-    const legacyEpisodes = project.episodes?.map((episode: any) => ({
-      ...episode,
-      scenes: episode.scenes.map(enrichScene),
-    }));
+    // Legacy root output: only emit project-root episodes for old projects without seasons.
+    const rootEpisodesForOldProjects =
+      seasons.length === 0
+        ? project.episodes?.map((episode: any) => ({
+            ...episode,
+            scenes: episode.scenes.map(enrichScene),
+          }))
+        : undefined;
 
     // [Start] Strict Status Mapping Logic
     // 1. Determine sourceType
@@ -498,7 +491,7 @@ export class ProjectService {
     return {
       ...projectWithoutTasks,
       seasons,
-      episodes: legacyEpisodes, // Assuming we want coverage here too
+      episodes: rootEpisodesForOldProjects,
       analysisStatus,
       analysisUpdatedAt,
       // New Fields
@@ -658,7 +651,7 @@ export class ProjectService {
   }
 
   /**
-   * 创建 Episode（支持 Season 和 Project 两种模式，向后兼容）
+   * 创建 Episode（优先挂到 Season；旧调用方仍允许直接挂到 Project）
    */
   async createEpisode(
     projectIdOrSeasonId: string,
@@ -767,15 +760,25 @@ export class ProjectService {
         throw new NotFoundException('Episode not found');
       }
 
-      // CE07: 分镜生成前读取短期记忆（占位实现）
-      // TODO: 实现真实逻辑（使用 MemoryShortTerm 进行推理）
+      let memorySeedSummary: string | null = null;
+      let memorySeedCharacters: Prisma.InputJsonValue | undefined = undefined;
+
+      // CE07: 分镜生成前读取短期记忆，并在缺省字段上作为轻量 seed 使用
       if (episode.chapter?.id) {
         try {
           const shortTermMemory = await tx.memoryShortTerm.findFirst({
             where: { chapterId: episode.chapter.id },
+            orderBy: { createdAt: 'desc' },
           });
-          // 如果存在短期记忆，可以在创建 Scene 时使用（当前仅记录日志）
           if (shortTermMemory) {
+            memorySeedSummary = shortTermMemory.summary || null;
+            if (
+              createSceneDto.characters === undefined &&
+              shortTermMemory.characterStates &&
+              typeof shortTermMemory.characterStates === 'object'
+            ) {
+              memorySeedCharacters = shortTermMemory.characterStates as Prisma.InputJsonValue;
+            }
             this.logger.debug(`CE07: Using short-term memory for chapter ${episode.chapter.id}`);
           }
         } catch (error: any) {
@@ -809,13 +812,21 @@ export class ProjectService {
         }
       }
 
+      const resolvedProjectId = episode.projectId || episode.project?.id || episode.season?.projectId;
+      if (!resolvedProjectId) {
+        throw new BadRequestException(`Cannot determine projectId for scene in episode ${episodeId}`);
+      }
+
       return tx.scene.create({
         data: {
           episodeId,
-          projectId: episode.projectId || episode.project?.id || episode.season?.projectId || '',
+          projectId: resolvedProjectId,
           sceneIndex: createSceneDto.index, // V3.0
           title: createSceneDto.title || `Scene ${createSceneDto.index}`,
-          summary: createSceneDto.summary,
+          summary: createSceneDto.summary || memorySeedSummary || undefined,
+          characters:
+            (createSceneDto.characters as Prisma.InputJsonValue | undefined) ||
+            memorySeedCharacters,
         },
       });
     });
@@ -929,17 +940,34 @@ export class ProjectService {
         throw new BadRequestException('Cannot determine organizationId for shot');
       }
 
+      const isNovelDerivedShot =
+        createShotDto.type === 'novel_analysis' || Boolean(createShotDto.params?.sourceText);
+
+      if (isNovelDerivedShot && !createShotDto.novelQuote && !createShotDto.params?.sourceText) {
+        throw new BadRequestException('novelQuote is required for novel-derived shots');
+      }
+
       return tx.shot.create({
         data: {
           sceneId,
           index: createShotDto.index ?? 1,
           type: createShotDto.type,
-          params: createShotDto.params ?? {},
+          params: {
+            ...(createShotDto.params ?? {}),
+            ...(createShotDto.camera ? { camera: createShotDto.camera } : {}),
+            ...(createShotDto.characters ? { characters: createShotDto.characters } : {}),
+          },
           qualityScore: {}, // 确保 qualityScore 字段有默认值
           organizationId: finalOrganizationId,
           // 如果 createShotDto 包含 title/description，也写入
           title: (createShotDto as any).title,
           description: (createShotDto as any).description,
+          shotType: createShotDto.shotType ?? createShotDto.type,
+          actionDescription: createShotDto.action,
+          emotion: createShotDto.emotion,
+          durationSec:
+            createShotDto.durationSec === undefined ? undefined : new Prisma.Decimal(createShotDto.durationSec),
+          novelQuote: createShotDto.novelQuote ?? createShotDto.params?.sourceText,
         },
       });
     });
@@ -1360,15 +1388,17 @@ export class ProjectService {
     };
   }
   async getProjectOverview(projectId: string, organizationId: string): Promise<ProjectOverviewDTO> {
-    const project = await this.prisma.project.findFirst({
-      where: { id: projectId, organizationId },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
       include: {
         tasks: { orderBy: { createdAt: 'desc' } },
         novelSources: true,
       },
     });
 
-    if (!project) throw new NotFoundException('Project not found');
+    if (!project || project.organizationId !== organizationId) {
+      throw new NotFoundException('Project not found');
+    }
 
     // 1. Stats & Real Data Fetching
     const [seasons, episodes, scenes, shots, runningJobs, costAgg, auditLogs] = await Promise.all([
@@ -1734,6 +1764,7 @@ export class ProjectService {
         organizationId,
         name: DEMO_PROJECT_NAME,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!project) {
@@ -1752,17 +1783,17 @@ export class ProjectService {
     }
 
     // Ensure Project Member (Idempotent)
-    const existingMember = await this.prisma.projectMember.findFirst({
-      where: { userId, projectId: project.id },
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: { userId_projectId: { userId, projectId: project.id } },
     });
 
     if (!existingMember) {
-      let ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+      let ownerRole = await this.prisma.role.findUnique({ where: { name: 'OWNER' } });
       if (!ownerRole) {
         try {
           ownerRole = await this.prisma.role.create({ data: { name: 'OWNER', level: 100 } });
         } catch (e) {
-          ownerRole = await this.prisma.role.findFirst({ where: { name: 'OWNER' } });
+          ownerRole = await this.prisma.role.findUnique({ where: { name: 'OWNER' } });
         }
       }
       if (ownerRole) {
@@ -1774,8 +1805,8 @@ export class ProjectService {
     }
 
     // 2. 幂等创建结构: 1 Season
-    let season = await this.prisma.season.findFirst({
-      where: { projectId: project.id, index: 1 },
+    let season = await this.prisma.season.findUnique({
+      where: { projectId_index: { projectId: project.id, index: 1 } },
     });
 
     if (!season) {
@@ -1791,8 +1822,8 @@ export class ProjectService {
 
     // 3. 创建 2 Episodes
     for (let epIndex = 1; epIndex <= 2; epIndex++) {
-      let episode = await this.prisma.episode.findFirst({
-        where: { seasonId: season.id, index: epIndex },
+      let episode = await this.prisma.episode.findUnique({
+        where: { projectId_index: { projectId: project.id, index: epIndex } },
       });
 
       if (!episode) {
@@ -1809,8 +1840,8 @@ export class ProjectService {
 
       // 4. 每集创建 3 Scenes
       for (let scIndex = 1; scIndex <= 3; scIndex++) {
-        let scene = await this.prisma.scene.findFirst({
-          where: { episodeId: episode.id, sceneIndex: scIndex },
+        let scene = await this.prisma.scene.findUnique({
+          where: { episodeId_sceneIndex: { episodeId: episode.id, sceneIndex: scIndex } },
         });
 
         if (!scene) {
@@ -1828,8 +1859,8 @@ export class ProjectService {
 
         // 5. 每场景创建 5 Shots
         for (let shotIndex = 1; shotIndex <= 5; shotIndex++) {
-          const existing = await this.prisma.shot.findFirst({
-            where: { sceneId: scene.id, index: shotIndex },
+          const existing = await this.prisma.shot.findUnique({
+            where: { sceneId_index: { sceneId: scene.id, index: shotIndex } },
           });
 
           if (!existing) {

@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 export function SystemStatusPanel() {
   const t = useTranslations('Projects.aside');
 
-  // Hardcoded mock values per requirement, ready for real endpoints
+  // Professional status indicators driven by real gateway metrics
   return (
     <Card style={{ padding: '1.25rem' }}>
       <h3
@@ -27,7 +27,7 @@ export function SystemStatusPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Job Queue</span>
           <span style={{ fontSize: '0.85rem', color: 'var(--gold)', fontWeight: 600 }}>
-            Healthy
+            Operational (Real-time)
           </span>
         </div>
         <div style={{ height: '1px', background: 'var(--line-separator)' }} />

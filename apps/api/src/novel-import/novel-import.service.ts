@@ -10,6 +10,10 @@ import { ProjectService } from '../project/project.service';
 import { NovelAnalysisProcessorService } from './novel-analysis-processor.service';
 import { randomUUID } from 'crypto';
 import * as fs from 'fs';
+import {
+  isWithinNovelUploadRoot,
+  resolveNovelUploadPath,
+} from './novel-upload-path.util';
 
 /**
  * 小说分析结果结构
@@ -286,20 +290,25 @@ export class NovelImportService {
     projectId: string,
     organizationId: string,
     userId: string,
-    filePath: string,
+    storedFileKey: string,
     title: string,
     traceId?: string,
     isVerification?: boolean
   ): Promise<any> {
     this.logger.log(`[Stage 4] Triggering Shredder workflow for Novel: ${title} (${projectId})`);
 
-    const stats = await fs.promises.stat(filePath).catch(() => ({ size: 0 }));
+    const safeFilePath = resolveNovelUploadPath(storedFileKey);
+    if (!isWithinNovelUploadRoot(safeFilePath)) {
+      throw new BadRequestException('Security violation: Attempt to access outside upload directory');
+    }
+
+    const stats = await fs.promises.stat(safeFilePath).catch(() => ({ size: 0 }));
 
     // 1. 创建 NovelSource 记录 (新模型)
     const novelSource = await this.prisma.novelSource.upsert({
       where: { projectId },
       update: {
-        fileKey: filePath,
+        fileKey: safeFilePath,
         fileName: title,
         fileSize: stats.size,
         status: 'PENDING',
@@ -310,7 +319,7 @@ export class NovelImportService {
       create: {
         projectId,
         organizationId,
-        fileKey: filePath,
+        fileKey: safeFilePath,
         fileName: title,
         fileSize: stats.size,
         status: 'PENDING',
@@ -349,7 +358,7 @@ export class NovelImportService {
           projectId,
           organizationId,
           userId,
-          fileKey: filePath,
+          fileKey: safeFilePath,
           title,
           isVerification: !!isVerification,
         },

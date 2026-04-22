@@ -1,4 +1,4 @@
-import { JobType, AssetOwnerType, AssetType, PrismaClient } from 'database';
+import { JobType, AssetOwnerType, AssetStatus, AssetType, PrismaClient } from 'database';
 import { EngineHubClient } from '../engine-hub-client';
 import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
 import * as path from 'path';
@@ -30,8 +30,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     throw new Error(`[TimelineRender] [${traceId}] Missing projectId in job ${job.id}`);
   }
 
-  console.log(`[TimelineRender] [${traceId}] Loading timeline from: ${timelineStorageKey}`);
-
   // 0. Load Timeline Data
   if (!(await fileExists(timelineStorageKey))) {
     throw new Error(`[TimelineRender] Timeline file not found: ${timelineStorageKey}`);
@@ -47,6 +45,31 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   const fps = timeline.fps || 24;
   const width = timeline.width || 1280;
   const height = timeline.height || 720;
+  const masterPriority = timeline.audio?.masterPriority || 'dialogue';
+  const audioMode = timeline.audio?.mode || 'truncate';
+  const directorRenderSummary = {
+    audioMode,
+    audioMasterPriority: masterPriority,
+    ruleSetVersions: timeline.shots
+      .map((shot) => shot.directorPlan?.ruleSetVersion)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    matchedRuleIds: timeline.shots.flatMap((shot) =>
+      Array.isArray(shot.directorPlan?.matchedRules)
+        ? shot.directorPlan.matchedRules
+            .map((rule) => rule?.id)
+            .filter((value): value is string => typeof value === 'string' && value.length > 0)
+        : [],
+    ),
+    coverageRoles: timeline.shots
+      .map((shot) => shot.directorPlan?.coverageRole)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    rhythmClasses: timeline.shots
+      .map((shot) => shot.directorPlan?.rhythmClass)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+    transitionHints: timeline.shots
+      .map((shot) => shot.directorPlan?.transitionHint)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0),
+  };
 
   // FFmpeg Fail-fast check
   try {
@@ -69,8 +92,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
 
   // Stage 1: Per-Shot MP4 Generation (Locked Params)
   for (const shot of timeline.shots) {
-    console.log(`[TimelineRender] Stage 1: Processing shotId=${shot.shotId}`);
-
     const shotOutputPath = path.join(tempMp4Dir, `shot_${shot.shotId}.mp4`);
 
     // SSOT Check: Check DB for existing valid Asset
@@ -84,31 +105,36 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
       },
     });
 
-    if (existingAsset && existingAsset.status === 'GENERATED') {
+    if (
+      existingAsset &&
+      (existingAsset.status === AssetStatus.GENERATED ||
+        existingAsset.status === AssetStatus.PUBLISHED)
+    ) {
       // Note: In real life, we should also verify if the existing asset matches our locked params (fps/res).
       // For S4-7, we assume the previous VIDEO_RENDER or our re-render handles this.
       const fullPath = path.resolve(storageRoot, existingAsset.storageKey);
       if (await fileExists(fullPath)) {
-        console.log(`[TimelineRender] Reusing existing Asset for shotId=${shot.shotId}`);
         shotMp4Paths.push(fullPath);
         continue;
       }
     }
 
     // P0-R5: High-Fidelity Pass-through (Phase T: Strict)
-    // If source asset is MP4, use it directly (bypass frames.txt/mock-compose)
+    // Timeline render is now sealed to truth-owned shot VIDEO assets only.
     try {
-      const sourceAsset = await prisma.asset.findFirst({
-        where: { ownerId: shot.shotId, ownerType: AssetOwnerType.SHOT, type: AssetType.VIDEO }, // Ensure VIDEO
-        orderBy: { createdAt: 'desc' },
+      const sourceAsset = await prisma.asset.findUnique({
+        where: {
+          ownerType_ownerId_type: {
+            ownerType: AssetOwnerType.SHOT,
+            ownerId: shot.shotId,
+            type: AssetType.VIDEO,
+          },
+        }, // Ensure VIDEO
       });
 
       if (sourceAsset && sourceAsset.storageKey) {
         const sourcePath = path.resolve(storageRoot, sourceAsset.storageKey);
         if (await fileExists(sourcePath)) {
-          process.stderr.write(
-            `[TimelineRender] High-Fidelity Pass-through: Using source ${sourcePath}\n`
-          );
           await fsp.copyFile(sourcePath, shotOutputPath);
           shotMp4Paths.push(shotOutputPath);
           continue; // Success -> Next Shot
@@ -122,57 +148,15 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
           `[TimelineRender] No VIDEO source asset found for shotId=${shot.shotId}. Legacy fallback is BANNED.`
         );
       }
-    } catch (e: any) {
-      throw new Error(`[TimelineRender] Critical Failure in Source Asset Resolution: ${e.message}`);
-    }
-
-    // Render if not skipped
-    const framesTxt = shot.framesTxtStorageKey;
-
-    // P22-0 Race Condition Fix: Wait for SHOT_RENDER completion (frames.txt availability)
-    if (!(await fileExists(framesTxt))) {
-      console.log(`[TimelineRender] Waiting for frames.txt: ${framesTxt} (TIMEOUT=60s)`);
-      const startWait = Date.now();
-      while (Date.now() - startWait < 60000) {
-        if (await fileExists(framesTxt)) break;
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    }
-
-    if (!(await fileExists(framesTxt))) {
+    } catch (error: any) {
       throw new Error(
-        `[TimelineRender] Fail-fast: frames.txt not found for shotId=${shot.shotId} at ${framesTxt}`
+        `[TimelineRender] Critical Failure in Source Asset Resolution: ${error.message}`
       );
     }
-
-    // Real rendering for Stage 1: Shot Frames to MP4
-    const args = [
-      '-f',
-      'concat',
-      '-safe',
-      '0',
-      '-i',
-      framesTxt,
-      '-c:v',
-      'libx264',
-      '-pix_fmt',
-      'yuv420p',
-      '-r',
-      fps.toString(),
-      '-y',
-      shotOutputPath,
-    ];
-    await runFfmpeg(args, `Stage1_Shot_${shot.shotId}`);
-    shotMp4Paths.push(shotOutputPath);
   }
 
   // Stage 1.5: Prepare Audio Assets (P18-1: Production Audio Routing)
-  console.log(`[TimelineRender] Stage 1.5: Preparing audio assets for sceneId=${timeline.sceneId}`);
-
   const sceneId = timeline.sceneId;
-  if (!sceneId) {
-    console.log(`[TimelineRender] [WARN] No sceneId found, skipping audio assets`);
-  }
 
   // P18-1: Instantiate AudioService and Resolve Routing
   // S3.4 Stage 5 Fix: Replaced local AudioServiceStub with EngineHub calls (AU01/AU02)
@@ -200,10 +184,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   let audioRenderMode: 'standard' | 'fallback_silence' = 'standard';
 
   if (shouldGenerate && sceneId) {
-    console.log(
-      `[TimelineRender] Routing to EngineHub (AU01/AU02): projectId=${projectId}, sceneId=${sceneId}, ks=${killOn}, preview=${preview}`
-    );
-
     // 1. Generate Voice (TTS) via AU01
     try {
       const ttsText = `${traceId}:${sceneId}:AUDIO_TTS`;
@@ -219,15 +199,14 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         context: { ...job.context, jobId: job.id, traceId },
       });
 
-      if (ttsRes.status !== 'SUCCESS') {
-        const errMsg = ttsRes.error?.message || 'Unknown AU01 error';
-        if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
-          console.warn(`[TimelineRender] [AUDIO_FALLBACK] AU01 failed: ${errMsg}. Using fallback_silence.`);
-          audioRenderMode = 'fallback_silence';
-        } else {
-          throw new Error(`AU01_TTS_FAIL: ${errMsg}`);
-        }
+    if (ttsRes.status !== 'SUCCESS') {
+      const errMsg = ttsRes.error?.message || 'Unknown AU01 error';
+      if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
+        audioRenderMode = 'fallback_silence';
+      } else {
+        throw new Error(`AU01_TTS_FAIL: ${errMsg}`);
       }
+    }
 
       if (audioRenderMode === 'standard') {
         const ttsSourcePath = ttsRes.output.assetUrl.replace('file://', '');
@@ -247,7 +226,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
             ownerType_ownerId_type: {
               ownerId: sceneId,
               ownerType: AssetOwnerType.SCENE,
-              type: 'AUDIO_TTS' as any,
+              type: AssetType.AUDIO_TTS,
             },
           },
           update: {
@@ -259,16 +238,20 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
             projectId,
             ownerId: sceneId,
             ownerType: AssetOwnerType.SCENE,
-            type: 'AUDIO_TTS' as any,
+            type: AssetType.AUDIO_TTS,
             storageKey: ttsStorageKey,
             checksum: ttsSha,
             status: 'GENERATED',
           },
         });
       }
-    } catch (e: any) {
-      console.warn(`[TimelineRender] [AUDIO_FALLBACK_CATCH] AU01 Exception: ${e.message}. Using fallback_silence.`);
-      audioRenderMode = 'fallback_silence';
+    } catch (error: any) {
+      const errMsg = error?.message || String(error);
+      if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
+        audioRenderMode = 'fallback_silence';
+      } else {
+        throw error;
+      }
     }
 
     // 2. Handle BGM via AU02
@@ -303,7 +286,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
                 ownerType_ownerId_type: {
                   ownerId: sceneId,
                   ownerType: AssetOwnerType.SCENE,
-                  type: 'AUDIO_BGM' as any,
+                  type: AssetType.AUDIO_BGM,
                 },
               },
               update: {
@@ -315,7 +298,7 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
                 projectId,
                 ownerId: sceneId,
                 ownerType: AssetOwnerType.SCENE,
-                type: 'AUDIO_BGM' as any,
+                type: AssetType.AUDIO_BGM,
                 storageKey: bgmStorageKey,
                 checksum: bgmSha,
                 status: 'GENERATED',
@@ -323,18 +306,18 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
             });
           }
         }
-      } catch (e: any) {
-        console.warn(`[TimelineRender] [AUDIO_BGM_FAIL_NON_BLOCKING] AU02 Exception: ${e.message}`);
+      } catch (error: any) {
+        const errMsg = error?.message || String(error);
+        if (errMsg.includes('AUDIO_VENDOR_API_KEY_NOT_CONFIGURED') || process.env.GATE_MODE === '1') {
+          audioRenderMode = 'fallback_silence';
+        } else {
+          throw error;
+        }
       }
     }
-
-    console.log(
-      `[TimelineRender] Audio phase finished. Mode=${audioRenderMode}, TTS=${ttsAsset?.id || 'none'}, BGM=${bgmAsset?.id || 'none'}`
-    );
   }
 
   // Stage 2: Scene Composition
-  console.log(`[TimelineRender] Stage 2: Composing ${shotMp4Paths.length} shots`);
   const finalOutputRelative = `renders/${projectId}/scenes/${timeline.sceneId}/output.mp4`;
   const finalOutputPath = path.resolve(storageRoot, finalOutputRelative);
   const finalOutputDir = path.dirname(finalOutputPath);
@@ -343,7 +326,14 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   // P13-2: 构建 audio tracks（如果音频资产存在）
   let tracks = timeline.audio?.tracks || [];
   if (ttsAsset && bgmAsset) {
-    console.log(`[TimelineRender] Adding audio tracks: TTS + BGM`);
+    const existingBgmTrack = timeline.audio?.tracks?.find((track) => track.type === 'music');
+    const derivedBgmGain =
+      typeof existingBgmTrack?.gain === 'number'
+        ? existingBgmTrack.gain
+        : masterPriority === 'music'
+          ? 0.45
+          : 0.25;
+
     tracks = [
       {
         id: 'tts_main',
@@ -355,9 +345,13 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
         id: 'bgm_main',
         type: 'music', // 使用 'music' 而非 'bgm'
         storageKey: bgmAsset.storageKey,
-        gain: 0.3, // 降低 BGM 音量
-        loop: false, // 已经计算足够时长,不需要 loop
-        ducking: { target: 'dialogue', gain: 0.3 }, // ducking gain (降低到30%)
+        gain: derivedBgmGain,
+        loop: audioMode === 'loop',
+        ducking:
+          masterPriority === 'music'
+            ? { target: 'dialogue', gain: 0.18 }
+            : { target: 'dialogue', gain: 0.3 },
+        truncate: audioMode === 'loop' ? 'longest' : 'shortest',
       },
     ];
   }
@@ -369,9 +363,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
   if (!forcePathB) {
     // Path A: Simple Concat (Fast, no re-encoding)
     // Rule: audio.tracks.length <= 1 && no ducking && no transitions
-    console.log(
-      `[TimelineRender] [Path A] Simple Concat (Demuxer/Copy) - Performance Conservation Mode`
-    );
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
     const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
     await fsp.writeFile(concatListPath, concatContent);
@@ -393,7 +384,6 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     await runFfmpeg(concatArgs, `Stage2_SimpleConcat`);
   } else {
     // Path B: Advanced Composition (FilterComplex, Re-encoding required)
-    console.log(`[TimelineRender] [Path B] Advanced Composition (Mixing & Ducking)`);
     const complexArgs: string[] = [];
 
     // Inputs: All shot MP4s
@@ -535,12 +525,10 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     const hlsOutputDir = path.join(finalOutputDir, 'hls');
     if (!(await fileExists(hlsOutputDir))) await ensureDir(hlsOutputDir);
     const hlsMasterPath = path.join(hlsOutputDir, 'master.m3u8');
-
-    console.log(`[TimelineRender] Generating HLS package at: ${hlsMasterPath}`);
     const hlsArgs = [
       '-i',
       finalOutputPath,
-      '-codec:',
+      '-c',
       'copy',
       '-start_number',
       '0',
@@ -611,17 +599,18 @@ export async function processTimelineRenderJob(ctx: ProcessorContext) {
     assetId: asset.id,
     storageKey: finalOutputRelative,
     audioRenderMode,
-    audit: { 
-      action: 'ce10.timeline_render.success', 
-      sceneId: timeline.sceneId, 
+    directorRenderSummary,
+    audit: {
+      action: 'ce10.timeline_render.success',
+      sceneId: timeline.sceneId,
       traceId,
-      audioRenderMode 
+      audioRenderMode,
+      directorRenderSummary,
     },
   };
 }
 
 async function runFfmpeg(args: string[], label: string) {
-  console.log(`[FFmpeg ${label}] Executing: ffmpeg ${args.join(' ')}`);
   return new Promise<void>((resolve, reject) => {
     const child = spawn('ffmpeg', args);
     let output = '';

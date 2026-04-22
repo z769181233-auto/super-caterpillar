@@ -11,8 +11,6 @@ export class UsageMeter {
   static async recordImport(organizationId: string, bytes: number) {
     const billingCycleId = new Date().toISOString().substring(0, 7); // YYYY-MM
 
-    console.log(`[UsageMeter] Recording import for Org ${organizationId}: ${bytes} bytes`);
-
     await prisma.usageRecord.upsert({
       where: {
         organizationId_billingCycleId: {
@@ -38,8 +36,6 @@ export class UsageMeter {
    */
   static async recordProcessing(organizationId: string, computeTimeMs: number, metadata: any) {
     const billingCycleId = new Date().toISOString().substring(0, 7);
-
-    console.log(`[UsageMeter] Recording processing for Org ${organizationId}: ${computeTimeMs}ms`);
 
     await prisma.usageRecord.upsert({
       where: {

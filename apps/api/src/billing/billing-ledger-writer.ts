@@ -21,14 +21,7 @@ interface BillingEntry {
  * 基于 (tenantId, traceId, itemType, itemId, chargeCode) 唯一约束确保幂等
  */
 export async function writeBillingLedger(entry: BillingEntry): Promise<void> {
-  try {
-    console.log(
-      `[BillingLedger] ⚠️ Skipped writing obsolete non-transactional ledger entry for: ${entry.traceId}`
-    );
-  } catch (error: any) {
-    console.error(`[BillingLedger] ❌ Error writing ledger:`, error);
-    throw error;
-  }
+  void entry;
 }
 
 /**

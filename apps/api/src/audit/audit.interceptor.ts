@@ -12,6 +12,12 @@ export class AuditInterceptor implements NestInterceptor {
     private readonly auditService: AuditService
   ) {}
 
+  private asNonEmptyString(value: unknown): string | undefined {
+    if (typeof value !== 'string') return undefined;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     try {
       if (context.getType() === 'http') {
@@ -31,9 +37,12 @@ export class AuditInterceptor implements NestInterceptor {
       const request = context.switchToHttp().getRequest();
       const user = request.user;
       const traceId =
-        request.traceId || request.headers['x-trace-id'] || `${Date.now()}-${Math.random()}`;
+        this.asNonEmptyString(request.traceId) ??
+        this.asNonEmptyString(request.headers['x-trace-id']);
       const ip = request.ip || request.headers['x-forwarded-for'];
       const ua = request.headers['user-agent'];
+      const resourceType =
+        this.asNonEmptyString(request?.route?.path) ?? this.asNonEmptyString(request.url);
 
       return next.handle().pipe(
         tap(async () => {
@@ -41,9 +50,9 @@ export class AuditInterceptor implements NestInterceptor {
             userId: user?.userId,
             organizationId: user?.organizationId,
             action,
-            resourceType: request?.route?.path || request.url || 'unknown',
+            resourceType,
             resourceId: request.params?.id || request.params?.projectId || null,
-            traceId: traceId.toString(),
+            traceId,
             ip: typeof ip === 'string' ? ip : Array.isArray(ip) ? ip[0] : undefined,
             userAgent: typeof ua === 'string' ? ua : undefined,
             details: {

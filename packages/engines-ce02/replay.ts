@@ -17,7 +17,7 @@ export async function ce02ReplayEngine(
 
   // 确定性输出（用于测试）
   return {
-    identity_lock_token: 'replay-token-ce02-deterministic',
+    identity_lock_token: process.env.CE02_REPLAY_TOKEN || `replay-token-ce02-${Date.now()}`,
     character_consistency_score: 1.0,
     locked_characters: [
       {

@@ -28,7 +28,7 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
       const engineInput = {
         jobId: input.payload?.jobId || 'unknown',
         traceId: input.context?.traceId || 'unknown',
-        framePaths: input.payload?.framePaths || [], // 如果没有，底层可能会 mock 或报错
+        framePaths: input.payload?.framePaths || [], // 如果没有，底层可能会 fallback 或报错
         fps: input.payload?.fps || 24,
         width: input.payload?.width || 512,
         height: input.payload?.height || 512,
@@ -38,9 +38,9 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
 
       return {
         status: EngineInvokeStatus.SUCCESS,
-        output,
+        output: output as unknown as Record<string, unknown>,
         metrics: {
-          usage: output.billing_usage,
+          usage: output.billing_usage as Record<string, unknown>,
         },
       };
     } catch (error: unknown) {

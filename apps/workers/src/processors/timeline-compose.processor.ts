@@ -7,6 +7,14 @@ import { EngineHubClient } from '../engine-hub-client';
 import { config } from '@scu/config';
 import { ProcessorContext } from '../types/processor-context';
 
+/**
+ * P1 Standard: Resolve Runtime Dir (Deduplicated across Workers)
+ */
+function resolveRuntimeDir(): string {
+  const root = process.env.RUNTIME_DIR || process.env.SCU_REPO_ROOT || process.cwd();
+  return path.resolve(root, '.runtime');
+}
+
 export interface TimelineShot {
   shotId: string;
   index: number;
@@ -16,6 +24,17 @@ export interface TimelineShot {
   framesTxtStorageKey: string;
   transition: 'none' | 'xfade';
   transitionFrames: number; // Overlap length
+  directorPlan?: {
+    ruleSetVersion?: string;
+    transitionHint?: string;
+    editingRhythmStrategy?: string;
+    soundStrategy?: string;
+    silenceStrategy?: string;
+    avgShotLengthSec?: number;
+    coverageRole?: string;
+    rhythmClass?: string;
+    matchedRules?: Array<{ id: string; reason: string }>;
+  };
 }
 
 export interface AudioTrack {
@@ -35,6 +54,7 @@ export interface AudioConfig {
   tracks: AudioTrack[];
   masterPriority?: string;
   mode?: 'none' | 'loop' | 'truncate'; // Legacy support
+  bgmGain?: number;
 }
 
 export interface TimelineData {
@@ -49,6 +69,124 @@ export interface TimelineData {
   audio?: AudioConfig;
 }
 
+function deriveAudioPreferences(shotParamsList: any[]): {
+  masterPriority: string;
+  mode: 'none' | 'loop' | 'truncate';
+  bgmGain: number;
+} {
+  const directorPlans = shotParamsList
+    .map((params) => {
+      const executionPolicy = params?.executionPolicy || {};
+      const audioPolicy = executionPolicy.audioPolicy || {};
+      return {
+        ...params?.directorPlan,
+        soundStrategy: audioPolicy.soundStrategy ?? params?.directorPlan?.soundStrategy ?? null,
+        silenceStrategy:
+          audioPolicy.silenceStrategy ?? params?.directorPlan?.silenceStrategy ?? null,
+      };
+    })
+    .filter(Boolean);
+
+  const soundHints = directorPlans
+    .map((plan) => String(plan.soundStrategy || '').toUpperCase())
+    .filter(Boolean);
+  const silenceHints = directorPlans
+    .map((plan) => String(plan.silenceStrategy || '').toUpperCase())
+    .filter(Boolean);
+
+  const prefersSilence = silenceHints.some(
+    (value) => value.includes('SILENCE') || value.includes('QUIET') || value.includes('BREATH'),
+  );
+  const prefersDialogueFocus = soundHints.some(
+    (value) => value.includes('DIALOGUE') || value.includes('VOICE') || value.includes('INTIMATE'),
+  );
+  const prefersAmbientLoop = soundHints.some(
+    (value) => value.includes('AMBIENT') || value.includes('ATMOS') || value.includes('SPACE'),
+  );
+  const prefersMusicForward = soundHints.some(
+    (value) => value.includes('MUSIC') || value.includes('SCORE') || value.includes('ORCHESTRAL'),
+  );
+
+  if (prefersSilence) {
+    return {
+      masterPriority: 'dialogue',
+      mode: 'truncate',
+      bgmGain: 0.15,
+    };
+  }
+
+  if (prefersDialogueFocus) {
+    return {
+      masterPriority: 'dialogue',
+      mode: prefersAmbientLoop ? 'loop' : 'truncate',
+      bgmGain: 0.22,
+    };
+  }
+
+  if (prefersMusicForward) {
+    return {
+      masterPriority: 'music',
+      mode: prefersAmbientLoop ? 'loop' : 'truncate',
+      bgmGain: 0.4,
+    };
+  }
+
+  return {
+    masterPriority: 'dialogue',
+    mode: prefersAmbientLoop ? 'loop' : 'truncate',
+    bgmGain: 0.3,
+  };
+}
+
+function deriveTransitionProfile(params: any): {
+  transition: 'none' | 'xfade';
+  transitionSec: number;
+} {
+  if (params.transition === 'xfade') {
+    return {
+      transition: 'xfade',
+      transitionSec: Number(params.transitionSec || 0.5),
+    };
+  }
+
+  const executionPolicy = params.executionPolicy || {};
+  const timelinePolicy = params.timelinePolicy || {};
+  const directorPlan = params.directorPlan || {};
+  const transitionHint = String(
+    timelinePolicy.transitionHint || executionPolicy.transitionHint || directorPlan.transitionHint || ''
+  ).toLowerCase();
+  const rhythm = String(
+    timelinePolicy.rhythmClass ||
+      executionPolicy.rhythmClass ||
+      directorPlan.editingRhythmStrategy ||
+      ''
+  ).toUpperCase();
+  const avgShotLengthSec = Number(
+    executionPolicy.durationSecTarget || directorPlan.avgShotLengthSec || 0
+  );
+
+  if (transitionHint === 'hold') {
+    return { transition: 'none', transitionSec: 0 };
+  }
+
+  if (transitionHint === 'match_cut') {
+    return {
+      transition: 'xfade',
+      transitionSec: avgShotLengthSec >= 6 || rhythm.includes('LINGER') ? 0.8 : 0.6,
+    };
+  }
+
+  if (rhythm.includes('FAST') || rhythm.includes('TIGHT')) {
+    return { transition: 'xfade', transitionSec: 0.35 };
+  }
+
+  if (rhythm.includes('LINGER') || rhythm.includes('HOLD')) {
+    return { transition: 'none', transitionSec: 0 };
+  }
+
+  return { transition: 'none', transitionSec: 0 };
+}
+
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
@@ -58,8 +196,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const engineHubClient = context.apiClient ? new EngineHubClient(apiClient) : undefined;
   const { sceneId, pipelineRunId } = job.payload;
   const traceId = job.traceId || `trace-${Date.now()}`;
-
-  console.log(`[TimelineCompose] [${traceId}] Starting for scene=${sceneId}`);
 
   // 1. DB 溯源获取 Context & Shots (Context SSOT)
   const scene = await prisma.scene.findUnique({
@@ -72,6 +208,13 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       },
       shots: {
         orderBy: { index: 'asc' },
+        include: {
+          characterAppearances: {
+            include: {
+              character: true
+            }
+          }
+        }
       },
     },
   });
@@ -87,10 +230,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   const organizationId = scene.episode.project.organizationId;
   const projectId = scene.episode.project.id;
   const episodeId = scene.episode.id;
-
-  console.log(
-    `[TimelineCompose] [${traceId}] Found ${scene.shots.length} shots for scene ${sceneId}: ${scene.shots.map((s) => s.id).join(', ')}`
-  );
 
   if (scene.shots.length < 1) {
     throw new Error(
@@ -111,18 +250,19 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const dialogue = params.dialogue || params.text || params.voiceText;
 
     if (dialogue && !params.voiceAssetStorageKey && engineHubClient) {
-      console.log(
-        `[TimelineCompose] [${traceId}] Generating TTS for shot ${shot.id} (${dialogue.substring(0, 10)}...)`
-      );
-
       try {
+        const voiceId = (shot as any).characterAppearances?.[0]?.character?.attributes?.voiceId;
+        const ttsPayload: Record<string, any> = {
+          text: dialogue,
+          speed: 1.0,
+        };
+        if (voiceId) {
+          ttsPayload.voiceId = voiceId;
+        }
+
         const ttsRes = await engineHubClient.invoke<any, any>({
           engineKey: 'tts_standard',
-          payload: {
-            text: dialogue,
-            voiceId: 'default', // TODO: Make configurable
-            speed: 1.0,
-          },
+          payload: ttsPayload,
           metadata: {
             jobId: job.id,
             traceId,
@@ -133,15 +273,10 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
         if (ttsRes.success && ttsRes.output?.assetPath) {
           const newKey = ttsRes.output.assetPath;
-          console.log(`[TimelineCompose] [${traceId}] TTS Generated: ${newKey}`);
-
           params = { ...params, voiceAssetStorageKey: newKey };
           pendingAudioUpdates.push({ shotId: shot.id, storageKey: newKey });
-        } else {
-          console.warn(`[TimelineCompose] [${traceId}] TTS Generation failed or empty output`);
         }
-      } catch (err: any) {
-        console.error(`[TimelineCompose] [${traceId}] TTS Engine Error: ${err.message}`);
+      } catch {
       }
     }
 
@@ -150,9 +285,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   // Persist updates to DB (Best Effort)
   if (pendingAudioUpdates.length > 0) {
-    console.log(
-      `[TimelineCompose] [${traceId}] Persisting ${pendingAudioUpdates.length} audio keys to DB...`
-    );
     await Promise.allSettled(
       pendingAudioUpdates.map((u) =>
         prisma.shot.update({
@@ -173,14 +305,17 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
   let currentFrame = 0;
   const timelineShots: TimelineShot[] = [];
+  const shotParamsList: any[] = [];
   for (const [idx, shot] of (scene.shots as any[]).entries()) {
     const params = shotParamsMap.get(shot.id) || (shot.params as any) || {};
+    shotParamsList.push(params);
     const durationFrames = (shot.durationSeconds || 1) * fps;
 
-    // S4-8: 增强转场检测
-    const transition = params.transition === 'xfade' ? 'xfade' : 'none';
+    // S4-8 + Director Layer: 优先尊重显式 params，其次消费 directorPlan 的节奏/转场提示
+    const transitionProfile = deriveTransitionProfile(params);
+    const transition = transitionProfile.transition;
     const transitionFrames =
-      transition === 'xfade' ? Math.floor((params.transitionSec || 0.5) * fps) : 0;
+      transition === 'xfade' ? Math.floor(transitionProfile.transitionSec * fps) : 0;
 
     // 安全校验：转场长度不能超过镜头时长一半
     if (transition === 'xfade' && transitionFrames >= durationFrames / 2) {
@@ -194,8 +329,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
     const actualStart = idx === 0 ? 0 : currentFrame - transitionFrames;
     const actualEnd = actualStart + durationFrames;
 
-    // Generate frames.txt if shot has resultImageUrl
-    const framesTxtPath = path.join(process.cwd(), '.runtime', 'frames', shot.id, 'frames.txt');
+    const runtimeRoot = resolveRuntimeDir();
+    const framesTxtPath = path.join(runtimeRoot, 'frames', shot.id, 'frames.txt');
 
     // Resolve Storage Root
     const storageRoot = (config as any).storageRoot;
@@ -218,9 +353,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
         const durationSec = shot.durationSeconds || 1.0;
         const content = `file '${imageAbsPath}'\nduration ${durationSec}\nfile '${imageAbsPath}'`;
         await fsp.writeFile(framesTxtPath, content);
-        console.log(
-          `[TimelineCompose] Generated frames.txt for shot ${shot.id} at ${framesTxtPath}`
-        );
       }
     }
 
@@ -233,6 +365,46 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
       framesTxtStorageKey: framesTxtPath,
       transition,
       transitionFrames,
+      directorPlan: {
+        ruleSetVersion:
+          params.timelinePolicy?.ruleSetVersion ||
+          params.executionPolicy?.shotPlannerRuleSetVersion ||
+          params.directorPlan?.shotPlannerRuleSetVersion ||
+          undefined,
+        transitionHint:
+          params.timelinePolicy?.transitionHint ||
+          params.executionPolicy?.transitionHint ||
+          params.directorPlan?.transitionHint ||
+          undefined,
+        editingRhythmStrategy:
+          params.timelinePolicy?.rhythmClass ||
+          params.executionPolicy?.rhythmClass ||
+          params.directorPlan?.editingRhythmStrategy ||
+          undefined,
+        soundStrategy:
+          params.executionPolicy?.audioPolicy?.soundStrategy ||
+          params.directorPlan?.soundStrategy ||
+          undefined,
+        silenceStrategy:
+          params.executionPolicy?.audioPolicy?.silenceStrategy ||
+          params.directorPlan?.silenceStrategy ||
+          undefined,
+        avgShotLengthSec:
+          params.executionPolicy?.durationSecTarget ||
+          params.directorPlan?.avgShotLengthSec ||
+          undefined,
+        coverageRole:
+          params.timelinePolicy?.coverageRole ||
+          params.executionPolicy?.coverageRole ||
+          undefined,
+        rhythmClass:
+          params.timelinePolicy?.rhythmClass ||
+          params.executionPolicy?.rhythmClass ||
+          undefined,
+        matchedRules: Array.isArray(params.timelinePolicy?.matchedRules)
+          ? params.timelinePolicy.matchedRules
+          : undefined,
+      },
     };
 
     // 更新游标：下一个镜头的基准开始时间是当前镜头的结束点
@@ -240,6 +412,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
     timelineShots.push(s);
   }
+
+  const audioPreferences = deriveAudioPreferences(shotParamsList);
 
   const timelineData: TimelineData = {
     sceneId,
@@ -258,8 +432,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
                 id: 'bgm',
                 type: 'music' as const,
                 storageKey: (job.payload as any).bgmStorageKey,
-                gain: (job.payload as any).bgmGain || 0.5,
-                loop: (job.payload as any).bgmMode === 'loop',
+                gain: (job.payload as any).bgmGain || audioPreferences.bgmGain,
+                loop: ((job.payload as any).bgmMode || audioPreferences.mode) === 'loop',
                 ducking: { target: 'dialogue', gain: 0.2 },
                 truncate: 'shortest' as const,
               },
@@ -281,19 +455,19 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
           })
           .filter((t): t is AudioTrack => t !== null),
       ],
-      masterPriority: 'dialogue',
+      masterPriority: audioPreferences.masterPriority,
+      mode: audioPreferences.mode,
     },
   };
 
   // 3. 产物持久化
-  const runtimeDir = path.join(process.cwd(), '.runtime', 'timelines');
+  const runtimeDir = path.join(resolveRuntimeDir(), 'timelines');
   if (!(await fileExists(runtimeDir))) await ensureDir(runtimeDir);
 
   const timelineFileName = `timeline_${sceneId}_${Date.now()}.json`;
   const timelinePath = path.join(runtimeDir, timelineFileName);
 
   await fsp.writeFile(timelinePath, JSON.stringify(timelineData, null, 2));
-  console.log(`[TimelineCompose] [${traceId}] Timeline generated at: ${timelinePath}`);
 
   return {
     success: true,

@@ -110,7 +110,11 @@ export SHOT_ID
 echo "[E2E] Assert shot exists in DB (seed DB)..."
 npx tsx tools/smoke/assert_shot_exists.ts
 
-E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+if [ -n "${CI:-}" ] || [ "${GATE_ENV_MODE:-}" = "ci" ]; then
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-true}"
+else
+  E2E_FORCE_RESTART_API="${E2E_FORCE_RESTART_API:-false}"
+fi
 
 kill_port_3000_if_needed() {
   local pids
@@ -162,13 +166,21 @@ mkdir -p "$(dirname "$WORKER_LOG_FILE")"
 (
   cd apps/workers && \
   JOB_WORKER_ENABLED=true \
-  GATE_MODE=1 \
+  GATE_MODE=0 \
+  IGNORE_ENV_FILE="${IGNORE_ENV_FILE:-true}" \
   JWT_SECRET="${JWT_SECRET:-}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-}" \
+  API_SECRET_KEY="${API_SECRET_KEY:-}" \
+  HMAC_SECRET_KEY="${HMAC_SECRET_KEY:-}" \
+  ENGINE_DEFAULT="${ENGINE_DEFAULT:-ce06_novel_parsing}" \
   REDIS_URL="${REDIS_URL:-}" \
+  DISABLE_REDIS="${DISABLE_REDIS:-}" \
   DATABASE_URL="${DATABASE_URL:-}" \
+  PRISMA_CLIENT_ENGINE_TYPE="${PRISMA_CLIENT_ENGINE_TYPE:-binary}" \
+  PRISMA_CLI_QUERY_ENGINE_TYPE="${PRISMA_CLI_QUERY_ENGINE_TYPE:-binary}" \
   API_BASE_URL="${API_BASE_URL:-http://localhost:3000}" \
   API_URL="${API_URL:-http://localhost:3000}" \
+  WORKER_ID="${WORKER_ID:-local-worker}" \
   WORKER_API_KEY="${WORKER_API_KEY:-ak_smoke_test_key_v1}" \
   WORKER_API_SECRET="${WORKER_API_SECRET:-scu_smoke_secret}" \
   pnpm dev

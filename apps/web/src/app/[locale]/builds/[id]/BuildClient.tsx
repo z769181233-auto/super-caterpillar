@@ -1,27 +1,74 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { scriptBuildApi } from '@/lib/apiClient';
 
+type BuildShot = {
+  id: string;
+  index?: number;
+  summary?: string;
+};
+
+type BuildScene = {
+  id: string;
+  index?: number;
+  title?: string;
+  shots: BuildShot[];
+};
+
+type BuildEpisode = {
+  id: string;
+  index?: number;
+  title?: string;
+  scenes: BuildScene[];
+};
+
+type BuildSeason = {
+  episodes?: BuildEpisode[];
+};
+
+type BuildOutlineData = {
+  build?: {
+    id?: string;
+    title?: string;
+  };
+  stats?: {
+    episodes?: number;
+    scenes?: number;
+    shots?: number;
+    characters?: number;
+  };
+  seasons?: BuildSeason[];
+  episodes?: BuildEpisode[];
+};
+
+type ShotSourceDetails = {
+  source: {
+    excerpt: string;
+    startOffset: number;
+    endOffset: number;
+    excerptStart: number;
+  };
+};
+
 interface BuildClientProps {
-  initialData: any;
+  initialData: BuildOutlineData;
   buildId: string;
 }
 
-export default function BuildClient({ initialData, buildId }: BuildClientProps) {
+function getProjectEpisodes(data: BuildOutlineData): BuildEpisode[] {
+  const seasonEpisodes = (data?.seasons || []).flatMap((season) => season?.episodes || []);
+  return seasonEpisodes.length > 0 ? seasonEpisodes : data?.episodes || [];
+}
+
+export default function BuildClient({ initialData, buildId: _buildId }: BuildClientProps) {
   const [data] = useState(initialData);
-  const [selectedShot, setSelectedShot] = useState<any>(null);
-  const [shotDetails, setShotDetails] = useState<any>(null);
+  const episodes = getProjectEpisodes(initialData);
+  const [selectedShot, setSelectedShot] = useState<BuildShot | null>(null);
+  const [shotDetails, setShotDetails] = useState<ShotSourceDetails | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [expandedEpisodes, setExpandedEpisodes] = useState<Set<string>>(
-    new Set([initialData?.episodes?.[0]?.id])
-  );
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [expandedEpisodes, setExpandedEpisodes] = useState<Set<string>>(new Set([episodes?.[0]?.id]));
 
   const toggleEpisode = (id: string) => {
     const next = new Set(expandedEpisodes);
@@ -30,33 +77,42 @@ export default function BuildClient({ initialData, buildId }: BuildClientProps) 
     setExpandedEpisodes(next);
   };
 
-  const handleShotClick = async (shot: any) => {
+  const handleShotClick = async (shot: BuildShot) => {
     setSelectedShot(shot);
     setLoadingDetails(true);
     try {
-      const details = await scriptBuildApi.getShotSource(shot.id);
-      setShotDetails(details);
-    } catch (e) {
-      console.error('Failed to fetch shot details:', e);
+      const details = (await scriptBuildApi.getShotSource(shot.id)) as Partial<{
+        source: Partial<ShotSourceDetails['source']>;
+      }>;
+      setShotDetails({
+        source: {
+          excerpt: details.source?.excerpt || '',
+          startOffset: details.source?.startOffset ?? 0,
+          endOffset: details.source?.endOffset ?? 0,
+          excerptStart: details.source?.excerptStart ?? 0,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to fetch shot details:', error);
       setShotDetails(null);
     } finally {
       setLoadingDetails(false);
     }
   };
 
-  const filteredEpisodes = (data?.episodes || [])
-    .map((ep: any) => ({
+  const filteredEpisodes = getProjectEpisodes(data)
+    .map((ep) => ({
       ...ep,
       scenes: (ep?.scenes || [])
-        .map((sc: any) => ({
+        .map((sc) => ({
           ...sc,
-          shots: (sc?.shots || []).filter((shot: any) =>
+          shots: (sc?.shots || []).filter((shot) =>
             (shot?.summary || '').toLowerCase().includes(searchQuery.toLowerCase())
           ),
         }))
-        .filter((sc: any) => sc.shots.length > 0),
+        .filter((sc) => sc.shots.length > 0),
     }))
-    .filter((ep: any) => ep.scenes.length > 0);
+    .filter((ep) => ep.scenes.length > 0);
 
   const formatTitle = (raw: string) => {
     if (!raw) return '未知资产';
@@ -194,7 +250,7 @@ export default function BuildClient({ initialData, buildId }: BuildClientProps) 
               paddingRight: 'var(--space-4)',
             }}
           >
-            {filteredEpisodes.map((ep: any) => (
+            {filteredEpisodes.map((ep) => (
               <div key={ep.id} style={{ marginBottom: 'var(--space-8)' }}>
                 <div
                   onClick={() => toggleEpisode(ep.id)}
@@ -232,7 +288,7 @@ export default function BuildClient({ initialData, buildId }: BuildClientProps) 
                       gap: 'var(--space-4)',
                     }}
                   >
-                    {ep.scenes.map((sc: any) => (
+                    {ep.scenes.map((sc) => (
                       <div key={sc.id}>
                         <div
                           className="text-luxury-scene"
@@ -254,7 +310,7 @@ export default function BuildClient({ initialData, buildId }: BuildClientProps) 
                           {sc.title || `场景 ${sc.index}`}
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          {sc.shots.map((shot: any) => (
+                          {sc.shots.map((shot) => (
                             <div
                               key={shot.id}
                               onClick={(e) => {

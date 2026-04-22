@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { Public } from '../auth/decorators/public.decorator';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('publish')
 export class PublishedVideoController {
   constructor(private readonly prisma: PrismaService) {}

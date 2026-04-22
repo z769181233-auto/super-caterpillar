@@ -7,6 +7,7 @@ import { JobType, PrismaClient } from 'database';
 import { JwtOrHmacGuard } from '../auth/guards/jwt-or-hmac.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
+@UseGuards(JwtOrHmacGuard)
 @Controller('story')
 export class StoryController {
   constructor(

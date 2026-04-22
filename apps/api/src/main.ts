@@ -17,7 +17,6 @@ const repoRoot = path.resolve(__dirname, '../../../');
 const envLocalPath = path.join(repoRoot, '.env.local');
 if (fs.existsSync(envLocalPath)) {
   dotenv.config({ path: envLocalPath });
-  console.log('[Bootstrap] Loaded .env.local');
 }
 
 process.on('uncaughtException', (e) => {
@@ -30,40 +29,31 @@ process.on('unhandledRejection', (reason) => {
 });
 
 async function bootstrap() {
-  const isStubMode = process.env.P9_B3_STUB_MODE === '1';
-
-  // P0-2: Wait for 10s to ensure background services (like Job Worker) are ready
-  console.log('[BOOTSTRAP] Waiting 10s for environment stabilizing...');
-  await new Promise(resolve => setTimeout(resolve, 10000));
-
   // A4: Environment Integrity Guard
   try {
     validateRequiredEnvs();
   } catch (e) {
-    if (!isStubMode) {
-      console.error('[FATAL] Environment validation failed. Service will exit.');
-      process.exit(1);
-    }
+    process.stderr.write('[FATAL] Environment validation failed. Service will exit.\n');
+    process.exit(1);
   }
 
-  console.log('[BOOTSTRAP] Calling NestFactory.create(AppModule)...');
   const app = await NestFactory.create(AppModule, {
     bufferLogs: false,
     rawBody: true,
   });
-  console.log('[BOOTSTRAP] NestFactory.create() returned.');
 
   app.useLogger(app.get(Logger));
 
-  app.use('/api/workers', (req: any, res: any, next: any) => {
-    console.log(`[API_WORKER_PRE] hit method=${req.method} url=${req.originalUrl || req.url}`);
-    console.log(`[API_WORKER_PRE] headers keys=${Object.keys(req.headers).join(',')}`);
-    console.log(`[API_WORKER_PRE] next()`);
-    next();
+  app.enableCors({
+    origin: [env.frontendUrl, 'http://localhost:3001', 'http://localhost:3002'],
+    credentials: true,
   });
 
-  app.use(json({ limit: '100mb' }));
-  app.use(urlencoded({ extended: true, limit: '100mb' }));
+  // P1 Security: Reduce global body limits to prevent DOS (100MB -> 50MB for general metadata)
+  // Large file uploads (Novels/Assets) should use streaming or signed URLs
+  const bodyLimit = process.env.GLOBAL_BODY_LIMIT || '50mb';
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
 
   app.useGlobalInterceptors(new LoggingInterceptor());
 
@@ -90,11 +80,14 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT) || 3000;
 
-  console.log(`[BOOTSTRAP] Attempting app.listen on port ${port}...`);
+  await app.init();
+
   await app.listen(port, '0.0.0.0');
 }
 
 bootstrap().catch(e => {
-  console.error('[BOOTSTRAP_ERROR]', e);
+  process.stderr.write(
+    `[BOOTSTRAP_ERROR] ${e instanceof Error ? e.message : String(e)}\n`
+  );
   process.exit(1);
 });

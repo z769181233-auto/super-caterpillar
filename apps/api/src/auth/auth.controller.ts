@@ -1,9 +1,8 @@
-import { Controller, Post, Body, Res, Req, Inject } from '@nestjs/common';
+import { Controller, Post, Body, Res, Req, Logger } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { env } from '@scu/config';
 import { AuditAction } from '../audit/audit.decorator';
 import { AuditActions } from '../audit/audit.constants';
@@ -11,13 +10,16 @@ import { Public } from './decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
   @Public() // 标记为公开路由，跳过 HMAC 校验
   @AuditAction(AuditActions.LOGIN) // 注册也视为一次登录入口
   async register(@Body() registerDto: RegisterDto, @Res({ passthrough: true }) res: Response) {
+    this.logger.log(`[AUTH_HTTP] register start email=${registerDto.email}`);
     const result = await this.authService.register(registerDto);
+    this.logger.log(`[AUTH_HTTP] register service returned email=${registerDto.email}`);
 
     // 设置 httpOnly cookie
     const isProduction = env.isProduction;
@@ -52,7 +54,9 @@ export class AuthController {
   @Public() // 标记为公开路由，跳过 HMAC 校验
   @AuditAction(AuditActions.LOGIN)
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    this.logger.log(`[AUTH_HTTP] login start email=${loginDto.email}`);
     const result = await this.authService.login(loginDto);
+    this.logger.log(`[AUTH_HTTP] login service returned email=${loginDto.email}`);
 
     // 设置 httpOnly cookie
     const isProduction = env.isProduction;
@@ -86,6 +90,7 @@ export class AuthController {
   @Post('refresh')
   @Public() // 标记为公开路由，跳过 HMAC 校验
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    this.logger.log(`[AUTH_HTTP] refresh start`);
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!refreshToken) {
       throw new Error('Refresh token not found');
@@ -102,6 +107,15 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    if (result.data.refreshToken) {
+      res.cookie('refreshToken', result.data.refreshToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'strict' : 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+    }
+
     return {
       success: true,
       data: {
@@ -114,7 +128,12 @@ export class AuthController {
 
   @Post('logout')
   @AuditAction(AuditActions.LOGOUT)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    this.logger.log(`[AUTH_HTTP] logout start`);
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return {

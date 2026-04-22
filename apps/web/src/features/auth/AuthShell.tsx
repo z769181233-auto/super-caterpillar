@@ -14,12 +14,24 @@ interface AuthShellProps {
   mode: 'login' | 'register';
 }
 
+interface AuthResponse {
+  success?: boolean;
+  data?: {
+    message?: string;
+  };
+  error?: {
+    message?: string;
+  };
+}
+
 export function AuthShell({ mode }: AuthShellProps) {
   const t = useTranslations('Auth');
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -33,25 +45,28 @@ export function AuthShell({ mode }: AuthShellProps) {
     setErrorMsg(null);
 
     try {
-      // Mocked authentication process
-      await new Promise((res) => setTimeout(res, 800));
+      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Simulate 10% chance of random network failure for demonstration
-      if (Math.random() > 0.9) {
-        throw new Error(t('errorNetwork'));
+      const result = (await response.json()) as AuthResponse;
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.data?.message || result.error?.message || t('errorInvalid'));
       }
 
-      // We set a dummy cookie to pass the middleware check
-      document.cookie = `accessToken=mock_token_123; path=/; max-age=3600; samesite=lax`;
-
+      // Success: accessToken is already set in httpOnly cookie by the backend
       // Read fallback route if provided by middleware
       const fromParam = searchParams.get('from');
       const safePath = getSafeRedirect(fromParam, locale, `/${locale}/projects`);
 
       // Using replace to prevent back button from returning to login form
       router.replace(safePath);
-    } catch (err: any) {
-      setErrorMsg(err.message || t('errorInvalid'));
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : t('errorInvalid'));
       setLoading(false);
     }
   };
@@ -93,11 +108,20 @@ export function AuthShell({ mode }: AuthShellProps) {
             required
             placeholder="engineer@super-caterpillar.com"
             disabled={loading}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
           />
         </FormField>
 
         <FormField label={t('passwordLabel')}>
-          <Input type="password" required placeholder="••••••••" disabled={loading} />
+          <Input
+            type="password"
+            required
+            placeholder="••••••••"
+            disabled={loading}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </FormField>
 
         <Button

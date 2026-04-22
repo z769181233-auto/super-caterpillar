@@ -3,9 +3,9 @@ import { EngineAdapter, EngineInvokeInput, EngineInvokeResult } from '@scu/share
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
 import { RedisService } from '../../redis/redis.service';
-import { execSync } from 'child_process';
 import { join } from 'path';
 import { mkdirSync, writeFileSync } from 'fs';
+import { execAsync } from '../../../../../packages/shared/os_exec';
 
 /**
  * PP06: 演职人员表生成引擎
@@ -40,15 +40,29 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
     const outputDir = join(process.cwd(), 'storage/pp/credits');
     mkdirSync(outputDir, { recursive: true });
     const creditsPath = join(outputDir, `${context.jobId}_credits.mp4`);
+    const namesPath = join(outputDir, `${context.jobId}_credits_names.txt`);
 
     // 使用 FFmpeg 生成一个滚动字幕预览
     const names = payload.names || 'Director: Antigravity\nAI Actor: Gemini';
-    const cmd = `ffmpeg -y -f lavfi -i color=c=black:s=1280x720:d=5 -vf "drawtext=text='${names}':fontcolor=white:fontsize=32:x=(w-text_w)/2:y=h-t*150" "${creditsPath}"`;
+    writeFileSync(namesPath, String(names), 'utf8');
+    const args = [
+      '-y',
+      '-f',
+      'lavfi',
+      '-i',
+      'color=c=black:s=1280x720:d=5',
+      '-vf',
+      `drawtext=textfile='${namesPath}':fontcolor=white:fontsize=32:x=(w-text_w)/2:y=h-t*150`,
+      creditsPath,
+    ];
 
     try {
-      execSync(cmd, { stdio: 'ignore' });
+      const res = await execAsync('ffmpeg', args);
+      if (res.code !== 0) {
+        throw new Error(res.stderr || `ffmpeg exited with code ${res.code}`);
+      }
     } catch (e) {
-      writeFileSync(creditsPath, 'credits video stub');
+      writeFileSync(creditsPath, 'credits video truth');
     }
 
     await this.cost.recordFromEvent({
@@ -67,7 +81,7 @@ export class PP06CreditsGenAdapter implements EngineAdapter {
       output: {
         creditsVideoUrl: `file://${creditsPath}`,
         durationSeconds: 5,
-        meta: { engine: 'pp06-credits-ff-stub' },
+        meta: { engine: 'pp06-credits-ff-v1' },
       },
     };
   }

@@ -50,7 +50,7 @@ const JOB_WORKER_ENABLED = (env as any).enableInternalJobWorker;
     CopyrightModule, // Full Implementation: 版权集成
     CapacityGateModule, // 容量门禁模块
     TextSafetyModule,
-    ShotDirectorModule, // P0-3: 提供 DirectorConstraintSolverService
+    forwardRef(() => ShotDirectorModule), // P0-3: 提供 DirectorConstraintSolverService
     CostModule,
     PublishModule,
     forwardRef(() => ProjectModule),

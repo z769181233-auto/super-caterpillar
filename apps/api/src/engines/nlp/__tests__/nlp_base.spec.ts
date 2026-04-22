@@ -42,11 +42,16 @@ describe('NlpBaseEngine', () => {
     };
 
     const result = await engine.execute(input, input.payload);
+    const output = result.output as {
+      status: string;
+      analysis: { detected: string };
+      meta: { source: string };
+    };
 
     expect(result.status).toBe('SUCCESS');
-    expect(result.output!.status).toBe('PASS');
-    expect(result.output!.analysis.detected).toBe('HELLO');
-    expect(result.output!.meta.source).toBe('generated');
+    expect(output.status).toBe('PASS');
+    expect(output.analysis.detected).toBe('HELLO');
+    expect(output.meta.source).toBe('generated');
 
     expect(mockCache.set).toHaveBeenCalled();
     expect(mockAudit.log).toHaveBeenCalledWith(
@@ -73,9 +78,13 @@ describe('NlpBaseEngine', () => {
     });
 
     const result = await engine.execute(input, input.payload);
+    const output = result.output as {
+      analysis: { detected: string };
+      meta: { source: string };
+    };
 
-    expect(result.output!.analysis.detected).toBe('HI');
-    expect(result.output!.meta.source).toBe('cache');
+    expect(output.analysis.detected).toBe('HI');
+    expect(output.meta.source).toBe('cache');
     expect(mockCost.recordFromEvent).toHaveBeenCalledWith(
       expect.objectContaining({ costAmount: 0 })
     );
