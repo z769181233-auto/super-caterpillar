@@ -1,0 +1,15 @@
+{
+  "dataset_version": "film-ir-dataset-v2",
+  "exported_at": "2026-04-21T08:15:00.000Z",
+  "script_to_directing_count": 8,
+  "directing_to_shot_plan_count": 8,
+  "directing_to_shot_plan_with_planning_count": 8,
+  "directing_to_shot_plan_planned_shot_count": 10,
+  "judge_samples_count": 7,
+  "continuity_samples_count": 15,
+  "review_policy_trace_count": 3475,
+  "continuity_snapshot_table_present": true,
+  "content_gate_table_present": true,
+  "film_ir_runs_table_present": true,
+  "output_dir": "/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/storage/exports/film_ir_dataset"
+}
