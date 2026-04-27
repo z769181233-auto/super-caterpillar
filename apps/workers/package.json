@@ -23,7 +23,7 @@
     "@scu/shared-types": "workspace:*",
     "@scu/storage": "workspace:^",
     "@scu/shared": "workspace:*",
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "database": "workspace:*",
     "prom-client": "^15.1.3",
     "sharp": "^0.34.5",
