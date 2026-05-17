@@ -15,6 +15,8 @@ interface ErrorResponse {
   [key: string]: unknown;
 }
 
+const AUTH_ROUTE_PREFIX = '/api/auth/';
+
 function makeUnauthorizedError(message = 'Unauthorized'): UnauthorizedError {
   const err = new Error(message) as UnauthorizedError;
   err.status = 401;
@@ -30,11 +32,38 @@ async function safeJson(res: Response): Promise<unknown> {
   }
 }
 
+function shouldAttemptSessionRefresh(url: string): boolean {
+  return !url.startsWith(AUTH_ROUTE_PREFIX);
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  const response = await fetch('/api/auth/refresh/', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  return response.ok;
+}
+
 // Global 401 Handler Wrapper
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth(url: string, options: RequestInit = {}, allowRefresh = true) {
   const res = await fetch(url, options);
 
   if (res.status === 401) {
+    if (allowRefresh && shouldAttemptSessionRefresh(url)) {
+      try {
+        const refreshed = await refreshAuthSession();
+        if (refreshed) {
+          const retryRes = await fetch(url, options);
+          if (retryRes.status !== 401) {
+            return retryRes;
+          }
+        }
+      } catch {
+        // Fall through to the structured unauthorized error below.
+      }
+    }
+
     // ✅ 只抛结构化错误；跳转由 UnauthorizedRedirectProvider 统一处理（单一权威）
     throw makeUnauthorizedError('Unauthorized');
   }
