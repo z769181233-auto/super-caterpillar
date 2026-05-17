@@ -15,6 +15,7 @@ import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
 import { UserRole, UserTier, UserType } from 'database';
 import { RedisService } from '../redis/redis.service';
+import { ProjectPermissions, SystemPermissions } from '../permission/permission.constants';
 
 type RefreshTokenPayload = {
   sub: string;
@@ -30,6 +31,24 @@ type RefreshTokenPayload = {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly inMemoryRevokedRefreshTokens = new Map<string, number>();
+  private readonly ownerBaselinePermissions = [
+    SystemPermissions.AUTH,
+    SystemPermissions.PROJECT_CREATE,
+    SystemPermissions.NOVEL_UPLOAD,
+    SystemPermissions.NOVEL_READ,
+    SystemPermissions.NOVEL_UPDATE,
+    SystemPermissions.STRUCTURE_READ,
+    SystemPermissions.BILLING_VIEW,
+    SystemPermissions.BILLING_MANAGE,
+    SystemPermissions.MODEL_USE_BASE,
+    ProjectPermissions.PROJECT_READ,
+    ProjectPermissions.PROJECT_WRITE,
+    ProjectPermissions.PROJECT_UPDATE,
+    ProjectPermissions.PROJECT_GENERATE,
+    ProjectPermissions.PROJECT_REVIEW,
+    ProjectPermissions.PROJECT_PUBLISH,
+    ProjectPermissions.PROJECT_DELETE,
+  ] as const;
   constructor(
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
@@ -41,6 +60,39 @@ export class AuthService {
 
   private shouldAllowRefreshRevocationMemoryFallback(): boolean {
     return process.env.ALLOW_REFRESH_TOKEN_MEMORY_FALLBACK === '1';
+  }
+
+  private async ensureOwnerRolePermissions(
+    tx: Pick<PrismaService, 'role' | 'permission' | 'rolePermission'>
+  ): Promise<void> {
+    const ownerRole = await tx.role.upsert({
+      where: { name: 'OWNER' },
+      update: { level: 100 },
+      create: { name: 'OWNER', level: 100 },
+    });
+
+    for (const key of this.ownerBaselinePermissions) {
+      const scope = key.startsWith('project.') ? 'project' : 'system';
+      const permission = await tx.permission.upsert({
+        where: { key },
+        update: { scope },
+        create: { key, scope },
+      });
+
+      await tx.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: ownerRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: ownerRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
   }
 
   async register(registerDto: RegisterDto) {
@@ -64,6 +116,8 @@ export class AuthService {
     // 3. 事务处理：User + Org + Membership
     this.logger.log(`[AUTH_FLOW] register transaction start email=${email}`);
     const { user, organizationId } = await this.prisma.$transaction(async (tx) => {
+      await this.ensureOwnerRolePermissions(tx);
+
       // a) 创建用户
       const newUser = await tx.user.create({
         data: {
@@ -152,6 +206,8 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
     this.logger.log(`[AUTH_FLOW] login lookup user email=${email}`);
+
+    await this.ensureOwnerRolePermissions(this.prisma);
 
     // 查询用户
     const user = await this.prisma.user.findUnique({
@@ -249,7 +305,7 @@ export class AuthService {
         requestId: randomUUID(),
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

@@ -112,3 +112,19 @@ export function extractForwardHeaders(request: Request): HeadersInit {
   if (forwardedFor) headers['x-forwarded-for'] = forwardedFor;
   return headers;
 }
+
+export function forwardSetCookies(source: Headers, target: Headers) {
+  const setCookies = typeof source.getSetCookie === 'function' ? source.getSetCookie() : [];
+
+  if (setCookies.length > 0) {
+    for (const value of setCookies) {
+      target.append('set-cookie', value);
+    }
+    return;
+  }
+
+  const fallback = source.get('set-cookie');
+  if (fallback) {
+    target.append('set-cookie', fallback);
+  }
+}
