@@ -558,6 +558,8 @@ export class ProjectService {
     // 注意：由于 schema 中已设置 onDelete: Cascade，Prisma 会自动级联删除子级
     // 但为了确保数据一致性和可追溯性，使用事务包装
     const project = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await this.deleteProjectBlockers(tx, id);
+
       // 先删除所有关联的 ShotJob、Task 等（如果需要）
       // 由于外键约束和 onDelete 策略，Season/Episode/Scene/Shot 会自动级联删除
       return tx.project.delete({
@@ -569,6 +571,38 @@ export class ProjectService {
     await this.sceneGraphService.invalidateProjectSceneGraph(id);
 
     return project as any;
+  }
+
+  private async deleteProjectBlockers(tx: Prisma.TransactionClient, projectId: string) {
+    // 历史表里仍有一批 project 级 RESTRICT 外键；删除项目前先清掉这些直接依赖。
+    await tx.characterAlias.deleteMany({
+      where: {
+        character: {
+          projectId,
+        },
+      },
+    });
+    await tx.scriptBuild.deleteMany({
+      where: { projectId },
+    });
+    await tx.billingEvent.deleteMany({
+      where: { projectId },
+    });
+    await tx.location.deleteMany({
+      where: { projectId },
+    });
+    await tx.prop.deleteMany({
+      where: { projectId },
+    });
+    await tx.outfit.deleteMany({
+      where: { projectId },
+    });
+    await tx.character.deleteMany({
+      where: { projectId },
+    });
+    await tx.novelSource.deleteMany({
+      where: { projectId },
+    });
   }
 
   async checkOwnership(projectId: string, userId: string) {

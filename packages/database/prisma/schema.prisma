@@ -102,7 +102,7 @@ model NovelSource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project      Project      @relation(fields: [projectId], references: [id])
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   organization Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
 
   @@map("novel_sources")
@@ -749,7 +749,7 @@ model BillingEvent {
   metadata     Json?
   createdAt    DateTime     @default(now()) @map("created_at")
   organization Organization @relation("BillingEventOrganization", fields: [orgId], references: [id])
-  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
+  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id], onDelete: Cascade)
   user         User?        @relation("BillingEventUser", fields: [userId], references: [id])
 
   @@index([projectId, createdAt])
@@ -1909,7 +1909,7 @@ model ScriptBuild {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  project     Project     @relation(fields: [projectId], references: [id])
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   storySource StorySource @relation(fields: [sourceId], references: [id])
 
   @@map("script_builds")
@@ -1934,7 +1934,7 @@ model Location {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
@@ -1948,7 +1948,7 @@ model Prop {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
@@ -1962,7 +1962,7 @@ model Outfit {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
