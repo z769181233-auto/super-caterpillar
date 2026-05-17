@@ -180,6 +180,68 @@ describe('ProjectStudioEpisodePlanService', () => {
     expect(episodePlans[0].plotGoal).toContain('静水院');
   });
 
+  it('prefers coverageReport scene candidates over legacy episodes when novel chapters exist', async () => {
+    const prisma = createPrismaMock({
+      novelSource: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-source-1',
+          fileName: '表姑娘又又又又跑了.txt',
+        }),
+      },
+      novel: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-1',
+          title: '表姑娘又又又又跑了',
+          chapters: [
+            {
+              id: 'chapter-1',
+              index: 1,
+              title: '第一章',
+              summary: '旧摘要不应优先。',
+              rawContent: '旧正文。',
+            },
+          ],
+        }),
+      },
+      episode: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'legacy-episode-1',
+            index: 1,
+            name: '旧结构第一集',
+            summary: '旧结构摘要不能覆盖 scene candidate。',
+            status: 'ready',
+            _count: { scenes: 4 },
+          },
+        ]),
+      },
+      sceneDraft: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            chapterId: 'chapter-1',
+            analysisResult: {
+              coverageReport: {
+                qualityGate: { status: 'pass' },
+                sceneCandidates: [sceneCandidate],
+              },
+            },
+          },
+        ]),
+      },
+    });
+    const service = new ProjectStudioEpisodePlanService(prisma as any);
+
+    const episodePlans = await service.generateEpisodePlans('project-1', 'org-1');
+
+    expect(episodePlans).toHaveLength(1);
+    expect(episodePlans[0].episodeId).toBeNull();
+    expect(episodePlans[0].title).toBe('第 1 集：第一章');
+    expect(episodePlans[0].sourceEvidence.join('\n')).toContain(
+      'scene-candidate:chapter-1:scene-candidate:1'
+    );
+    expect(episodePlans[0].plotGoal).not.toContain('旧结构摘要不能覆盖');
+  });
+
   it('blocks EpisodePlan generation from novel chapters when scene candidates are missing', async () => {
     const prisma = createPrismaMock({
       novelSource: {
@@ -213,6 +275,18 @@ describe('ProjectStudioEpisodePlanService', () => {
                 sceneCandidates: [],
               },
             },
+          },
+        ]),
+      },
+      episode: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'legacy-episode-1',
+            index: 1,
+            name: '旧结构第一集',
+            summary: '不应在 scene candidate 缺失时回退。',
+            status: 'ready',
+            _count: { scenes: 4 },
           },
         ]),
       },

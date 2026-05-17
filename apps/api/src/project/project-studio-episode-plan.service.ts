@@ -275,20 +275,7 @@ export class ProjectStudioEpisodePlanService {
     }
 
     let episodeInputs: EpisodePlanInput[];
-    if (legacyEpisodes.length > 0) {
-      episodeInputs = legacyEpisodes.map((episode, index) => ({
-        episodeId: episode.id,
-        episodeNo: episode.index || index + 1,
-        title: episode.name || `第 ${episode.index || index + 1} 集`,
-        text: [episode.name, episode.summary, `旧结构场景数：${episode._count.scenes}`, episode.status]
-          .filter(Boolean)
-          .join(' '),
-        nextTitle: legacyEpisodes[index + 1]?.name || null,
-        characterNames,
-        locationNames,
-        sourceEvidence: [] as string[],
-      }));
-    } else {
+    if ((novel?.chapters || []).length > 0) {
       const chapterEpisodeInputs: Array<EpisodePlanInput | null> = (novel?.chapters || []).map(
         (chapter, index, chapters) => {
           const chapterSceneCandidates = sceneCandidatesByChapterId.get(chapter.id) || [];
@@ -316,6 +303,21 @@ export class ProjectStudioEpisodePlanService {
         }
       );
       episodeInputs = chapterEpisodeInputs.filter(isEpisodePlanInput);
+    } else if (legacyEpisodes.length > 0) {
+      episodeInputs = legacyEpisodes.map((episode, index) => ({
+        episodeId: episode.id,
+        episodeNo: episode.index || index + 1,
+        title: episode.name || `第 ${episode.index || index + 1} 集`,
+        text: [episode.name, episode.summary, `旧结构场景数：${episode._count.scenes}`, episode.status]
+          .filter(Boolean)
+          .join(' '),
+        nextTitle: legacyEpisodes[index + 1]?.name || null,
+        characterNames,
+        locationNames,
+        sourceEvidence: [] as string[],
+      }));
+    } else {
+      episodeInputs = [];
     }
 
     if (episodeInputs.length === 0) {
