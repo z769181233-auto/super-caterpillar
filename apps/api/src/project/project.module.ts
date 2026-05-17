@@ -3,6 +3,14 @@ import { ProjectController } from './project.controller';
 import { ProjectStructureController } from './project-structure.controller';
 import { ProjectService } from './project.service';
 import { ProjectStructureService } from './project-structure.service';
+import { ProjectProductionStateService } from './project-production-state.service';
+import { ProjectStudioCharacterBibleService } from './project-studio-character-bible.service';
+import { ProjectStudioDirectorScriptService } from './project-studio-director-script.service';
+import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
+import { ProjectStudioLocationBibleService } from './project-studio-location-bible.service';
+import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
+import { ProjectStudioStoryBibleService } from './project-studio-story-bible.service';
+import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
 import { StructureGenerateService } from './structure-generate.service';
 import { SceneGraphService } from './scene-graph.service';
 import { SceneGraphCache } from './scene-graph.cache';
@@ -36,6 +44,14 @@ import { ProjectResolver } from '../common/project-resolver';
   providers: [
     ProjectService,
     ProjectStructureService,
+    ProjectProductionStateService,
+    ProjectStudioCharacterBibleService,
+    ProjectStudioDirectorScriptService,
+    ProjectStudioEpisodePlanService,
+    ProjectStudioLocationBibleService,
+    ProjectStudioShotScriptService,
+    ProjectStudioStoryBibleService,
+    ProjectStudioVideoPromptService,
     StructureGenerateService,
     SceneGraphService,
     SceneGraphCache,
@@ -44,6 +60,14 @@ import { ProjectResolver } from '../common/project-resolver';
   exports: [
     ProjectService,
     ProjectStructureService,
+    ProjectProductionStateService,
+    ProjectStudioCharacterBibleService,
+    ProjectStudioDirectorScriptService,
+    ProjectStudioEpisodePlanService,
+    ProjectStudioLocationBibleService,
+    ProjectStudioShotScriptService,
+    ProjectStudioStoryBibleService,
+    ProjectStudioVideoPromptService,
     StructureGenerateService,
     SceneGraphService,
     ProjectResolver,

@@ -1,0 +1,71 @@
+'use client';
+
+import type { ProductionStateDTO } from '@scu/shared-types';
+
+interface StudioRightPanelProps {
+  state: ProductionStateDTO | null;
+}
+
+function panelTitle(text: string) {
+  return <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{text}</h3>;
+}
+
+export function StudioRightPanel({ state }: StudioRightPanelProps) {
+  const legacy = state?.legacyDataSummary;
+  const canContinue = Boolean(state && state.riskFlags.length === 0);
+
+  return (
+    <aside
+      style={{
+        position: 'sticky',
+        top: '2rem',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--r-lg)',
+        background: 'var(--bg-panel)',
+        padding: '1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem',
+      }}
+    >
+      <section>
+        {panelTitle('质量 / 风险')}
+        <p style={{ color: 'var(--text-secondary)' }}>
+          {state ? `当前阶段：${state.currentStage}` : '正在读取生产状态'}
+        </p>
+        <p style={{ color: canContinue ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+          是否可继续下一步：{canContinue ? '可继续' : '需要补齐缺失能力'}
+        </p>
+      </section>
+
+      <section>
+        {panelTitle('当前项目风险')}
+        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
+          {(state?.riskFlags || ['状态读取中']).map((flag) => (
+            <li key={flag}>{flag}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        {panelTitle('缺失能力')}
+        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
+          {(state?.missingCapabilities || ['状态读取中']).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        {panelTitle('可用旧资产')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>旧小说：{legacy?.hasNovelSource ? '有' : '无'}</div>
+          <div>章节：{legacy?.novelChapterCount ?? '--'}</div>
+          <div>旧剧集：{legacy?.episodeCount ?? '--'}</div>
+          <div>旧场景：{legacy?.sceneCount ?? '--'}</div>
+          <div>旧镜头：{legacy?.shotCount ?? '--'}</div>
+        </div>
+      </section>
+    </aside>
+  );
+}

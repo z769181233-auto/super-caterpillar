@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { ProjectDetailView } from './adapters';
 import { ProjectDetailOverview, OverviewAside } from './ProjectDetailOverview';
@@ -18,6 +18,7 @@ export type TabType = 'overview' | 'builds' | 'evidence';
 
 export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
   const t = useTranslations('ProjectDetail');
+  const locale = useLocale();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
@@ -62,6 +63,13 @@ export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
           style={{ width: '100%', justifyContent: 'flex-start' }}
         >
           &larr; Back
+        </Button>
+        <Button
+          variant="primary"
+          onClick={() => router.push(`/${locale}/projects/${project.id}/studio`)}
+          style={{ width: '100%', justifyContent: 'flex-start', marginTop: '0.75rem' }}
+        >
+          进入新版动漫制作 Studio
         </Button>
       </div>
       {navItems.map((item) => {
