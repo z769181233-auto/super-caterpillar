@@ -44,7 +44,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
 export const projectApi = {
   async createProject(payload: { name: string; description?: string }) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects`, {
+    const res = await fetchWithAuth('/api/projects/', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -64,8 +64,29 @@ export const projectApi = {
     return json.data.project ?? json.data;
   },
 
+  async deleteProject(projectId: string) {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    const json: unknown = await safeJson(res);
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
+
+    if (!res.ok) {
+      const msg = obj?.error?.message || obj?.message || `删除项目失败 (${res.status})`;
+      throw new Error(msg);
+    }
+
+    if (obj && typeof obj === 'object' && 'success' in obj && (obj as { success?: boolean }).success === false) {
+      throw new Error(obj?.error?.message || '删除项目失败');
+    }
+
+    return obj?.data ?? json;
+  },
+
   async getProjects(): Promise<ProjectDTO[]> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects`, {
+    const res = await fetchWithAuth('/api/projects/', {
       credentials: 'include',
     });
 

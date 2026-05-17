@@ -167,13 +167,15 @@
     },
     "card": {
       "latestBuild": "Latest Build",
-      "updated": "Updated"
+      "updated": "Updated",
+      "delete": "Delete"
     },
     "openStudio": "Workbench",
     "stats": {
       "seasons": "Seasons",
       "scenes": "Scenes",
-      "shots": "Shots"
+      "shots": "Shots",
+      "episodes": "Episodes"
     },
     "status": {
       "READY": "Ready",
@@ -221,7 +223,16 @@
       "unknown": "Unknown Node Type",
       "noDesc": "(No description)",
       "noSummary": "(No summary)"
-    }
+    },
+    "createModalCancel": "Cancel",
+    "createModalErrorEmptyName": "Enter a project name before creating it.",
+    "createModalErrorGeneric": "Failed to create project. Please try again.",
+    "deleteModalTitle": "Delete Project",
+    "deleteModalDesc": "This action cannot be undone. Imported novels, analysis tasks, and structure results under this project will be removed together.",
+    "deleteModalCancel": "Keep Project",
+    "deleteModalConfirm": "Delete Project",
+    "deleteModalErrorGeneric": "Failed to delete project. Please try again.",
+    "deletingButton": "Deleting..."
   },
   "ProjectDetail": {
     "navOverview": "Overview",

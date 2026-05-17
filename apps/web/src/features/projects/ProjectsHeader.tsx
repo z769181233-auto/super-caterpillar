@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { useTranslations } from 'next-intl';
-import { Button } from '@/components/ui/Button';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
+import { getProjectsCreateHref } from './project-create-flow';
 
 interface ProjectsHeaderProps {
   onCreateClick: () => void;
@@ -10,6 +11,8 @@ interface ProjectsHeaderProps {
 
 export function ProjectsHeader({ onCreateClick }: ProjectsHeaderProps) {
   const t = useTranslations('Projects');
+  const locale = useLocale();
+  const createHref = getProjectsCreateHref(locale);
 
   return (
     <div
@@ -36,9 +39,27 @@ export function ProjectsHeader({ onCreateClick }: ProjectsHeaderProps) {
       </div>
 
       <div>
-        <Button variant="primary" onClick={onCreateClick}>
+        <Link
+          href={createHref}
+          onClick={(event) => {
+            event.preventDefault();
+            onCreateClick();
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0.5rem 1rem',
+            borderRadius: 'var(--r-md)',
+            background: 'var(--gold)',
+            color: 'var(--on-gold)',
+            border: '1px solid var(--gold)',
+            fontWeight: 500,
+            textDecoration: 'none',
+          }}
+        >
           {t('newProject')}
-        </Button>
+        </Link>
       </div>
     </div>
   );

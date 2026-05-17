@@ -12,6 +12,7 @@ interface ProjectsGridProps {
   isLoading: boolean;
   onImportClick?: () => void;
   onCreateClick?: () => void;
+  onDeleteClick?: (project: ProjectCardView) => void;
 }
 
 export function ProjectsGrid({
@@ -19,6 +20,7 @@ export function ProjectsGrid({
   isLoading,
   onImportClick,
   onCreateClick,
+  onDeleteClick,
 }: ProjectsGridProps) {
   const t = useTranslations('Projects');
   const [search, setSearch] = useState('');
@@ -116,7 +118,7 @@ export function ProjectsGrid({
         }}
       >
         {filteredProjects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
+          <ProjectCard key={project.id} project={project} onDeleteClick={onDeleteClick} />
         ))}
       </div>
     </div>

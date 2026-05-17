@@ -5,23 +5,24 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { KpiStat } from '@/components/ui/KpiStat';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ProjectCardView } from './adapters';
 import { useRouter } from 'next/navigation';
+import { getProjectDetailHref } from './project-create-flow';
 
 interface ProjectCardProps {
   project: ProjectCardView;
+  onDeleteClick?: (project: ProjectCardView) => void;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, onDeleteClick }: ProjectCardProps) {
   const t = useTranslations('Projects');
   const tCard = useTranslations('Projects.card');
+  const locale = useLocale();
   const router = useRouter();
 
-  // Route strictly to the builds workspace to follow system rules
   const handleOpenStudio = () => {
-    // Note: If build ID was present in future API, we'd use it. Setting placeholder project id per requirements.
-    router.push(`/projects/${project.id}`);
+    router.push(getProjectDetailHref(locale, project.id));
   };
 
   const getSystemStatus = () => {
@@ -35,7 +36,14 @@ export function ProjectCard({ project }: ProjectCardProps) {
     return <StatusPill level="DEFAULT">{t(`status.${status}`)}</StatusPill>;
   };
 
-  const formattedDate = new Date(project.updatedAt).toLocaleDateString();
+  const formattedDate = new Date(project.updatedAt).toLocaleString(locale, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
 
   return (
     <Card
@@ -53,7 +61,30 @@ export function ProjectCard({ project }: ProjectCardProps) {
         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
           {project.title}
         </h3>
-        {project.latestBuild && <div>{getSystemStatus()}</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          {project.latestBuild && <div>{getSystemStatus()}</div>}
+          {onDeleteClick ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDeleteClick(project);
+              }}
+              aria-label={tCard('delete')}
+              style={{
+                background: 'transparent',
+                color: 'hsl(var(--hsl-error))',
+                border: '1px solid hsla(var(--hsl-error), 0.35)',
+                borderRadius: '999px',
+                padding: '0.3rem 0.75rem',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              {tCard('delete')}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {project.tags && project.tags.length > 0 && (

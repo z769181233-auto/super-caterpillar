@@ -165,13 +165,15 @@
     },
     "card": {
       "latestBuild": "最新构建",
-      "updated": "更新于"
+      "updated": "更新于",
+      "delete": "删除"
     },
     "openStudio": "工作台",
     "stats": {
       "seasons": "季",
       "scenes": "场",
-      "shots": "镜"
+      "shots": "镜",
+      "episodes": "集"
     },
     "status": {
       "READY": "就绪",
@@ -219,7 +221,16 @@
       "unknown": "未知节点类型",
       "noDesc": "（暂无描述）",
       "noSummary": "（暂无摘要）"
-    }
+    },
+    "createModalCancel": "取消",
+    "createModalErrorEmptyName": "请输入项目名称后再创建。",
+    "createModalErrorGeneric": "创建项目失败，请稍后重试。",
+    "deleteModalTitle": "删除项目",
+    "deleteModalDesc": "删除后将无法恢复，项目下的导入记录、分析任务与结构结果也会一并移除。",
+    "deleteModalCancel": "保留项目",
+    "deleteModalConfirm": "确认删除",
+    "deleteModalErrorGeneric": "删除项目失败，请稍后重试。",
+    "deletingButton": "删除中..."
   },
   "Landing": {
     "title": "工业级 AI 动漫生产线",

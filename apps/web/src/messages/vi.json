@@ -157,7 +157,8 @@
     "stats": {
       "seasons": "Mùa",
       "scenes": "Cảnh",
-      "shots": "Cảnh Shot"
+      "shots": "Cảnh Shot",
+      "episodes": "Tập"
     },
     "status": {
       "READY": "Sẵn sàng",
@@ -203,6 +204,18 @@
       "unknown": "Loại Nút Không Xác Định",
       "noDesc": "(Không có mô tả)",
       "noSummary": "(Không có tóm tắt)"
+    },
+    "createModalCancel": "Hủy",
+    "createModalErrorEmptyName": "Hãy nhập tên dự án trước khi tạo.",
+    "createModalErrorGeneric": "Không thể tạo dự án. Vui lòng thử lại.",
+    "deleteModalTitle": "Xóa dự án",
+    "deleteModalDesc": "Hành động này không thể hoàn tác. Bản nhập truyện, tác vụ phân tích và kết quả cấu trúc của dự án này sẽ bị xóa cùng nhau.",
+    "deleteModalCancel": "Giữ lại dự án",
+    "deleteModalConfirm": "Xóa dự án",
+    "deleteModalErrorGeneric": "Không thể xóa dự án. Vui lòng thử lại.",
+    "deletingButton": "Đang xóa...",
+    "card": {
+      "delete": "Xóa"
     }
   },
   "Landing": {

@@ -9,3 +9,7 @@ export async function getProjects(): Promise<ProjectCardView[]> {
 export async function createProject(data: { name: string; description?: string }) {
   return projectApi.createProject(data);
 }
+
+export async function deleteProject(projectId: string) {
+  return projectApi.deleteProject(projectId);
+}
