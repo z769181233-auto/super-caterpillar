@@ -20,6 +20,18 @@ export interface AnalyzedScene {
   index: number; // 场景序号，从 1 开始
   title: string; // 场景标题
   summary: string; // 场景简介
+  characters?: string[]; // 最小语义抽取：场景主要人物
+  location?: string; // 最小语义抽取：场景地点
+  timeOfDay?: string; // 最小语义抽取：时间语义
+  emotionalTone?: string; // 最小语义抽取：主情绪
+  conflictSummary?: string; // 最小语义抽取：冲突摘要
+  semanticSummary?: string; // 最小语义抽取：可读摘要
+  chapterContextSummary?: string; // 上下文语义引擎：chapter 级摘要真相
+  memoryContextSummary?: string; // 长文本记忆/摘要体系：memory 级上下文真相
+  memoryContextSource?: string; // 长文本记忆/摘要体系：memory 来源
+  crossChapterMemoryHit?: boolean; // 长文本记忆/摘要体系：是否命中跨章节记忆
+  semanticMethod?: string; // 上下文语义引擎：提取方法
+  fallbackStrategy?: string; // 上下文语义引擎：fallback 策略
   shots: AnalyzedShot[];
 }
 

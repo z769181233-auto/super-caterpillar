@@ -6,6 +6,8 @@ export * from './worker.dto';
 export * from './user.dto';
 // export * from './project.dto';
 export * from './novel-analysis.dto';
+export * from './scene-semantics';
+export * from './animation-studio';
 export * from './scene-graph';
 export * from './engines';
 export * from './tasks';
