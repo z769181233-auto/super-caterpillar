@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { novelImportApi } from '@/lib/apiClient';
 import type { JobDTO, ImportNovelResultDTO } from '@/types/dto';
+import { buildImportNovelNav } from './import-novel-nav';
 
 type Mode = 'file' | 'text';
 
@@ -19,9 +20,11 @@ function isTerminal(status?: string) {
 }
 
 export function ImportNovelPageContent() {
-  const params = useParams<{ projectId: string }>();
+  const params = useParams<{ projectId: string; locale: string }>();
   const router = useRouter();
   const projectId = params.projectId;
+  const locale = params.locale || 'en';
+  const nav = useMemo(() => buildImportNovelNav(locale, projectId), [locale, projectId]);
 
   const [mode, setMode] = useState<Mode>('file');
   const [title, setTitle] = useState('');
@@ -67,11 +70,11 @@ export function ImportNovelPageContent() {
     if (latestStatus === 'DONE' && !redirectScheduled) {
       setRedirectScheduled(true);
       const timer = window.setTimeout(() => {
-        router.push(`/projects/${projectId}/structure`);
+        router.push(nav.structureHref);
       }, 1200);
       return () => window.clearTimeout(timer);
     }
-  }, [latestStatus, redirectScheduled, router, projectId]);
+  }, [latestStatus, redirectScheduled, router, nav.structureHref]);
 
   async function handleImport() {
     setSubmitting(true);
@@ -117,6 +120,11 @@ export function ImportNovelPageContent() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '2rem 1rem 4rem' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+        <div>
+          <Button variant="secondary" onClick={() => router.push(nav.projectHref)}>
+            返回项目
+          </Button>
+        </div>
         <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text-primary)' }}>导入小说并生成剧本结构</h1>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
           这里已经接通真实导入链路。你可以上传 `txt/docx/epub/md`，或者直接粘贴正文；系统会创建小说源并发起分析任务，完成后跳到项目结构页继续看场次与镜头。
@@ -200,7 +208,7 @@ export function ImportNovelPageContent() {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => router.push(`/projects/${projectId}/structure`)}
+              onClick={() => router.push(nav.structureHref)}
               disabled={latestStatus !== 'DONE'}
             >
               前往结构页

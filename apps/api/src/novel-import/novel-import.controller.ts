@@ -169,6 +169,18 @@ export class NovelImportController {
       !Array.isArray(activeAnalysisJob.progress)
         ? (activeAnalysisJob.progress as Record<string, any>)
         : {};
+    const backingJobId = typeof progress.jobId === 'string' ? progress.jobId : null;
+
+    if (backingJobId) {
+      const backingJob = await this.prisma.shotJob.findUnique({
+        where: { id: backingJobId },
+        select: { status: true },
+      });
+
+      if (!backingJob || backingJob.status === 'SUCCEEDED' || backingJob.status === 'FAILED') {
+        return;
+      }
+    }
 
     throw new ConflictException({
       message: '当前项目已有分析任务正在执行，请等待完成后再重新发起分析。',
@@ -635,9 +647,51 @@ export class NovelImportController {
       take: 10,
     });
 
+    const backingJobIds = jobs
+      .map((job) => {
+        const progress =
+          job.progress && typeof job.progress === 'object' && !Array.isArray(job.progress)
+            ? (job.progress as Record<string, unknown>)
+            : null;
+        return typeof progress?.jobId === 'string' ? progress.jobId : null;
+      })
+      .filter((value): value is string => Boolean(value));
+
+    const backingJobs =
+      backingJobIds.length > 0
+        ? await this.prisma.shotJob.findMany({
+            where: { id: { in: backingJobIds } },
+            select: {
+              id: true,
+              type: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          })
+        : [];
+    const backingJobById = new Map(backingJobs.map((job) => [job.id, job]));
+
+    const syncedJobs = jobs.map((job) => {
+      const progress =
+        job.progress && typeof job.progress === 'object' && !Array.isArray(job.progress)
+          ? (job.progress as Record<string, unknown>)
+          : {};
+      const backingJobId = typeof progress.jobId === 'string' ? progress.jobId : null;
+      const backingJob = backingJobId ? backingJobById.get(backingJobId) : null;
+
+      return {
+        ...job,
+        status: backingJob?.status ?? job.status,
+        type: backingJob?.type ?? job.jobType,
+        updatedAt: backingJob?.updatedAt ?? job.updatedAt,
+        createdAt: backingJob?.createdAt ?? job.createdAt,
+      };
+    });
+
     return {
       success: true,
-      data: { jobs },
+      data: { jobs: syncedJobs },
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };
@@ -682,7 +736,7 @@ export class NovelImportController {
   @Permissions(ProjectPermissions.PROJECT_GENERATE)
   async analyzeNovel(
     @Param('projectId') projectId: string,
-    @Body() body: { chapterId?: string },
+    @Body() body: { chapterId?: string; traceId?: string },
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
     @Req() request: Request
@@ -695,6 +749,11 @@ export class NovelImportController {
     });
     if (!novelSource) throw new NotFoundException('找不到小说源');
     await this.ensureNoActiveNovelAnalysisJob(projectId);
+
+    const resolvedTraceId =
+      body.traceId ||
+      (typeof request.headers['x-trace-id'] === 'string' ? request.headers['x-trace-id'] : undefined) ||
+      randomUUID();
 
     const analysisJob = await this.prisma.novelAnalysisJob.create({
       data: {
@@ -715,10 +774,12 @@ export class NovelImportController {
     const job = await this.jobService.createNovelAnalysisJob(
       {
         type: JobTypeEnum.NOVEL_ANALYSIS as any,
+        traceId: resolvedTraceId,
         payload: {
           projectId,
           novelSourceId: novelSource.id,
           chapterId: body.chapterId,
+          traceId: resolvedTraceId,
           organizationId,
           userId: user.userId,
         },
