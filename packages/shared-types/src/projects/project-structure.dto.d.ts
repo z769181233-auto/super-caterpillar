@@ -5,7 +5,7 @@ export interface ProjectStructureTree {
     sourceType: 'DEMO' | 'NOVEL';
     productionStatus: 'IDLE' | 'READY' | 'RUNNING' | 'DONE';
     structureStatus: 'EMPTY' | 'READY';
-    tree: ProjectStructureSeasonNode[];
+    tree: Array<ProjectStructureSeasonNode | ProjectStructureEpisodeNode>;
     counts: {
         seasons: number;
         episodes: number;
@@ -43,6 +43,9 @@ export interface ProjectStructureSceneNode {
     index: number;
     title: string;
     summary?: string | null;
+    characters?: unknown;
+    characterIds?: unknown;
+    directingNotes?: string | null;
     visualDensityScore?: number | null;
     enrichedText?: string | null;
     qaStatus?: 'PASS' | 'WARN' | 'FAIL' | 'PENDING';
@@ -56,8 +59,34 @@ export interface ProjectStructureShotNode {
     index: number;
     title?: string | null;
     description?: string | null;
+    content?: string | null;
+    actionDescription?: string | null;
+    dialogueContent?: string | null;
+    productionScript?: ProjectStructureProductionScript | null;
+    visualDescription?: string | null;
+    visualPrompt?: string | null;
+    cameraMovement?: string | null;
+    cameraAngle?: string | null;
+    lightingPreset?: string | null;
+    soundFx?: string | null;
+    durationSec?: number | null;
+    durationSeconds?: number | null;
+    dramaticFunction?: string | null;
+    emotionalTarget?: string | null;
+    videoUrl?: string | null;
+    novelQuote?: string | null;
     shotType: string;
     qaStatus?: 'PASS' | 'WARN' | 'FAIL' | 'PENDING';
     blockingReason?: string | null;
     canGenerate?: boolean;
+}
+export interface ProjectStructureProductionScript {
+    sceneBeat?: string | null;
+    characterBlocking?: string | null;
+    performanceNote?: string | null;
+    artDirection?: string | null;
+    soundDesign?: string | null;
+    editNote?: string | null;
+    continuity?: string | null;
+    productionRemark?: string | null;
 }

@@ -17,7 +17,7 @@ export interface ProjectStructureTree {
   structureStatus: 'EMPTY' | 'READY';
 
   // Data Source
-  tree: ProjectStructureSeasonNode[];
+  tree: Array<ProjectStructureSeasonNode | ProjectStructureEpisodeNode>;
 
   // Meta
   counts: {
@@ -64,6 +64,9 @@ export interface ProjectStructureSceneNode {
   index: number;
   title: string;
   summary?: string | null;
+  characters?: unknown;
+  characterIds?: unknown;
+  directingNotes?: string | null;
   visualDensityScore?: number | null;
   enrichedText?: string | null;
   // Industrial Fields
@@ -79,6 +82,22 @@ export interface ProjectStructureShotNode {
   index: number;
   title?: string | null;
   description?: string | null;
+  content?: string | null;
+  actionDescription?: string | null;
+  dialogueContent?: string | null;
+  productionScript?: ProjectStructureProductionScript | null;
+  visualDescription?: string | null;
+  visualPrompt?: string | null;
+  cameraMovement?: string | null;
+  cameraAngle?: string | null;
+  lightingPreset?: string | null;
+  soundFx?: string | null;
+  durationSec?: number | null;
+  durationSeconds?: number | null;
+  dramaticFunction?: string | null;
+  emotionalTarget?: string | null;
+  videoUrl?: string | null;
+  novelQuote?: string | null;
   shotType: string; // Renamed from 'type' to avoid conflict with node type discriminator, or keep 'type' if safe?
   // User Request: "tree (Season/Episode/Scene/Shot)" implies using specific types.
   // But Shot entity has 'type' (e.g. FULL, CLOSEUP).
@@ -90,4 +109,15 @@ export interface ProjectStructureShotNode {
   qaStatus?: 'PASS' | 'WARN' | 'FAIL' | 'PENDING';
   blockingReason?: string | null;
   canGenerate?: boolean;
+}
+
+export interface ProjectStructureProductionScript {
+  sceneBeat?: string | null;
+  characterBlocking?: string | null;
+  performanceNote?: string | null;
+  artDirection?: string | null;
+  soundDesign?: string | null;
+  editNote?: string | null;
+  continuity?: string | null;
+  productionRemark?: string | null;
 }

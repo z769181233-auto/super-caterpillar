@@ -354,6 +354,30 @@ export const projectApi = {
     throw new Error('Invalid response format');
   },
 
+  async generateVideoScript(
+    projectId: string,
+    payload: { sceneId?: string; shotCount?: number }
+  ) {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/structure/video-script/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const error = json as ErrorResponse | null;
+      throw new Error(error?.error?.message || error?.message || `视频剧本生成失败: ${res.status}`);
+    }
+
+    if (json && json.success) {
+      return json.data;
+    }
+    throw new Error('视频剧本生成失败');
+  },
+
   // Stage4: Scene Semantic Enhancement (MVP)
   async getSceneSemanticEnhancement(projectId: string, sceneId: string) {
     const res = await fetchWithAuth(

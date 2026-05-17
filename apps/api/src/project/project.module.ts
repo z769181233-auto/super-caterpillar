@@ -11,6 +11,7 @@ import { ProjectStudioLocationBibleService } from './project-studio-location-bib
 import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
 import { ProjectStudioStoryBibleService } from './project-studio-story-bible.service';
 import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
+import { ProjectVideoScriptService } from './project-video-script.service';
 import { StructureGenerateService } from './structure-generate.service';
 import { SceneGraphService } from './scene-graph.service';
 import { SceneGraphCache } from './scene-graph.cache';
@@ -52,6 +53,7 @@ import { ProjectResolver } from '../common/project-resolver';
     ProjectStudioShotScriptService,
     ProjectStudioStoryBibleService,
     ProjectStudioVideoPromptService,
+    ProjectVideoScriptService,
     StructureGenerateService,
     SceneGraphService,
     SceneGraphCache,
@@ -68,6 +70,7 @@ import { ProjectResolver } from '../common/project-resolver';
     ProjectStudioShotScriptService,
     ProjectStudioStoryBibleService,
     ProjectStudioVideoPromptService,
+    ProjectVideoScriptService,
     StructureGenerateService,
     SceneGraphService,
     ProjectResolver,
