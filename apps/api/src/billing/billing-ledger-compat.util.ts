@@ -1,3 +1,5 @@
+import { createHash } from 'crypto';
+
 export type LegacyBillingState = 'RESERVED' | 'COMMITTED' | 'RELEASED' | string;
 
 export type BillingLedgerSsotStatus = 'PENDING' | 'POSTED' | 'REVERSED' | 'FAILED';
@@ -81,14 +83,20 @@ export function buildBillingLedgerSsotIdempotencyKey(params: {
   itemId: string;
   chargeCode: string;
 }): string {
-  return [
+  const rawKey = [
     requireNonEmptyString(params.tenantId, 'BILLING_TENANT_ID_REQUIRED'),
     requireNonEmptyString(params.traceId, 'BILLING_TRACE_ID_REQUIRED'),
     requireNonEmptyString(params.itemType, 'BILLING_ITEM_TYPE_REQUIRED'),
     requireNonEmptyString(params.itemId, 'BILLING_ITEM_ID_REQUIRED'),
     requireNonEmptyString(params.chargeCode, 'BILLING_CHARGE_CODE_REQUIRED'),
-  ]
-    .join(':');
+  ].join(':');
+
+  if (rawKey.length <= 128) {
+    return rawKey;
+  }
+
+  // Keep the key deterministic while respecting billing_ledger.idempotency_key varchar(128).
+  return `ssot:${createHash('sha256').update(rawKey).digest('hex')}`;
 }
 
 export function buildBillingLedgerCreateData(params: {
