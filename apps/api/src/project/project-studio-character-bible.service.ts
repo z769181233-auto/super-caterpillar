@@ -66,11 +66,12 @@ function extractCharacterNames(text: string): string[] {
     if (text.includes(name)) names.push(name);
   }
 
-  const surnameMatches = text.match(/[薛萧王李赵顾沈陆谢周林宋陈许][\u4e00-\u9fa5]{1,2}/g) || [];
+  const surnameMatches: string[] =
+    text.match(/[薛萧王李赵顾沈陆谢周林宋陈许][\u4e00-\u9fa5]{1,2}/g) ?? [];
   names.push(...surnameMatches.filter((name) => name.length >= 2 && name.length <= 3));
 
   const titledMatches =
-    text.match(/[\u4e00-\u9fa5]{1,3}(?:姑娘|夫人|嬷嬷|公子|少爷|小姐|丫鬟|侍女|王爷|侯爷)/g) || [];
+    text.match(/[\u4e00-\u9fa5]{1,3}(?:姑娘|夫人|嬷嬷|公子|少爷|小姐|丫鬟|侍女|王爷|侯爷)/g) ?? [];
   names.push(...titledMatches);
 
   const cleanNames = uniq(names)
