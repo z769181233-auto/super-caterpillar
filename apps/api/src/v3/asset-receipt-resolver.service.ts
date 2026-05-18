@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { projectDirectorLayerToReceipt } from '@scu/shared-types';
 
 export interface V3AssetReceipt {
   asset_id: string | null;
@@ -21,6 +22,13 @@ export interface V3AssetReceipt {
     publish_eligibility: string | null;
     review_required: boolean | null;
     policy_stage: string | null;
+    review_policy_result: string | null;
+    review_policy_source: string | null;
+    approval_action_source: string | null;
+    approval_actor_user_id: string | null;
+    approval_review_status: string | null;
+    approval_review_note: string | null;
+    approval_reviewed_at: string | null;
     shot_planner_rule_set_version: string | null;
     shot_planner_matched_rule_ids: string[] | null;
     planner_version: string | null;
@@ -129,6 +137,7 @@ export class AssetReceiptResolverService {
       !Array.isArray(metadata.directorLayer)
         ? metadata.directorLayer
         : null;
+    const receiptDirectorLayer = projectDirectorLayerToReceipt(directorLayer);
     return {
       asset_id: asset.id,
       hls_url: asset.hlsPlaylistUrl,
@@ -137,34 +146,7 @@ export class AssetReceiptResolverService {
       storage_key: asset.storageKey,
       duration_sec: metadata.duration_sec || 0,
       fallback_reason: fallbackReason,
-      director_layer: directorLayer
-        ? {
-            scene_id: directorLayer.sceneId ?? null,
-            film_ir_id: directorLayer.filmIrId ?? null,
-            gate_verdict: directorLayer.latestGateVerdict ?? null,
-            gate_reason: directorLayer.gateReason ?? null,
-            threshold_profile: directorLayer.thresholdProfile ?? null,
-            gate_policy_level: directorLayer.gatePolicyLevel ?? null,
-            publish_action: directorLayer.publishAction ?? null,
-            publish_eligibility: directorLayer.publishEligibility ?? null,
-            review_required:
-              typeof directorLayer.reviewRequired === 'boolean'
-                ? directorLayer.reviewRequired
-                : null,
-            policy_stage: directorLayer.policyStage ?? null,
-            shot_planner_rule_set_version: directorLayer.shotPlannerRuleSetVersion ?? null,
-            shot_planner_matched_rule_ids: Array.isArray(directorLayer.shotPlannerMatchedRuleIds)
-              ? directorLayer.shotPlannerMatchedRuleIds
-              : null,
-            planner_version: directorLayer.plannerVersion ?? null,
-            coverage_role: directorLayer.coverageRole ?? null,
-            rhythm_class: directorLayer.rhythmClass ?? null,
-            transition_hint: directorLayer.transitionHint ?? null,
-            rhythm_strategy: directorLayer.editingRhythmStrategy ?? null,
-            audio_master_priority: directorLayer.audioMasterPriority ?? null,
-            silence_strategy: directorLayer.silenceStrategy ?? null,
-          }
-        : null,
+      director_layer: receiptDirectorLayer,
     };
   }
 }
