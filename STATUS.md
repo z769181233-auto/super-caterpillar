@@ -1,40 +1,37 @@
 # STATUS
 
 ## 当前任务
-小说分析质量 M6：覆盖率不足原因、scene candidate 阈值、Studio v2 阻断提示。
+stash@{0} 专门消化 M1：inventory / risk buckets。
 
 ## 已完成
-- 已完成前置 worktree hygiene，当前工作区从干净状态开始。
-- 历史未归因改动已隔离在 `stash@{0}: hygiene-quarantine-remaining-dirty-2026-05-18`，本轮不恢复、不修改。
-- 已确认 M6 不需要 Prisma migration，也不需要进入图片/视频生成。
+- 小说分析质量 M6 已提交：`f4928df79 fix(studio): surface scene candidate coverage blockers`。
+- 当前工作区以 clean HEAD 为基线开始处理 stash。
 
 ## 进行中
-- `stash@{0}` 专门消化 milestone 尚未开始。
+- 等待下一个 stash restore milestone。
 
 ## 未完成
-- `stash@{0}` 专门消化 milestone。
-- 图片分镜资产生成。
-- 镜头级视频生成。
-- 审片评分与回修闭环。
+- `stash@{0}` 具体业务切片恢复。
+- auth/security 单独恢复与验证。
+- safe project-detail/structure UI 单独恢复与验证。
+- asset receipt / review evidence 单独恢复与验证。
+- Storyboard image / video generation 继续隔离。
 
 ## 当前风险
-- 如果小说分析质量输出没有足够 `sceneCandidates`，后续 EpisodePlan / DirectorScript / ShotScript 应阻断，而不是生成低质量伪结果。
-- 当前 M6 只修阻断与提示，不提升人物/场景抽取算法本身。
+- `stash@{0}` 包含 155 个文件、约 3.7 万行新增，不能整包恢复。
+- stash 中混有 CI、Prisma migration、worker、Storyboard 图片、视频/shot 生成、Studio UI、auth/security，多业务线耦合会造成不可 review 和回归风险。
 
 ## 已知问题
-- 旧数据仍可能存在章节摘要、旧 Episode、旧 Shot，但不能直接等同于大厂级 Studio 产物。
-- `stash@{0}` 仍待后续单独 milestone 分类处理。
+- stash 中的 `PLANS.md` / `STATUS.md` 是历史大文档，不能覆盖当前状态文档。
+- stash 中的图片/视频生成相关内容仍不应进入当前主线。
 
 ## 验证状态
-- lint: pass，目标文件无 error；既有 spec `any` 规则仍为 warning
-- typecheck: pass
-- unit tests: pass
-- integration tests: not applicable
-- build: pass via typecheck baseline
-- smoke test: not applicable
+- stash inventory: pass
+- worktree clean check: pass
+- stash preservation check: pass
 
 ## 当前是否允许恢复新功能开发
 no
 
 ## 原因
-M6 仍属于小说分析质量稳定化与阻断保护；图片/视频生成和更大 Studio 能力必须等输入质量链路稳定后再进入。
+先完成 stash hygiene，避免再次把多条未验证业务线混成一个巨大 dirty 工作区。

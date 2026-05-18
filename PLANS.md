@@ -1,44 +1,39 @@
-# 当前计划：小说分析质量 M6
+# 当前计划：stash@{0} 专门消化 M1
 
 ## 目标
-在不恢复 `stash@{0}`、不进入图片/视频生成的前提下，补齐小说分析质量链路的最小阻断能力：当 `coverageReport.sceneCandidates` 不足时，EpisodePlan / DirectorScript / ShotScript 不能继续伪生成，必须给出明确的覆盖率不足原因、阈值和 UI 提示。
+把 `stash@{0}: hygiene-quarantine-remaining-dirty-2026-05-18` 从“不可见的大包风险”变成可追踪、可拆分、可验证的 inventory。当前 milestone 不 `pop`、不整包提交、不进入图片/视频生成，只做清单固化和后续拆分策略。
 
 ## 请求流
-用户在 Studio v2 页面触发生成剧集规划、导演剧本或镜头台本；Web 调用现有 Studio API；API 从项目 metadata、旧小说章节、`SceneDraft.analysisResult.coverageReport.sceneCandidates` 聚合输入；若输入不足则返回可读阻断错误，Web 展示阻断原因。
+当前 clean HEAD -> 只读检查 `stash@{0}` -> 统计文件与业务线 -> 输出 inventory 文档 -> 更新状态 -> 验证当前工作区仍干净、stash 仍存在。
 
 ## 数据流
-`NovelSource / Novel / SceneDraft.coverageReport.sceneCandidates` -> EpisodePlan sourceEvidence -> DirectorScript sourceEvidence -> ShotScript source evidence。M6 只补阻断与提示，不新增表、不改 worker、不改旧导入。
+`git stash show -u --name-status stash@{0}` 和 `git stash show -u --stat stash@{0}` -> `docs/audits/stash_0_hygiene_inventory_2026-05-18.md`。不把 stash 内容恢复进工作区。
 
 ## 状态流
-`sceneCandidates` 充足时保持现有生成；不足或 quality gate blocked 时进入明确 blocked 状态，由 UI 展示“需要重新跑小说分析质量链路”，不把旧摘要、旧 Episode 或旧 Shot 伪装为标准 Studio 产物。
+`stash pending` -> `inventory documented`。后续每个业务线必须单独恢复、单独验证、单独提交。
 
 ## 修改边界
-- 允许：EpisodePlan 覆盖率阻断原因、Studio v2 文本提示、相关测试、计划/状态文档。
-- 禁止：恢复 `stash@{0}`、Prisma migration、worker 修改、旧 novel import 重构、图片生成、视频生成、批量格式化。
+- 允许：新增 stash inventory 文档，更新 `PLANS.md` / `STATUS.md`。
+- 禁止：`git stash pop`、`git stash apply`、删除 stash、恢复图片/视频生成、恢复 Prisma migration、整包提交 155 个文件。
 
-## Milestone M6 - Scene Candidate Coverage Blocker
+## Milestone Stash M1 - Inventory / Risk Buckets
 
 ### 范围
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-episode-plan.service.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-episode-plan.service.spec.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/StudioEpisodePlanPage.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/StudioDirectorScriptPage.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/StudioShotScriptPage.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-generation-blockers.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-generation-blockers.test.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/audits/stash_0_hygiene_inventory_2026-05-18.md`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- scene candidate 不足时 EpisodePlan 生成返回明确阻断原因。
-- quality gate blocked 时不会回退旧 Episode 伪生成。
-- UI 对 EpisodePlan / DirectorScript / ShotScript 生成失败展示中文阻断说明。
-- 不触碰 `stash@{0}`。
-- 现有旧导入、旧详情、旧结构链路不被修改。
+- 已记录 stash 文件总量、主要业务线、风险等级。
+- 已明确哪些切片可优先恢复，哪些必须继续隔离。
+- 当前工作区不混入 stash 内容。
+- `stash@{0}` 仍保留，未被 pop/drop。
 
 ### 验证命令
-- `pnpm --filter api test -- project-studio-episode-plan.service.spec.ts project-studio-director-script.service.spec.ts project-studio-shot-script.service.spec.ts`
-- `pnpm --filter web exec tsx src/features/studio-v2/studio-generation-blockers.test.ts`
-- `pnpm --filter api typecheck`
-- `pnpm --filter web exec tsc -p tsconfig.json --noEmit`
+- `git stash show -u --name-status stash@{0}`
+- `git stash show -u --stat stash@{0}`
+- `git status --short`
+- `git stash list --date=local | head -3`
 - `git diff --check`
 
 ### 当前状态
