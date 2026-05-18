@@ -7,6 +7,7 @@ import {
   getStudioProductionState,
   getStudioShotScripts,
 } from './api';
+import { formatStudioGenerationError } from './studio-generation-blockers';
 import { StudioLayout } from './StudioLayout';
 
 interface StudioShotScriptPageProps {
@@ -59,7 +60,8 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
       setShotScripts(nextShotScripts);
       setState(nextState);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate Studio ShotScript');
+      const message = err instanceof Error ? err.message : 'Failed to generate Studio ShotScript';
+      setError(formatStudioGenerationError(message, '镜头台本'));
     } finally {
       setGenerating(false);
     }

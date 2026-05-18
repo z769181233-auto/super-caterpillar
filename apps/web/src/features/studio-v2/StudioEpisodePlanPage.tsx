@@ -7,6 +7,7 @@ import {
   getStudioEpisodePlans,
   getStudioProductionState,
 } from './api';
+import { formatStudioGenerationError } from './studio-generation-blockers';
 import { StudioLayout } from './StudioLayout';
 
 interface StudioEpisodePlanPageProps {
@@ -53,7 +54,8 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
       setEpisodePlans(nextEpisodePlans);
       setState(nextState);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate Studio EpisodePlan');
+      const message = err instanceof Error ? err.message : 'Failed to generate Studio EpisodePlan';
+      setError(formatStudioGenerationError(message, '剧集规划'));
     } finally {
       setGenerating(false);
     }

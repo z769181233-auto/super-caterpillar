@@ -7,6 +7,7 @@ import {
   getStudioDirectorScripts,
   getStudioProductionState,
 } from './api';
+import { formatStudioGenerationError } from './studio-generation-blockers';
 import { StudioLayout } from './StudioLayout';
 
 interface StudioDirectorScriptPageProps {
@@ -65,7 +66,8 @@ export function StudioDirectorScriptPage({
       setDirectorScripts(nextDirectorScripts);
       setState(nextState);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate Studio DirectorScript');
+      const message = err instanceof Error ? err.message : 'Failed to generate Studio DirectorScript';
+      setError(formatStudioGenerationError(message, '导演剧本'));
     } finally {
       setGenerating(false);
     }

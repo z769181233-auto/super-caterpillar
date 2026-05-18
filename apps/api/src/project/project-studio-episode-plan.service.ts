@@ -14,9 +14,14 @@ type EpisodePlanInput = {
   locationNames: string[];
   sourceEvidence: string[];
 };
+type SceneCandidateExtraction = {
+  candidates: NovelSceneCandidate[];
+  blockedReason: string | null;
+};
 
 const EPISODE_PLAN_VERSION = 'studio-episode-plan-v1';
 const SCENE_CANDIDATE_EVIDENCE_PREFIX = 'scene-candidate:';
+const MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER = 1;
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -76,17 +81,88 @@ function isUsableSceneCandidate(value: unknown): value is NovelSceneCandidate {
   return Boolean(candidateId && text && confidence !== 'low');
 }
 
-function sceneCandidatesFromAnalysisResult(value: unknown): NovelSceneCandidate[] {
+function formatCount(value: unknown): string {
+  return typeof value === 'number' && Number.isFinite(value) ? String(value) : 'unknown';
+}
+
+function textList(value: unknown): string[] {
+  return asArray(value)
+    .map((item) => asString(item))
+    .filter(Boolean) as string[];
+}
+
+function summarizeCoverageReport(coverageReport: JsonRecord): string {
+  const qualityGate = asRecord(coverageReport.qualityGate);
+  const blockingReasons = textList(qualityGate.blockingReasons);
+  const warnings = textList(qualityGate.warnings);
+  const nextActions = textList(qualityGate.nextActions);
+  const missingCapabilities = textList(coverageReport.missingCapabilities);
+  const details = [
+    `sceneCandidates=${formatCount(coverageReport.sceneCandidateCount)}`,
+    `characters=${formatCount(coverageReport.characterCount)}`,
+    `locations=${formatCount(coverageReport.locationCount)}`,
+    `dialogueBlocks=${formatCount(coverageReport.dialogueBlockCount)}`,
+    `actionBlocks=${formatCount(coverageReport.actionBlockCount)}`,
+    `qualityGate=${asString(qualityGate.status) || 'unknown'}`,
+  ];
+  const reasons = [
+    ...blockingReasons.map((reason) => `blocking:${reason}`),
+    ...warnings.map((warning) => `warning:${warning}`),
+    ...missingCapabilities.map((capability) => `missing:${capability}`),
+    ...nextActions.map((action) => `next:${action}`),
+  ];
+  return [...details, ...reasons].join(' | ');
+}
+
+function sceneCandidateExtractionFromAnalysisResult(value: unknown): SceneCandidateExtraction {
   const analysisResult = asRecord(value);
   const coverageReport = asRecord(analysisResult.coverageReport);
-  const qualityGate = asRecord(coverageReport.qualityGate);
-  if (asString(qualityGate.status) === 'blocked') {
-    return [];
+  if (Object.keys(coverageReport).length === 0) {
+    return {
+      candidates: [],
+      blockedReason:
+        'missing coverageReport.sceneCandidates; rerun novel analysis quality pipeline first',
+    };
   }
 
-  return asArray(coverageReport.sceneCandidates)
+  const qualityGate = asRecord(coverageReport.qualityGate);
+  if (asString(qualityGate.status) === 'blocked') {
+    return {
+      candidates: [],
+      blockedReason: `coverage quality gate blocked: ${summarizeCoverageReport(coverageReport)}`,
+    };
+  }
+
+  const sceneCandidates = asArray(coverageReport.sceneCandidates);
+  const usableCandidates = sceneCandidates
     .filter((candidate) => isUsableSceneCandidate(candidate))
     .map((candidate) => candidate as NovelSceneCandidate);
+  if (usableCandidates.length < MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER) {
+    return {
+      candidates: [],
+      blockedReason: `usable scene candidates below threshold (${usableCandidates.length}/${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER}): ${summarizeCoverageReport(coverageReport)}`,
+    };
+  }
+
+  return {
+    candidates: usableCandidates,
+    blockedReason: null,
+  };
+}
+
+function formatEpisodePlanBlockerMessage(reasons: string[]): string {
+  const uniqueReasons = uniq(reasons).slice(0, 8);
+  const reasonText =
+    uniqueReasons.length > 0
+      ? uniqueReasons.map((reason) => `- ${reason}`).join('\n')
+      : '- missing coverageReport.sceneCandidates';
+  return [
+    'No usable scene candidates found for EpisodePlan generation.',
+    `Required threshold: at least ${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER} usable medium/high scene candidate per chapter.`,
+    'Blocking reasons:',
+    reasonText,
+    'Next action: rerun novel analysis quality pipeline and ensure chapter split, character extraction, location extraction, dialogue/action blocks, and scene candidates are present before generating EpisodePlan.',
+  ].join('\n');
 }
 
 function formatSceneCandidateEvidence(candidate: NovelSceneCandidate): string {
@@ -265,8 +341,16 @@ export class ProjectStudioEpisodePlanService {
     const generatedAt = new Date().toISOString();
 
     const sceneCandidatesByChapterId = new Map<string, NovelSceneCandidate[]>();
+    const coverageBlockersByChapterId = new Map<string, string[]>();
     for (const sceneDraft of sceneDrafts) {
-      const candidates = sceneCandidatesFromAnalysisResult(sceneDraft.analysisResult);
+      const extraction = sceneCandidateExtractionFromAnalysisResult(sceneDraft.analysisResult);
+      const candidates = extraction.candidates;
+      if (extraction.blockedReason) {
+        coverageBlockersByChapterId.set(sceneDraft.chapterId, [
+          ...(coverageBlockersByChapterId.get(sceneDraft.chapterId) || []),
+          extraction.blockedReason,
+        ]);
+      }
       if (candidates.length === 0) continue;
       sceneCandidatesByChapterId.set(sceneDraft.chapterId, [
         ...(sceneCandidatesByChapterId.get(sceneDraft.chapterId) || []),
@@ -279,7 +363,7 @@ export class ProjectStudioEpisodePlanService {
       const chapterEpisodeInputs: Array<EpisodePlanInput | null> = (novel?.chapters || []).map(
         (chapter, index, chapters) => {
           const chapterSceneCandidates = sceneCandidatesByChapterId.get(chapter.id) || [];
-          if (chapterSceneCandidates.length === 0) return null;
+          if (chapterSceneCandidates.length < MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER) return null;
           const candidateCharacters = uniq(chapterSceneCandidates.flatMap((candidate) => candidate.characters));
           const candidateLocations = uniq(
             chapterSceneCandidates.map((candidate) => candidate.location).filter(Boolean) as string[]
@@ -322,8 +406,18 @@ export class ProjectStudioEpisodePlanService {
 
     if (episodeInputs.length === 0) {
       if ((novel?.chapters || []).length > 0) {
+        const blockerReasons = (novel?.chapters || []).flatMap((chapter) => {
+          const chapterLabel = chapter.title || `chapter:${chapter.id}`;
+          const chapterReasons = coverageBlockersByChapterId.get(chapter.id);
+          if (chapterReasons && chapterReasons.length > 0) {
+            return chapterReasons.map((reason) => `${chapterLabel}: ${reason}`);
+          }
+          return [
+            `${chapterLabel}: no usable scene candidates mapped from coverageReport.sceneCandidates`,
+          ];
+        });
         throw new BadRequestException(
-          'No usable scene candidates found for EpisodePlan generation; rerun novel analysis quality pipeline first'
+          formatEpisodePlanBlockerMessage(blockerReasons)
         );
       }
       throw new BadRequestException('No usable chapters or legacy episodes found for EpisodePlan generation');

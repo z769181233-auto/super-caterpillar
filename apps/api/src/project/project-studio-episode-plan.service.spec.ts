@@ -293,8 +293,73 @@ describe('ProjectStudioEpisodePlanService', () => {
     });
     const service = new ProjectStudioEpisodePlanService(prisma as any);
 
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toBeInstanceOf(
-      BadRequestException
+    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
+      /No usable scene candidates found for EpisodePlan generation/
+    );
+    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(/quality gate blocked/);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('explains the coverage shortage when scene candidates are below the usable threshold', async () => {
+    const prisma = createPrismaMock({
+      novelSource: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-source-1',
+          fileName: '表姑娘又又又又跑了.txt',
+        }),
+      },
+      novel: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-1',
+          title: '表姑娘又又又又跑了',
+          chapters: [
+            {
+              id: 'chapter-1',
+              index: 1,
+              title: '第一章',
+              summary: '只有低置信度候选。',
+              rawContent: '旧正文。',
+            },
+          ],
+        }),
+      },
+      sceneDraft: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            chapterId: 'chapter-1',
+            analysisResult: {
+              coverageReport: {
+                sceneCandidateCount: 1,
+                characterCount: 0,
+                locationCount: 0,
+                dialogueBlockCount: 0,
+                actionBlockCount: 0,
+                missingCapabilities: ['character_extraction', 'location_extraction'],
+                qualityGate: {
+                  status: 'warning',
+                  warnings: ['low_character_coverage'],
+                  nextActions: ['rerun scene candidate extraction'],
+                },
+                sceneCandidates: [
+                  {
+                    ...sceneCandidate,
+                    candidateId: 'chapter-1:scene-candidate:low',
+                    confidence: 'low',
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+      },
+    });
+    const service = new ProjectStudioEpisodePlanService(prisma as any);
+
+    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
+      /usable scene candidates below threshold/
+    );
+    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
+      /missing:character_extraction/
     );
     expect(prisma.project.update).not.toHaveBeenCalled();
   });
