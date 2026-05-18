@@ -10,6 +10,10 @@ import { ProjectDetailSkeleton } from '../components/ProjectDetailSkeleton';
 import { ProjectDetailShell } from '@/features/project-detail/ProjectDetailShell';
 import { getProjectDetail } from '@/features/project-detail/api';
 import { ProjectDetailView } from '@/features/project-detail/adapters';
+import {
+  PROJECT_STATUS_POLL_INTERVAL_MS,
+  shouldPollProjectDetail,
+} from '../project-status-polling';
 
 const projectDetailRequestOptions = {
   initialStatus: 'loading' as const,
@@ -23,20 +27,26 @@ export function ProjectDetailPage() {
   const s = useRequestState<ProjectDetailView>(null, projectDetailRequestOptions);
   const { setLoading, setEmpty, setSuccess, setError } = s;
 
-  const fetchData = useCallback(async () => {
-    setLoading();
+  const fetchData = useCallback(async (background = false) => {
+    if (!background) {
+      setLoading();
+    }
     try {
       const data = await getProjectDetail(projectId);
       if (!data) {
-        setEmpty();
+        if (!background) {
+          setEmpty();
+        }
       } else {
         setSuccess(data);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error('Failed to load project'),
-        'ERR_PJ_DETAIL_' + projectId
-      );
+      if (!background) {
+        setError(
+          err instanceof Error ? err : new Error('Failed to load project'),
+          'ERR_PJ_DETAIL_' + projectId
+        );
+      }
     }
   }, [projectId, setEmpty, setError, setLoading, setSuccess]);
 
@@ -45,6 +55,18 @@ export function ProjectDetailPage() {
       void fetchData();
     }
   }, [fetchData, projectId]);
+
+  useEffect(() => {
+    if (s.status !== 'success' || !shouldPollProjectDetail(s.data)) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void fetchData(true);
+    }, PROJECT_STATUS_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [fetchData, s.data, s.status]);
 
   return (
     <PageShell maxWidth="1200px">
