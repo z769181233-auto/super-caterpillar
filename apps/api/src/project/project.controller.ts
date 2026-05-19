@@ -105,6 +105,34 @@ export class ProjectController {
     };
   }
 
+  @Get(':projectId/quality/review-queue')
+  @Permissions(SystemPermissions.AUTH)
+  async getQualityReviewQueue(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    await this.permissionService.assertCanManageProject(user.userId, organizationId);
+
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
+    const result = await this.projectService.listQualityReviewQueue(projectId, organizationId, {
+      status,
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+    });
+
+    return {
+      success: true,
+      data: result,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   /**
    * Dev/Smoke Only: 创建示例项目(含 1/2/6/30 结构)
    * 用于本地证据采集和快速演示

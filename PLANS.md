@@ -1,49 +1,47 @@
-# 当前计划：display-only project-detail / structure UI 小切片
+# 当前计划：asset receipt / review evidence 只读切片
 
 ## 目标
-从 `stash@{0}` 中只恢复项目详情与结构结果的展示型 UI 能力，让旧项目详情页可以通过 `?module=structure|script` 打开只读结构/视频剧本结果视图，同时继续排除 Storyboard image / video generation。
+继续 hygiene，不恢复整包 `stash@{0}`，只拆出 asset receipt / review evidence 相关的只读展示与规格能力：后端提供审核队列 evidence 聚合接口，前端 Review Queue 页面展示策略、语义、审批证据。继续排除 Storyboard image / video generation。
 
 ## 请求流
-用户进入旧项目详情页或旧 `/structure` 别名页 -> `ProjectDetailShell` 根据 query module 选择只读 `script` tab -> `ProjectStructureResultsPanel` 调用现有 `projectApi.getProjectStructure(projectId)` -> 页面只展示现有 Episode / Scene / Shot / ProductionScript / resultImageUrl 状态。
+用户进入旧 Review Queue 页面 -> `ReviewQueuePageContent` 调用现有 `projectApi.getQualityReviewQueue` -> API `GET /api/projects/:projectId/quality/review-queue` -> `ProjectService.listQualityReviewQueue` 从现有 `PublishedVideo` / `Asset` / `PublishingReview` / metadata 聚合只读 evidence -> 前端展示，不触发重跑。
 
 ## 数据流
-现有后端 `/api/projects/:projectId/structure` -> `ProjectStructureTree` -> 前端只读派生：章节数、场景数、镜头数、角色文字卡、分集镜头列表、已有文字镜头脚本数量、已有图片资产数量。
+现有 `PublishedVideo.metadata.directorLayer|timelineLayer` 和 `PublishingReview.result/status/note` -> `normalizeReviewPolicy` 归一化审核策略证据 -> Review Queue DTO 字段：policy stage、review policy result/source、publish eligibility、semantic location/time/characters/conflict、approval evidence。
 
 ## 状态流
-无结构数据显示空态；只有小说分析结构时明确标记“还不是导演剧本/镜头台本”；已有 productionScript/镜头字段时显示为文字镜头脚本；已有 `resultImageUrl` 只作为现有资产展示，不触发生成。
+无 published video 时返回空队列；有待处理证据时 `PENDING` 过滤展示；已处理证据在 `DONE` 过滤展示。任何缺失字段只显示空值或 `UNKNOWN`，不得伪造成完成资产。
 
 ## 修改边界
-- 允许：项目详情 tab、旧结构页别名、只读结构结果面板、纯展示派生 helper、相关单测、必要 i18n 文案、`PLANS.md` / `STATUS.md`。
-- 禁止：恢复任何 `storyboard-assets` / `storyboard-images` route、调用 `generateVideoScript`、调用 `generateStoryboardImages`、修改 worker、修改 Prisma、修改 novel import、接图片或视频生成。
+- 允许：`ProjectService` 新增只读 list 方法、`ProjectController` 新增 GET 路由、Review Queue 页面只读 evidence 列、对应单测、`PLANS.md` / `STATUS.md`。
+- 禁止：恢复 rerun POST 操作、恢复 storyboard-assets/storyboard-images、调用图片/视频生成、修改 worker、修改 Prisma、修改旧 novel import、修改旧结构/项目详情链路。
 
-## Milestone Display UI Slice
+## Milestone Review Evidence Slice
 
 ### 范围
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/app/[locale]/projects/[projectId]/structure/page.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/project-detail/ProjectDetailShell.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/project-detail/ProjectDetailOverview.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/project-detail/ProjectStructureResultsPanel.tsx`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/project-detail/project-detail-tabs.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/project-detail/project-production-breakdown.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/messages/*.json`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project.service.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project.controller.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project.service.review-queue.spec.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/projects/pages/ReviewQueuePageContent.tsx`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- 旧项目详情页仍可用。
-- `/zh/projects/:projectId/structure` 重定向到旧详情页的 script tab。
-- `/zh/projects/:projectId/?module=structure` 和 `?module=script` 能打开只读结构结果。
-- 页面不出现任何“生成视频剧本 / 生成图片故事板”的触发按钮。
-- 没有结构数据时显示空态，不报错。
-- 有旧结构数据时显示章节、场景、镜头、角色文字卡和分集镜头列表。
+- 旧小说导入、旧项目详情、旧结构页不被修改。
+- `GET /api/projects/:projectId/quality/review-queue` 返回稳定 JSON。
+- `PENDING` 不把已处理审核误判为待处理。
+- `DONE` 能展示已有 final review/approval evidence。
+- 前端只展示 evidence，不提供重跑按钮。
+- 不出现图片/视频生成入口或调用。
+- 不做 Prisma migration。
 - `stash@{0}` 不被 pop/drop。
 
 ### 验证命令
-- `pnpm --filter web exec tsx src/features/project-detail/project-detail-tabs.test.ts`
-- `pnpm --filter web exec tsx src/features/project-detail/project-production-breakdown.test.ts`
-- `pnpm --filter web exec tsx src/features/project-detail/api.test.ts`
+- `pnpm --filter api test -- project.service.review-queue.spec.ts`
+- `pnpm --filter api exec eslint src/project/project.service.ts src/project/project.controller.ts src/project/project.service.review-queue.spec.ts`
+- `pnpm --filter api typecheck`
 - `pnpm --filter web exec tsc -p tsconfig.json --noEmit`
-- `pnpm --filter web exec eslint src/features/project-detail/ProjectDetailShell.tsx src/features/project-detail/ProjectDetailOverview.tsx src/features/project-detail/ProjectStructureResultsPanel.tsx src/features/project-detail/project-detail-tabs.ts src/features/project-detail/project-detail-tabs.test.ts src/features/project-detail/project-production-breakdown.ts src/features/project-detail/project-production-breakdown.test.ts`
+- `pnpm --filter web exec eslint src/features/projects/pages/ReviewQueuePageContent.tsx`
 - `pnpm --filter web build`
 - `git diff --check`
 - `git status --short --untracked-files=all`

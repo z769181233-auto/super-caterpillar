@@ -27,6 +27,7 @@ import {
   ProjectFlowDTO,
   ProjectFlowStepDTO,
   BlockReasonCode,
+  normalizeReviewPolicy,
 } from '@scu/shared-types';
 
 import { ProjectResolver } from '../common/project-resolver';
@@ -42,11 +43,191 @@ export class ProjectService {
     private readonly projectResolver: ProjectResolver
   ) {}
 
+  async listQualityReviewQueue(
+    projectId: string,
+    organizationId: string,
+    params: { status?: string; limit?: number }
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, organizationId: true },
+    });
 
+    if (!project || project.organizationId !== organizationId) {
+      throw new NotFoundException('Project not found');
+    }
 
+    const limit = Math.max(1, Math.min(params.limit ?? 50, 200));
 
+    const publishedVideos = await this.prisma.publishedVideo.findMany({
+      where: { projectId },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit * 4,
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        status: true,
+        metadata: true,
+        asset: {
+          select: {
+            id: true,
+            ownerType: true,
+            ownerId: true,
+            shot: {
+              select: {
+                id: true,
+                sceneId: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
+    const shotIds = publishedVideos
+      .map((record) => record.asset?.shot?.id ?? null)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    const latestPublishingReviews =
+      shotIds.length > 0
+        ? await this.prisma.publishingReview.findMany({
+            where: { shotId: { in: shotIds } },
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            select: {
+              shotId: true,
+              result: true,
+            },
+          })
+        : [];
+    const reviewByShotId = new Map<string, { result: string }>();
+    for (const review of latestPublishingReviews) {
+      if (!review.shotId || reviewByShotId.has(review.shotId)) continue;
+      reviewByShotId.set(review.shotId, { result: review.result });
+    }
 
+    const normalized = publishedVideos
+      .map((record) => {
+        const metadata =
+          record.metadata && typeof record.metadata === 'object' && !Array.isArray(record.metadata)
+            ? (record.metadata as Record<string, unknown>)
+            : {};
+        const directorLayer =
+          metadata.directorLayer &&
+          typeof metadata.directorLayer === 'object' &&
+          !Array.isArray(metadata.directorLayer)
+            ? (metadata.directorLayer as Record<string, unknown>)
+            : {};
+        const timelineLayer =
+          metadata.timelineLayer &&
+          typeof metadata.timelineLayer === 'object' &&
+          !Array.isArray(metadata.timelineLayer)
+            ? (metadata.timelineLayer as Record<string, unknown>)
+            : {};
+        const sceneSemanticContext =
+          timelineLayer.sceneSemanticContext &&
+          typeof timelineLayer.sceneSemanticContext === 'object' &&
+          !Array.isArray(timelineLayer.sceneSemanticContext)
+            ? (timelineLayer.sceneSemanticContext as Record<string, unknown>)
+            : {};
+
+        const sceneId =
+          record.asset?.ownerType === 'SCENE'
+            ? record.asset.ownerId
+            : record.asset?.shot?.sceneId ?? null;
+        const shotId = record.asset?.shot?.id ?? null;
+        const reviewPolicy = normalizeReviewPolicy({
+          directorLayer,
+          publishingReviewResult: shotId ? reviewByShotId.get(shotId)?.result : undefined,
+        });
+
+        return {
+          auditId: record.id,
+          publishedVideoId: record.id,
+          assetId: record.asset?.id ?? null,
+          shotId,
+          sceneId,
+          createdAt: record.createdAt.toISOString(),
+          updatedAt: record.updatedAt.toISOString(),
+          publishStatus: record.status,
+          decision: reviewPolicy.publishAction ?? 'UNKNOWN',
+          effectiveDecision: reviewPolicy.effectiveDecision,
+          publishEligibility: reviewPolicy.publishEligibility ?? 'UNKNOWN',
+          reviewRequired: reviewPolicy.reviewRequired ?? false,
+          gatePolicyLevel: reviewPolicy.gatePolicyLevel,
+          policyStage: reviewPolicy.policyStage ?? '',
+          reviewPolicyResult: reviewPolicy.reviewPolicyResult ?? '',
+          reviewPolicySource: reviewPolicy.reviewPolicySource,
+          approvalActionSource:
+            typeof directorLayer.approvalActionSource === 'string'
+              ? directorLayer.approvalActionSource
+              : null,
+          approvalActorUserId:
+            typeof directorLayer.approvalActorUserId === 'string'
+              ? directorLayer.approvalActorUserId
+              : null,
+          approvalReviewStatus:
+            typeof directorLayer.approvalReviewStatus === 'string'
+              ? directorLayer.approvalReviewStatus
+              : null,
+          approvalReviewNote:
+            typeof directorLayer.approvalReviewNote === 'string'
+              ? directorLayer.approvalReviewNote
+              : null,
+          approvalReviewedAt:
+            typeof directorLayer.approvalReviewedAt === 'string'
+              ? directorLayer.approvalReviewedAt
+              : null,
+          semanticCharacters: Array.isArray(directorLayer.semanticCharacters)
+            ? directorLayer.semanticCharacters
+            : Array.isArray(sceneSemanticContext.semanticCharacters)
+              ? sceneSemanticContext.semanticCharacters
+              : [],
+          semanticLocationSlug:
+            typeof directorLayer.semanticLocationSlug === 'string'
+              ? directorLayer.semanticLocationSlug
+              : typeof sceneSemanticContext.semanticLocationSlug === 'string'
+                ? sceneSemanticContext.semanticLocationSlug
+                : null,
+          semanticTimeOfDay:
+            typeof directorLayer.semanticTimeOfDay === 'string'
+              ? directorLayer.semanticTimeOfDay
+              : typeof sceneSemanticContext.semanticTimeOfDay === 'string'
+                ? sceneSemanticContext.semanticTimeOfDay
+                : null,
+          semanticConflictSummary:
+            typeof directorLayer.semanticConflictSummary === 'string'
+              ? directorLayer.semanticConflictSummary
+              : typeof sceneSemanticContext.semanticConflictSummary === 'string'
+                ? sceneSemanticContext.semanticConflictSummary
+                : null,
+          memoryContextSource:
+            typeof directorLayer.memoryContextSource === 'string'
+              ? directorLayer.memoryContextSource
+              : typeof sceneSemanticContext.memoryContextSource === 'string'
+                ? sceneSemanticContext.memoryContextSource
+                : null,
+          crossChapterMemoryHit:
+            directorLayer.crossChapterMemoryHit === true ||
+            sceneSemanticContext.crossChapterMemoryHit === true,
+        };
+      })
+      .filter((item) => item.sceneId || item.shotId);
+
+    const bySceneOrShot = new Map<string, (typeof normalized)[number]>();
+    for (const item of normalized) {
+      const key = item.sceneId ?? item.shotId;
+      if (!key || bySceneOrShot.has(key)) continue;
+      bySceneOrShot.set(key, item);
+    }
+
+    const filtered = Array.from(bySceneOrShot.values()).filter((item) => {
+      if (params.status === 'PENDING') return item.reviewRequired;
+      if (params.status === 'DONE') return !item.reviewRequired;
+      return true;
+    });
+
+    return filtered.slice(0, limit);
+  }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');

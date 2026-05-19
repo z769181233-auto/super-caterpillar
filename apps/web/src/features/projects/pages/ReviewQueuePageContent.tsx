@@ -7,8 +7,25 @@ import { projectApi } from '@/lib/apiClient';
 type ReviewDecision = {
   auditId: string;
   createdAt: string;
+  updatedAt?: string;
   decision: string;
   effectiveDecision: string;
+  publishEligibility?: string;
+  reviewRequired?: boolean;
+  policyStage?: string;
+  reviewPolicyResult?: string;
+  reviewPolicySource?: string;
+  semanticLocationSlug?: string | null;
+  semanticTimeOfDay?: string | null;
+  semanticConflictSummary?: string | null;
+  semanticCharacters?: unknown[];
+  memoryContextSource?: string | null;
+  crossChapterMemoryHit?: boolean;
+  approvalActionSource?: string | null;
+  approvalActorUserId?: string | null;
+  approvalReviewStatus?: string | null;
+  approvalReviewNote?: string | null;
+  approvalReviewedAt?: string | null;
 };
 
 type ReviewStatusFilter = 'PENDING' | 'DONE';
@@ -19,6 +36,23 @@ const DecisionBadge = ({ decision }: { decision: string }) => {
     else if (decision === 'BLOCK') style = { ...style, backgroundColor: '#fee2e2', color: '#991b1b' };
     else style = { ...style, backgroundColor: '#f3f4f6', color: '#374151' };
     return <span style={style}>{decision}</span>;
+};
+
+const renderText = (value: unknown, fallback = '-') =>
+    typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+
+const formatCharacters = (characters: unknown[] | undefined) => {
+    if (!Array.isArray(characters) || characters.length === 0) return '-';
+    return characters
+        .map((character) => {
+            if (typeof character === 'string') return character;
+            if (character && typeof character === 'object' && 'name' in character) {
+                return String((character as { name?: unknown }).name ?? '');
+            }
+            return '';
+        })
+        .filter(Boolean)
+        .join(', ') || '-';
 };
 
 export function ReviewQueuePageContent() {
@@ -61,12 +95,22 @@ export function ReviewQueuePageContent() {
                                 <th style={{ padding: '0.75rem' }}>Created At</th>
                                 <th style={{ padding: '0.75rem' }}>Decision</th>
                                 <th style={{ padding: '0.75rem' }}>Effective</th>
+                                <th style={{ padding: '0.75rem' }}>Eligibility</th>
+                                <th style={{ padding: '0.75rem' }}>Scene Evidence</th>
+                                <th style={{ padding: '0.75rem' }}>Policy / Approval Evidence</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading && decisions.length === 0 ? (
                                 <tr>
-                                    <td style={{ padding: '0.75rem' }} colSpan={3}>Loading...</td>
+                                    <td style={{ padding: '0.75rem' }} colSpan={6}>Loading...</td>
+                                </tr>
+                            ) : null}
+                            {!loading && decisions.length === 0 ? (
+                                <tr>
+                                    <td style={{ padding: '0.75rem', color: '#94a3b8' }} colSpan={6}>
+                                        No review evidence found for this filter.
+                                    </td>
                                 </tr>
                             ) : null}
                             {decisions.map((item) => (
@@ -74,6 +118,33 @@ export function ReviewQueuePageContent() {
                                     <td style={{ padding: '0.75rem' }}>{new Date(item.createdAt).toLocaleString()}</td>
                                     <td style={{ padding: '0.75rem' }}><DecisionBadge decision={item.decision} /></td>
                                     <td style={{ padding: '0.75rem' }}>{item.effectiveDecision}</td>
+                                    <td style={{ padding: '0.75rem' }}>
+                                        <div>{renderText(item.publishEligibility)}</div>
+                                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                                            {item.reviewRequired ? 'Review required' : 'No review required'}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '0.75rem', maxWidth: '260px' }}>
+                                        <div>Location: {renderText(item.semanticLocationSlug)}</div>
+                                        <div>Time: {renderText(item.semanticTimeOfDay)}</div>
+                                        <div>Characters: {formatCharacters(item.semanticCharacters)}</div>
+                                        <div style={{ color: '#94a3b8' }}>
+                                            Conflict: {renderText(item.semanticConflictSummary)}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '0.75rem', maxWidth: '280px' }}>
+                                        <div>Stage: {renderText(item.policyStage)}</div>
+                                        <div>Result: {renderText(item.reviewPolicyResult)}</div>
+                                        <div>Source: {renderText(item.reviewPolicySource)}</div>
+                                        <div style={{ color: '#94a3b8' }}>
+                                            Approval: {renderText(item.approvalReviewStatus)}
+                                            {item.approvalReviewNote ? ` / ${item.approvalReviewNote}` : ''}
+                                        </div>
+                                        <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                                            Memory: {renderText(item.memoryContextSource)}
+                                            {item.crossChapterMemoryHit ? ' / cross-chapter hit' : ''}
+                                        </div>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
