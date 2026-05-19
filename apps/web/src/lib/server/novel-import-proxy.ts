@@ -1,12 +1,72 @@
 import { createHash, randomUUID, webcrypto } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { parse as parseDotenv } from 'dotenv';
 import { buildApiUrl as buildWebApiUrl } from '@/lib/api-base';
 
 const textEncoder = new TextEncoder();
 type NodeCryptoKey = Awaited<ReturnType<typeof webcrypto.subtle.importKey>>;
 let signingKeyPromise: Promise<NodeCryptoKey> | null = null;
+const fallbackEnvCache = new Map<string, string>();
+const fallbackEnvLoadedFiles = new Set<string>();
+
+function getCandidateRoots(): string[] {
+  const roots = new Set<string>();
+  let current = process.cwd();
+
+  for (let i = 0; i < 4; i += 1) {
+    roots.add(current);
+    const parent = path.dirname(current);
+    if (parent === current) {
+      break;
+    }
+    current = parent;
+  }
+
+  return Array.from(roots);
+}
+
+function getDefaultEnvFiles(): string[] {
+  return getCandidateRoots().flatMap((root) => [
+    path.resolve(root, '.env'),
+    path.resolve(root, 'apps/api/.env'),
+    path.resolve(root, 'apps/web/.env'),
+  ]);
+}
+
+export function readEnvValueFromFiles(name: string, files = getDefaultEnvFiles()): string | undefined {
+  if (fallbackEnvCache.has(name)) {
+    return fallbackEnvCache.get(name);
+  }
+
+  for (const file of files) {
+    if (fallbackEnvLoadedFiles.has(file)) {
+      continue;
+    }
+
+    if (!fs.existsSync(file)) {
+      fallbackEnvLoadedFiles.add(file);
+      continue;
+    }
+
+    const parsed = parseDotenv(fs.readFileSync(file, 'utf8'));
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!fallbackEnvCache.has(key)) {
+        fallbackEnvCache.set(key, value);
+      }
+    }
+    fallbackEnvLoadedFiles.add(file);
+  }
+
+  return fallbackEnvCache.get(name);
+}
+
+export function resolveProxyEnv(name: string): string | undefined {
+  return process.env[name] || readEnvValueFromFiles(name);
+}
 
 function requireEnv(name: string): string {
-  const value = process.env[name];
+  const value = resolveProxyEnv(name);
   if (!value) {
     throw new Error(`Missing required env: ${name}`);
   }
