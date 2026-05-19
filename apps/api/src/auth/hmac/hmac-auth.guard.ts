@@ -199,7 +199,6 @@ export class HmacAuthGuard implements CanActivate {
 
     // 4. 可选调试日志（仅非生产环境）
     if (process.env.NODE_ENV !== 'production') {
-      /* eslint-disable no-console */
       this.logger.log(
         `[HMAC DEBUG]: ${JSON.stringify({
           method,
@@ -213,7 +212,6 @@ export class HmacAuthGuard implements CanActivate {
           bodyString,
         })}`
       );
-      /* eslint-enable no-console */
     }
 
     // 5. 验证签名

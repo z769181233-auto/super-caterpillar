@@ -1,40 +1,44 @@
-# 当前计划：stash@{0} 专门消化 M1
+# 当前计划：stash@{0} auth/security 小切片
 
 ## 目标
-把 `stash@{0}: hygiene-quarantine-remaining-dirty-2026-05-18` 从“不可见的大包风险”变成可追踪、可拆分、可验证的 inventory。当前 milestone 不 `pop`、不整包提交、不进入图片/视频生成，只做清单固化和后续拆分策略。
+从 `stash@{0}` 中只恢复 auth/security 相关的最小安全切片，避免再次形成大 dirty 工作区。本轮只处理 `BudgetGuard` / `HmacAuthGuard`，继续排除 display UI、Storyboard image、video generation、Prisma migration 和 worker 改动。
 
 ## 请求流
-当前 clean HEAD -> 只读检查 `stash@{0}` -> 统计文件与业务线 -> 输出 inventory 文档 -> 更新状态 -> 验证当前工作区仍干净、stash 仍存在。
+Job API 请求先经过 `JwtOrHmacGuard`，再经过 `QuotaGuard` / `BudgetGuard`。`BudgetGuard` 必须用与当前组织上下文一致的 organizationId 做预算检查，否则会出现“Controller 使用 header org 创建任务，但预算检查使用 user org”的不一致。
 
 ## 数据流
-`git stash show -u --name-status stash@{0}` 和 `git stash show -u --stat stash@{0}` -> `docs/audits/stash_0_hygiene_inventory_2026-05-18.md`。不把 stash 内容恢复进工作区。
+认证上下文 `request.apiKeyOwnerOrgId` / `request.user.organizationId` / 组织 header -> `BudgetService.getBudgetStatus(organizationId)` -> request 注入 `budgetLevel` / `budgetRatio` -> 审计记录。HMAC slice 只清理无意义注释，不改变签名校验逻辑。
 
 ## 状态流
-`stash pending` -> `inventory documented`。后续每个业务线必须单独恢复、单独验证、单独提交。
+无组织上下文时继续 `ForbiddenException`；预算阻断状态保持现有行为；有组织上下文时允许进入预算判断。
 
 ## 修改边界
-- 允许：新增 stash inventory 文档，更新 `PLANS.md` / `STATUS.md`。
-- 禁止：`git stash pop`、`git stash apply`、删除 stash、恢复图片/视频生成、恢复 Prisma migration、整包提交 155 个文件。
+- 允许：`BudgetGuard` 组织上下文解析、无用 timestamp/comment 清理、相关单测。
+- 禁止：恢复 `stash@{0}` 其他文件、修改 `JwtOrHmacGuard`、修改 worker、修改 Storyboard/video、修改 Prisma migration。
 
-## Milestone Stash M1 - Inventory / Risk Buckets
+## Milestone Auth Security Slice
 
 ### 范围
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/audits/stash_0_hygiene_inventory_2026-05-18.md`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/budget.guard.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/guards/budget.guard.spec.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/auth/hmac/hmac-auth.guard.ts`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- 已记录 stash 文件总量、主要业务线、风险等级。
-- 已明确哪些切片可优先恢复，哪些必须继续隔离。
-- 当前工作区不混入 stash 内容。
-- `stash@{0}` 仍保留，未被 pop/drop。
+- `BudgetGuard` 支持 `x-organization-id`、`x-scu-org-id`、`x-org-id` 作为组织上下文 fallback。
+- `apiKeyOwnerOrgId` 和 `user.organizationId` 优先级不被 header 覆盖。
+- 无组织上下文仍然拒绝。
+- HMAC 签名逻辑不改变。
+- `stash@{0}` 不被 pop/drop。
 
 ### 验证命令
-- `git stash show -u --name-status stash@{0}`
-- `git stash show -u --stat stash@{0}`
-- `git status --short`
-- `git stash list --date=local | head -3`
+- `pnpm --filter api test -- budget.guard.spec.ts`
+- `pnpm --filter api exec eslint src/auth/guards/budget.guard.ts src/auth/guards/budget.guard.spec.ts src/auth/hmac/hmac-auth.guard.ts`
+- `pnpm --filter api typecheck`
 - `git diff --check`
+- `git status --short --untracked-files=all`
+- `git stash list --date=local | head -3`
 
 ### 当前状态
 done
