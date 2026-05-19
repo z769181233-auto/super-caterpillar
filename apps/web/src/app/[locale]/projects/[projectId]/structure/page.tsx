@@ -16,6 +16,6 @@ interface Props {
 export default async function ProjectStructureAliasPage(props: Props) {
   const { locale, projectId } = await props.params;
 
-  // 核心逻辑：重定向到项目详情页，并带上 module=structure 参数
-  redirect(`/${locale}/projects/${projectId}?module=structure`);
+  // 旧结构页别名继续保留，只切到项目详情里的只读脚本/结构结果 tab。
+  redirect(`/${locale}/projects/${projectId}?module=script`);
 }

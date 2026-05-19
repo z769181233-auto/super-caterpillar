@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ProjectDetailView } from './adapters';
 import { ProjectDetailOverview, OverviewAside } from './ProjectDetailOverview';
 import { ProjectBuildsPanel } from './ProjectBuildsPanel';
 import { ProjectEvidencePanel } from './ProjectEvidencePanel';
+import { ProjectStructureResultsPanel } from './ProjectStructureResultsPanel';
+import { getProjectDetailTabFromModule, ProjectDetailTabType } from './project-detail-tabs';
 import { ProjectDetailLayout } from '@/components/layout/ProjectDetailLayout';
 import { Button } from '@/components/ui/Button';
 
@@ -14,18 +16,27 @@ interface ProjectDetailShellProps {
   project: ProjectDetailView;
 }
 
-export type TabType = 'overview' | 'builds' | 'evidence';
+export type TabType = ProjectDetailTabType;
 
 export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
   const t = useTranslations('ProjectDetail');
   const locale = useLocale();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<TabType>(() =>
+    getProjectDetailTabFromModule(searchParams.get('module'))
+  );
+
+  useEffect(() => {
+    setActiveTab(getProjectDetailTabFromModule(searchParams.get('module')));
+  }, [searchParams]);
 
   const renderMainContent = () => {
     switch (activeTab) {
       case 'overview':
         return <ProjectDetailOverview project={project} onSwitchTab={setActiveTab} />;
+      case 'script':
+        return <ProjectStructureResultsPanel projectId={project.id} projectName={project.name} />;
       case 'builds':
         return <ProjectBuildsPanel projectId={project.id} />;
       case 'evidence':
@@ -39,6 +50,8 @@ export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
     switch (activeTab) {
       case 'overview':
         return <OverviewAside project={project} onSwitchTab={setActiveTab} />;
+      case 'script':
+        return null;
       case 'builds':
         return null;
       case 'evidence':
@@ -50,6 +63,7 @@ export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
 
   const navItems: { id: TabType; label: string }[] = [
     { id: 'overview', label: t('navOverview') },
+    { id: 'script', label: t('navScript') },
     { id: 'builds', label: t('navBuilds') },
     { id: 'evidence', label: t('navEvidence') },
   ];
@@ -59,10 +73,10 @@ export function ProjectDetailShell({ project }: ProjectDetailShellProps) {
       <div style={{ marginBottom: '1.5rem', padding: '0 1rem' }}>
         <Button
           variant="secondary"
-          onClick={() => router.push('/projects')}
+          onClick={() => router.push(`/${locale}/projects`)}
           style={{ width: '100%', justifyContent: 'flex-start' }}
         >
-          &larr; Back
+          &larr; {t('ctaBackToProjects')}
         </Button>
         <Button
           variant="primary"
