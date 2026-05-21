@@ -26,23 +26,21 @@
 - stash 中其他业务线改动仍需后续单独 milestone 消化。
 
 ## 当前风险
-- 不能把本轮 ProjectDetail 文案扩展成项目创建/删除、登录注册或业务逻辑改动。
-- 剩余纯测试文件多数依赖未恢复运行时代码，不能盲目恢复。
+- 当前剩余 stash 多数是运行时代码、CI、Prisma、worker、Film IR、shot planner 或 storyboard image / video generation，不能按文件名盲目恢复。
+- 剩余纯测试文件多数依赖未恢复运行时代码，不能单独恢复。
 - `stash@{0}` 仍包含多业务线历史改动，不能 `git stash pop/apply` 整包恢复。
 
 ## 已知问题
-- 当前切片只改善项目详情页展示文案；不修复小说分析质量，不生成 StoryBible、CharacterBible、StoryboardAsset 或视频资产。
+- 当前切片只更新 hygiene 文档；不修复小说分析质量，不生成 StoryBible、CharacterBible、StoryboardAsset 或视频资产。
 
 ## 验证状态
-- `node` ProjectDetail i18n key assertion：通过。
-- `pnpm --filter web exec tsc -p tsconfig.json --noEmit`：通过。
-- `pnpm --filter web exec eslint src/features/project-detail/ProjectDetailOverview.tsx src/features/project-detail/ProjectDetailShell.tsx`：通过。
-- `pnpm --filter web build`：通过。
 - `git diff --check`：通过。
-- `git stash list --date=local | head -3`：已确认 `stash@{0}` 仍保留。
+- `git status --short --untracked-files=all`：通过，仅计划内文档文件修改。
+- `git stash list --date=local | head -3`：通过，`stash@{0}` 仍保留。
+- `git diff --name-status HEAD 'stash@{0}' -- docs apps/web/src/features apps/web/src/app apps/api/src apps/workers/src packages/shared-types .github packages/database/prisma | sed -n '1,220p'`：通过，用于复核剩余 stash 风险分类。
 
 ## 当前是否允许恢复新功能开发
 no
 
 ## 原因
-当前仍处于 hygiene 小切片恢复阶段，只允许 display-only 文案修复，不进入图片、视频或大范围 Studio 新功能。
+当前仍处于 hygiene 小切片恢复阶段，只允许 spec/display 文档复核，不进入图片、视频或大范围 Studio 新功能。

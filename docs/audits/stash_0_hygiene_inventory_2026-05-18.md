@@ -107,6 +107,8 @@ The following slices have been extracted from the original stash into separate c
 | `a0aa5ab85` | smoke receipt dry-run | Added read-only smoke receipt dry-run script instead of restoring write-capable smoke scripts. |
 | `f7df4808c` | Common nav i18n | Added missing display-only navigation labels. |
 | `629083308` | Director Layer acceptance registry | Locked default acceptance profile to a minimal verified scene sample. |
+| `76c5152f4` | remaining stash evaluation | Rechecked remaining low-risk candidates before restoring any more files. |
+| `27393e857` | ProjectDetail i18n display-only | Clarified screenplay / novel analysis status copy in three locales. |
 
 ## Remaining Low-Risk Candidate Evaluation - 2026-05-21
 
@@ -135,3 +137,30 @@ Current comparison used:
 ### Decision
 
 No additional pure test file should be restored blindly from `stash@{0}` at this point. Remaining test files are mostly coupled to unstaged runtime changes. Keep `stash@{0}` intact and continue with manually scoped slices only.
+
+## Remaining Stash Risk Ledger - 2026-05-21
+
+Current comparison used after `27393e857`:
+
+`git diff --name-status HEAD stash@{0}`
+
+### Rechecked Safe-Slice Candidates
+
+| Area | Current Assessment | Reason | Decision |
+| --- | --- | --- | --- |
+| Web Studio storyboard route/API | Not low-risk | Remaining diff includes `storyboard-assets`, image generation, lock/unlock, and generated image API routes. | Keep isolated until explicit storyboard image milestone. |
+| Studio v2 module configs | Not safe as display-only | Remaining diff changes storyboard module target from text-boundary language to image generation language. | Do not restore in hygiene. |
+| Studio generation error blockers | Already ahead of stash | Current HEAD has safer blocker formatting; stash would remove it. | Do not restore. |
+| ProjectDetail display text | Completed | Safe selected copy was manually extracted into `27393e857`. | No further action. |
+| Review evidence display | Completed | Safe read-only slice already committed as `7c063116a`. | No further action. |
+| API overview / structure proxies | Completed | Safe read-only proxy slices already committed as `56ef0fbf9` and `b661d4121`. | No further action. |
+| Director acceptance registry | Completed | Safe spec slice already committed as `629083308`. | No further action. |
+| Smoke scripts | Partially completed | Only `smoke-studio-receipt` dry-run was safely recreated as `a0aa5ab85`; remaining smoke scripts touch publish, worker, Film IR, shot planner, timeline, or audit flow. | Keep isolated unless a dedicated smoke milestone is opened. |
+| CI workflows | Not low-risk | Remaining diff can change required checks and scheduled production behavior. | Dedicated CI milestone only. |
+| Prisma migrations | Not low-risk | Remaining migrations alter database shape/backfill behavior. | Dedicated migration milestone only. |
+| Workers / continuity / content gates | Not low-risk | Remaining files change runtime processors and cross-service contracts. | Dedicated runtime milestone only. |
+| Film IR / shot planner | Not low-risk | Remaining files modify planner services, providers, DTOs, and tests together. | Dedicated Film IR or shot-planner milestone only. |
+
+### Current Handling Rule
+
+Do not treat the remaining stash as a queue of safe files. At this point, recoverable display/spec slices have either been extracted or require manual reimplementation from current HEAD. Any future slice must start by selecting one domain and proving it can pass targeted validation without restoring storyboard image / video generation.
