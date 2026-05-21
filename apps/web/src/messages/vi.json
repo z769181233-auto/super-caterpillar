@@ -138,7 +138,9 @@
   "Common": {
     "loading": "Đang tải tài nguyên hệ thống...",
     "retry": "Thử lại kết nối",
-    "empty": "Không tìm thấy hồ sơ nào"
+    "empty": "Không tìm thấy hồ sơ nào",
+    "login": "Đăng nhập",
+    "enterWorkbench": "Vào bàn làm việc"
   },
   "Projects": {
     "title": "Dự án",

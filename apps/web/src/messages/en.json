@@ -138,7 +138,9 @@
   "Common": {
     "loading": "Loading system resources...",
     "retry": "Retry connection",
-    "empty": "No records found in this sector"
+    "empty": "No records found in this sector",
+    "login": "Login",
+    "enterWorkbench": "Enter Workbench"
   },
   "Projects": {
     "title": "Projects",

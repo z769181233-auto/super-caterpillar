@@ -138,7 +138,9 @@
   "Common": {
     "loading": "系统正在读取终端源...",
     "retry": "请求超时，重试",
-    "empty": "当前时区暂无记录"
+    "empty": "当前时区暂无记录",
+    "login": "登录",
+    "enterWorkbench": "进入工作台"
   },
   "Projects": {
     "title": "项目列表",
