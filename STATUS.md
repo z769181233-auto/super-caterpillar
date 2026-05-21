@@ -1,7 +1,7 @@
 # STATUS
 
 ## 当前任务
-stash remaining low-risk candidate evaluation 文档切片。
+等待下一个 hygiene milestone。
 
 ## 已完成
 - `stash@{0}` 已完成只读 inventory：`98a59074a chore: document quarantined stash inventory`。
@@ -13,10 +13,11 @@ stash remaining low-risk candidate evaluation 文档切片。
 - smoke studio receipt dry-run 脚本切片已单独提交：`a0aa5ab85 chore(smoke): add studio receipt dry run`。
 - Common 导航文案 i18n display-only 切片已单独提交：`f7df4808c fix(web): add common nav translations`。
 - Director Layer acceptance registry spec 切片已单独提交：`629083308 chore(spec): lock director layer acceptance target`。
-- stash remaining low-risk candidate evaluation 文档切片已完成：记录剩余纯测试/纯文档候选评估。
+- stash remaining low-risk candidate evaluation 文档切片已单独提交：`76c5152f4 docs(hygiene): evaluate remaining stash candidates`。
+- ProjectDetail i18n display-only 切片已完成：三语言项目详情页文案已收敛为视频剧本 / 小说分析状态 / 下一步说明语义。
 
 ## 进行中
-- 等待下一个 hygiene milestone。
+- 无。
 
 ## 未完成
 - Storyboard image / video generation 继续隔离。
@@ -25,20 +26,23 @@ stash remaining low-risk candidate evaluation 文档切片。
 - stash 中其他业务线改动仍需后续单独 milestone 消化。
 
 ## 当前风险
-- 当前剩余 stash 中纯测试文件多数依赖未恢复的运行时代码，不能单独恢复。
-- 剩余 messages diff 混有 auth 缩进变更和项目详情文案改写，不适合直接整包恢复。
+- 不能把本轮 ProjectDetail 文案扩展成项目创建/删除、登录注册或业务逻辑改动。
+- 剩余纯测试文件多数依赖未恢复运行时代码，不能盲目恢复。
 - `stash@{0}` 仍包含多业务线历史改动，不能 `git stash pop/apply` 整包恢复。
 
 ## 已知问题
-- 当前切片只更新 hygiene 文档；不修复小说分析质量，不生成 StoryBible、CharacterBible、StoryboardAsset 或视频资产。
+- 当前切片只改善项目详情页展示文案；不修复小说分析质量，不生成 StoryBible、CharacterBible、StoryboardAsset 或视频资产。
 
 ## 验证状态
-- `git diff --check`: pass
-- `git status --short --untracked-files=all`: pass, only planned files modified before staging
-- `git stash list --date=local | head -3`: pass, `stash@{0}` still present
+- `node` ProjectDetail i18n key assertion：通过。
+- `pnpm --filter web exec tsc -p tsconfig.json --noEmit`：通过。
+- `pnpm --filter web exec eslint src/features/project-detail/ProjectDetailOverview.tsx src/features/project-detail/ProjectDetailShell.tsx`：通过。
+- `pnpm --filter web build`：通过。
+- `git diff --check`：通过。
+- `git stash list --date=local | head -3`：已确认 `stash@{0}` 仍保留。
 
 ## 当前是否允许恢复新功能开发
 no
 
 ## 原因
-当前仍处于 hygiene 小切片恢复阶段，只允许文档评估更新，不进入图片、视频或大范围 Studio 新功能。
+当前仍处于 hygiene 小切片恢复阶段，只允许 display-only 文案修复，不进入图片、视频或大范围 Studio 新功能。
