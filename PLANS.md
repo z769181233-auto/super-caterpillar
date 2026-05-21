@@ -1,42 +1,47 @@
-# 当前计划：小说分析质量 M6/M7 - Studio 阻断原因透传
+# 当前计划：小说分析质量 M7 - scene candidate 覆盖率风险接入 ProductionState
 
 ## 目标
-回到小说分析质量主线，做 M6/M7 极小切片：让 EpisodePlan / DirectorScript / ShotScript 生成失败时优先透传后端 `coverageReport.sceneCandidates` 阻断原因，并在 UI 上明确显示“小说分析质量门禁阻断”，避免用户误判为页面无响应或普通报错。继续排除 storyboard image / video generation。
+继续小说分析质量主线，只做 M7 极小切片：把已有 `SceneDraft.analysisResult.coverageReport.sceneCandidates` 的覆盖率不足原因聚合进 `GET /projects/:projectId/production-state`，并在 Studio v2 总览 / 右侧风险面板明确展示。继续排除 storyboard image / video generation。
 
 ## 请求流
-Studio v2 页面点击生成按钮 -> `apps/web/src/features/studio-v2/api.ts` 调用 Next API 代理 -> API 返回 Nest 错误 JSON -> 前端解析错误原因 -> `formatStudioGenerationError` 展示可理解阻断提示。
+Studio v2 页面加载 -> `getStudioProductionState(projectId)` -> API 聚合旧 Novel / SceneDraft coverageReport -> 返回 `riskFlags`、`nextActions`、`legacyDataSummary` -> Studio 总览和右侧面板显示覆盖率不足原因。
 
 ## 数据流
-后端 `BadRequestException` 的顶层 `message` / `error.message` -> 前端 API error extractor -> Studio 页面错误态。无数据库写入、无 worker、无图片或视频生成。
+`SceneDraft.analysisResult.coverageReport` -> ProductionState coverage summary -> `riskFlags` / `nextActions` / `legacyDataSummary.sceneCandidateCoverage` -> Studio v2 UI。无数据库写入、无 worker、无图片或视频生成。
 
 ## 状态流
-生成被阻断时不改变 Studio metadata；只显示阻断原因。成功路径保持现状。
+只读生产状态聚合；不改变 Project.metadata、不改变 NovelAnalysisJob、不改变旧 Episode/Scene/Shot、不启动任何生成任务。
 
 ## 修改边界
-- 允许：`apps/web/src/features/studio-v2/api.ts`、新增/更新 studio-v2 纯函数测试与错误解析工具、`PLANS.md`、`STATUS.md`。
-- 禁止：修改 novel import、EpisodePlan/DirectorScript/ShotScript 后端生成算法、worker、Prisma、CI、图片生成、视频生成、stash。
+- 允许：`packages/shared-types/src/animation-studio.ts`、`apps/api/src/project/project-production-state.service.ts`、对应 service 测试、Studio v2 总览/右侧面板/summary 测试、`PLANS.md`、`STATUS.md`。
+- 禁止：修改 novel import、Studio 生成算法、worker、Prisma schema/migration、CI、图片生成、视频生成、stash。
 
-## Milestone M6/M7 Studio Blocker Propagation
+## Milestone M7 ProductionState Scene Candidate Risk
 
 ### 范围
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/api.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-api-errors.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-api-errors.test.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/packages/shared-types/src/animation-studio.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-production-state.service.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-production-state.service.spec.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/StudioOverviewPage.tsx`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/StudioRightPanel.tsx`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-state-summary.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-state-summary.test.ts`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- Nest 顶层 `message` 能被前端生成 API 正确透传。
-- `coverageReport.sceneCandidates` / `No usable scene candidates` / `scene candidate evidence` 阻断不会退化为 generic error。
-- UI 现有 `formatStudioGenerationError` 能拿到真实阻断原因。
+- ProductionState 能返回 scene candidate 覆盖率摘要。
+- sceneCandidates 缺失或低于章节数时，`riskFlags` 明确提示不足原因。
+- Studio 总览和右侧风险面板能显示场景候选覆盖率。
 - 不修改图片/视频生成相关文件。
 - `stash@{0}` 不被 pop/drop。
 
 ### 验证命令
-- `pnpm exec tsx apps/web/src/features/studio-v2/studio-api-errors.test.ts`
-- `pnpm exec tsx apps/web/src/features/studio-v2/studio-generation-blockers.test.ts`
+- `pnpm --filter api exec jest src/project/project-production-state.service.spec.ts --runInBand`
+- `pnpm exec tsx apps/web/src/features/studio-v2/studio-state-summary.test.ts`
 - `pnpm --filter web exec tsc -p tsconfig.json --noEmit`
-- `pnpm --filter web exec eslint src/features/studio-v2/api.ts src/features/studio-v2/studio-api-errors.ts`
+- `pnpm --filter api exec tsc -p tsconfig.json --noEmit`
+- `pnpm --filter web exec eslint src/features/studio-v2/StudioOverviewPage.tsx src/features/studio-v2/StudioRightPanel.tsx src/features/studio-v2/studio-state-summary.ts`
 - `pnpm --filter web build`
 - `git diff --check`
 - `git status --short --untracked-files=all`

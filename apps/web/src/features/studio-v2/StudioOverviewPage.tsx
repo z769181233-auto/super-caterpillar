@@ -6,6 +6,7 @@ import { getStudioProductionState } from './api';
 import { StudioLayout } from './StudioLayout';
 import {
   formatLegacySummary,
+  formatSceneCandidateCoverage,
   getDoneStages,
   getMissingOrBlockedStages,
   getRequiredEmptyStateLabels,
@@ -128,6 +129,30 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
             <h2 style={{ marginTop: 0 }}>旧数据兼容摘要</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
               {(state ? formatLegacySummary(state) : ['状态读取中']).map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--r-md)',
+                    padding: '0.75rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {card(
+          <>
+            <h2 style={{ marginTop: 0 }}>小说分析质量门禁</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              这里只读展示 scene candidate 覆盖率；不足时会阻断 EpisodePlan / DirectorScript / ShotScript，避免把摘要伪装成正式视频剧本。
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
+              {(state ? formatSceneCandidateCoverage(state) : ['状态读取中']).map((item) => (
                 <div
                   key={item}
                   style={{

@@ -16,6 +16,7 @@
 - stash remaining low-risk candidate evaluation 文档切片已单独提交：`76c5152f4 docs(hygiene): evaluate remaining stash candidates`。
 - ProjectDetail i18n display-only 切片已完成：三语言项目详情页文案已收敛为视频剧本 / 小说分析状态 / 下一步说明语义。
 - 小说分析质量 M6/M7 阻断原因透传已完成：Studio v2 的 EpisodePlan / DirectorScript / ShotScript 生成接口现在可以读取 Nest 顶层 `message`，保留 `coverageReport.sceneCandidates` 质量门禁阻断详情，不再退化为 generic error。
+- 小说分析质量 M7 已完成：ProductionState 只读聚合 `SceneDraft.analysisResult.coverageReport.sceneCandidates` 覆盖率，并在 Studio v2 总览 / 右侧风险面板显示质量不足原因。
 
 ## 进行中
 - 无。
@@ -27,7 +28,7 @@
 - stash 中其他业务线改动仍需后续单独 milestone 消化。
 
 ## 当前风险
-- 本轮只能改前端错误透传，不能扩展到后端生成算法或 worker。
+- 本轮只能改只读 ProductionState 聚合与 Studio v2 风险展示，不能扩展到后端生成算法或 worker。
 - 仍不能进入 storyboard image / video generation。
 - `stash@{0}` 仍包含多业务线历史改动，不能 `git stash pop/apply` 整包恢复。
 
@@ -36,10 +37,12 @@
 - 当前仍不生成 Storyboard 图片或视频资产。
 
 ## 验证状态
-- `pnpm exec tsx apps/web/src/features/studio-v2/studio-api-errors.test.ts` 通过。
-- `pnpm exec tsx apps/web/src/features/studio-v2/studio-generation-blockers.test.ts` 通过。
+- `pnpm --filter @scu/shared-types build` 通过。
+- `pnpm --filter api exec jest src/project/project-production-state.service.spec.ts --runInBand` 通过。
+- `pnpm exec tsx apps/web/src/features/studio-v2/studio-state-summary.test.ts` 通过。
 - `pnpm --filter web exec tsc -p tsconfig.json --noEmit` 通过。
-- `pnpm --filter web exec eslint src/features/studio-v2/api.ts src/features/studio-v2/studio-api-errors.ts` 通过。
+- `pnpm --filter api exec tsc -p tsconfig.json --noEmit` 通过。
+- `pnpm --filter web exec eslint src/features/studio-v2/StudioOverviewPage.tsx src/features/studio-v2/StudioRightPanel.tsx src/features/studio-v2/studio-state-summary.ts` 通过。
 - `pnpm --filter web build` 通过。
 - `git diff --check` 通过。
 
@@ -47,4 +50,4 @@
 no
 
 ## 原因
-当前只完成小说分析质量阻断原因可见性；下一步仍应继续小说分析质量主线或继续 hygiene，不进入图片、视频或大范围 Studio 新功能。
+当前只完成小说分析质量风险可见性；下一步仍应继续提升章节拆分、人物/场景抽取、对白/动作块与 scene candidate 召回，不进入图片、视频或大范围 Studio 新功能。

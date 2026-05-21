@@ -12,6 +12,7 @@ function panelTitle(text: string) {
 
 export function StudioRightPanel({ state }: StudioRightPanelProps) {
   const legacy = state?.legacyDataSummary;
+  const coverage = legacy?.sceneCandidateCoverage;
   const canContinue = Boolean(state && state.riskFlags.length === 0);
 
   return (
@@ -64,6 +65,19 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
           <div>旧剧集：{legacy?.episodeCount ?? '--'}</div>
           <div>旧场景：{legacy?.sceneCount ?? '--'}</div>
           <div>旧镜头：{legacy?.shotCount ?? '--'}</div>
+        </div>
+      </section>
+
+      <section>
+        {panelTitle('小说分析质量')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>场景候选状态：{coverage?.coverageStatus || '--'}</div>
+          <div>
+            可用场景候选：
+            {coverage ? `${coverage.usableSceneCandidateCount}/${Math.max(1, coverage.chapterCount)}` : '--'}
+          </div>
+          <div>缺失能力：{coverage?.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}</div>
+          <div>阻断原因：{coverage?.blockerReason || '无'}</div>
         </div>
       </section>
     </aside>

@@ -23,6 +23,9 @@ function createPrismaMock(overrides: Record<string, any> = {}) {
     novelAnalysisJob: {
       findFirst: jest.fn().mockResolvedValue(null),
     },
+    sceneDraft: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
     episode: {
       count: jest.fn().mockResolvedValue(0),
     },
@@ -82,6 +85,114 @@ describe('ProjectProductionStateService', () => {
     );
     expect(state.legacyDataSummary.hasNovelSource).toBe(true);
     expect(state.legacyDataSummary.novelChapterCount).toBe(1);
+  });
+
+  it('surfaces scene candidate coverage shortage as ProductionState risk', async () => {
+    const prisma = createPrismaMock({
+      novel: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-1',
+          title: '表姑娘又又又又跑了',
+          author: '作者',
+          fileName: 'novel.txt',
+          chapterCount: 2,
+          status: 'READY',
+          updatedAt: new Date(),
+          _count: { chapters: 2 },
+        }),
+      },
+      sceneDraft: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            analysisResult: {
+              coverageReport: {
+                sceneCandidateCount: 1,
+                characterCount: 1,
+                locationCount: 0,
+                dialogueBlockCount: 1,
+                actionBlockCount: 1,
+                missingCapabilities: ['locations'],
+                qualityGate: { status: 'blocked', score: 42 },
+                sceneCandidates: [
+                  {
+                    id: 'scene-candidate-1',
+                    summary: '薛知盈在静水院读书，被王嬷嬷催促。',
+                    confidence: 'medium',
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.legacyDataSummary.sceneCandidateCoverage).toEqual(
+      expect.objectContaining({
+        coverageStatus: 'insufficient',
+        sceneCandidateCount: 1,
+        usableSceneCandidateCount: 1,
+        chapterCount: 2,
+        qualityGateStatus: 'blocked',
+        qualityGateScore: 42,
+        missingCapabilities: ['locations'],
+      })
+    );
+    expect(state.riskFlags.join('\n')).toContain('小说分析质量不足');
+    expect(state.riskFlags.join('\n')).toContain('可用 scene candidates 不足：1/2');
+    expect(state.nextActions[0]).toContain('补足章节到 scene candidate 的可追踪映射');
+  });
+
+  it('marks scene candidate coverage ready when usable candidates cover chapters', async () => {
+    const prisma = createPrismaMock({
+      novel: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-1',
+          title: '表姑娘又又又又跑了',
+          author: '作者',
+          fileName: 'novel.txt',
+          chapterCount: 1,
+          status: 'READY',
+          updatedAt: new Date(),
+          _count: { chapters: 1 },
+        }),
+      },
+      sceneDraft: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            analysisResult: {
+              coverageReport: {
+                qualityGate: { status: 'pass', score: 86 },
+                missingCapabilities: [],
+                sceneCandidates: [
+                  {
+                    id: 'scene-candidate-1',
+                    summary: '薛知盈在静水院读书。',
+                    confidence: 'high',
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.legacyDataSummary.sceneCandidateCoverage).toEqual(
+      expect.objectContaining({
+        coverageStatus: 'ready',
+        sceneCandidateCount: 1,
+        usableSceneCandidateCount: 1,
+        chapterCount: 1,
+      })
+    );
+    expect(state.riskFlags.join('\n')).not.toContain('小说分析质量不足');
   });
 
   it('marks story bible ready when Studio StoryBible exists in project metadata', async () => {

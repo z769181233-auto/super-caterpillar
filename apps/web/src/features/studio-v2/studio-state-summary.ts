@@ -20,15 +20,37 @@ export function getRequiredEmptyStateLabels(state: ProductionStateDTO): string[]
 
 export function formatLegacySummary(state: ProductionStateDTO): string[] {
   const legacy = state.legacyDataSummary;
+  const coverage = legacy.sceneCandidateCoverage;
   return [
     `StorySource：${legacy.storySourceCount}`,
     `旧小说来源：${legacy.hasNovelSource ? '有' : '无'}`,
     `章节：${legacy.novelChapterCount}`,
+    coverage
+      ? `场景候选：${coverage.usableSceneCandidateCount}/${Math.max(1, coverage.chapterCount)} 可用`
+      : '场景候选：未知',
     `旧剧集：${legacy.episodeCount}`,
     `旧场景：${legacy.sceneCount}`,
     `旧镜头：${legacy.shotCount}`,
     `旧分镜/图片：${legacy.storyboardImageCount}`,
     `旧视频任务：${legacy.videoJobCount}`,
     `旧质量评分：${legacy.qualityScoreCount}`,
+  ];
+}
+
+export function formatSceneCandidateCoverage(state: ProductionStateDTO): string[] {
+  const coverage = state.legacyDataSummary.sceneCandidateCoverage;
+  if (!coverage) {
+    return ['场景候选覆盖率：未知'];
+  }
+
+  return [
+    `状态：${coverage.coverageStatus}`,
+    `SceneDraft：${coverage.sceneDraftCount}`,
+    `CoverageReport：${coverage.coverageReportCount}`,
+    `场景候选：${coverage.sceneCandidateCount}`,
+    `可用场景候选：${coverage.usableSceneCandidateCount}/${Math.max(1, coverage.chapterCount)}`,
+    `质量门禁：${coverage.qualityGateStatus || '未知'}${coverage.qualityGateScore === null ? '' : ` (${coverage.qualityGateScore})`}`,
+    `缺失能力：${coverage.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}`,
+    `阻断原因：${coverage.blockerReason || '无'}`,
   ];
 }

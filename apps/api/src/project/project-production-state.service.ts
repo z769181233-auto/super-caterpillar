@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   ProductionLegacyDataSummaryDTO,
+  ProductionSceneCandidateCoverageDTO,
   ProductionStage,
   ProductionStageDTO,
   ProductionStateDTO,
@@ -72,6 +73,93 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function stringList(value: unknown): string[] {
+  return asArray(value)
+    .map((item) => (typeof item === 'string' ? item.trim() : null))
+    .filter(Boolean) as string[];
+}
+
+function isUsableSceneCandidate(value: unknown): boolean {
+  const candidate = asRecord(value);
+  const confidence = String(candidate.confidence || '').toLowerCase();
+  const hasSummary = typeof candidate.summary === 'string' && candidate.summary.trim().length > 0;
+  return hasSummary && (confidence === 'medium' || confidence === 'high');
+}
+
+function buildSceneCandidateCoverage(input: {
+  sceneDrafts: Array<{ analysisResult: unknown }>;
+  chapterCount: number;
+}): ProductionSceneCandidateCoverageDTO {
+  const coverageReports = input.sceneDrafts
+    .map((draft) => asRecord(asRecord(draft.analysisResult).coverageReport))
+    .filter((report) => Object.keys(report).length > 0);
+  const sceneCandidates = coverageReports.flatMap((report) => asArray(report.sceneCandidates));
+  const usableSceneCandidates = sceneCandidates.filter(isUsableSceneCandidate);
+  const missingCapabilities = Array.from(
+    new Set(coverageReports.flatMap((report) => stringList(report.missingCapabilities)))
+  );
+  const qualityGate = asRecord(coverageReports[0]?.qualityGate);
+  const qualityGateStatus =
+    typeof qualityGate.status === 'string' && qualityGate.status.trim()
+      ? qualityGate.status.trim()
+      : null;
+  const qualityGateScore =
+    typeof qualityGate.score === 'number' && Number.isFinite(qualityGate.score)
+      ? qualityGate.score
+      : null;
+  const requiredUsableCandidates = Math.max(1, input.chapterCount);
+
+  if (coverageReports.length === 0) {
+    return {
+      sceneDraftCount: input.sceneDrafts.length,
+      coverageReportCount: 0,
+      sceneCandidateCount: 0,
+      usableSceneCandidateCount: 0,
+      chapterCount: input.chapterCount,
+      coverageStatus: 'missing',
+      qualityGateStatus,
+      qualityGateScore,
+      missingCapabilities,
+      blockerReason: '未发现 coverageReport.sceneCandidates，无法判断小说是否具备可追踪场景候选。',
+      nextAction: '重跑小说分析质量链路，确保章节拆分、人物抽取、场景抽取、对白块、动作块和 scene candidates 已生成。',
+    };
+  }
+
+  if (usableSceneCandidates.length < requiredUsableCandidates) {
+    return {
+      sceneDraftCount: input.sceneDrafts.length,
+      coverageReportCount: coverageReports.length,
+      sceneCandidateCount: sceneCandidates.length,
+      usableSceneCandidateCount: usableSceneCandidates.length,
+      chapterCount: input.chapterCount,
+      coverageStatus: 'insufficient',
+      qualityGateStatus,
+      qualityGateScore,
+      missingCapabilities,
+      blockerReason: `可用 scene candidates 不足：${usableSceneCandidates.length}/${requiredUsableCandidates}。`,
+      nextAction: '补足章节到 scene candidate 的可追踪映射后，再生成 EpisodePlan / DirectorScript / ShotScript。',
+    };
+  }
+
+  return {
+    sceneDraftCount: input.sceneDrafts.length,
+    coverageReportCount: coverageReports.length,
+    sceneCandidateCount: sceneCandidates.length,
+    usableSceneCandidateCount: usableSceneCandidates.length,
+    chapterCount: input.chapterCount,
+    coverageStatus: 'ready',
+    qualityGateStatus,
+    qualityGateScore,
+    missingCapabilities,
+    blockerReason: null,
+    nextAction: null,
+  };
 }
 
 @Injectable()
@@ -248,6 +336,7 @@ export class ProjectProductionStateService {
       storyboardImageShotCount,
       videoJobCount,
       qualityScoreCount,
+      sceneDrafts,
     ] = await Promise.all([
       this.prisma.storySource.count({ where: { projectId } }),
       this.prisma.storySource.findFirst({
@@ -298,6 +387,12 @@ export class ProjectProductionStateService {
         },
       }),
       this.prisma.qualityScore.count({ where: { shot: { scene: sceneScope } } }),
+      this.prisma.sceneDraft.findMany({
+        where: { chapter: { novelSource: { projectId } } },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+        select: { analysisResult: true },
+      }),
     ]);
 
     const novelChapterCount =
@@ -354,6 +449,10 @@ export class ProjectProductionStateService {
     const isAnalysisRunning = latestStatus === 'PENDING' || latestStatus === 'RUNNING';
     const isAnalysisFailed = latestStatus === 'FAILED';
     const hasLegacyStructure = episodeCount > 0 || sceneCount > 0 || shotCount > 0;
+    const sceneCandidateCoverage = buildSceneCandidateCoverage({
+      sceneDrafts,
+      chapterCount: novelChapterCount,
+    });
 
     const legacyDataSummary: ProductionLegacyDataSummaryDTO = {
       projectName: project.name,
@@ -369,6 +468,7 @@ export class ProjectProductionStateService {
       storyboardImageCount: storyboardImageShotCount,
       videoJobCount,
       qualityScoreCount,
+      sceneCandidateCoverage,
     };
 
     const stages: ProductionStageDTO[] = [
@@ -539,10 +639,16 @@ export class ProjectProductionStateService {
       .filter((item) => item.status === 'missing' || item.status === 'blocked' || item.status === 'failed')
       .filter((item) => item.key !== 'failed' || item.status === 'failed')
       .map((item) => item.label);
-    const nextActions = stages
+    const stageNextActions = stages
       .filter((item) => item.nextAction)
       .slice(0, 5)
       .map((item) => item.nextAction as string);
+    const nextActions =
+      hasLegacyNovelSource &&
+      sceneCandidateCoverage.nextAction &&
+      sceneCandidateCoverage.coverageStatus !== 'ready'
+        ? [sceneCandidateCoverage.nextAction, ...stageNextActions].slice(0, 5)
+        : stageNextActions;
     const riskFlags = this.buildRiskFlags({
       hasCanonicalStorySource,
       hasLegacyNovelSource,
@@ -561,6 +667,7 @@ export class ProjectProductionStateService {
       storyboardImageShotCount,
       videoJobCount,
       qualityScoreCount,
+      sceneCandidateCoverage,
     });
 
     return {
@@ -605,6 +712,7 @@ export class ProjectProductionStateService {
     storyboardImageShotCount: number;
     videoJobCount: number;
     qualityScoreCount: number;
+    sceneCandidateCoverage: ProductionSceneCandidateCoverageDTO;
   }): string[] {
     const flags: string[] = [];
 
@@ -625,6 +733,19 @@ export class ProjectProductionStateService {
     }
     if (input.qualityScoreCount > 0) {
       flags.push('发现旧 QualityScore，但还没有 QualityReview 聚合审片报告。');
+    }
+    if (input.hasLegacyNovelSource && input.sceneCandidateCoverage.coverageStatus === 'missing') {
+      flags.push(
+        `小说分析质量不足：${input.sceneCandidateCoverage.blockerReason} ${input.sceneCandidateCoverage.nextAction}`
+      );
+    }
+    if (input.hasLegacyNovelSource && input.sceneCandidateCoverage.coverageStatus === 'insufficient') {
+      const missing = input.sceneCandidateCoverage.missingCapabilities.length
+        ? ` 缺失能力：${input.sceneCandidateCoverage.missingCapabilities.join('、')}。`
+        : '';
+      flags.push(
+        `小说分析质量不足：${input.sceneCandidateCoverage.blockerReason}${missing} ${input.sceneCandidateCoverage.nextAction}`
+      );
     }
 
     if (!input.hasStudioStoryBible) {

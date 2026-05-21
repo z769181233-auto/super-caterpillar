@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProductionStateDTO } from '@scu/shared-types';
-import { getRequiredEmptyStateLabels } from './studio-state-summary';
+import { formatSceneCandidateCoverage, getRequiredEmptyStateLabels } from './studio-state-summary';
 
 test('Studio empty-state summary does not treat missing core assets as generated', () => {
   const state: ProductionStateDTO = {
@@ -49,6 +49,19 @@ test('Studio empty-state summary does not treat missing core assets as generated
       storyboardImageCount: 0,
       videoJobCount: 0,
       qualityScoreCount: 0,
+      sceneCandidateCoverage: {
+        sceneDraftCount: 1,
+        coverageReportCount: 1,
+        sceneCandidateCount: 1,
+        usableSceneCandidateCount: 0,
+        chapterCount: 1,
+        coverageStatus: 'insufficient',
+        qualityGateStatus: 'blocked',
+        qualityGateScore: 35,
+        missingCapabilities: ['locations'],
+        blockerReason: '可用 scene candidates 不足：0/1。',
+        nextAction: '补足章节到 scene candidate 的可追踪映射后再重试。',
+      },
     },
     riskFlags: [],
   };
@@ -57,5 +70,15 @@ test('Studio empty-state summary does not treat missing core assets as generated
     '故事圣经未生成',
     '角色资产未生成',
     '镜头台本未生成',
+  ]);
+  assert.deepEqual(formatSceneCandidateCoverage(state), [
+    '状态：insufficient',
+    'SceneDraft：1',
+    'CoverageReport：1',
+    '场景候选：1',
+    '可用场景候选：0/1',
+    '质量门禁：blocked (35)',
+    '缺失能力：locations',
+    '阻断原因：可用 scene candidates 不足：0/1。',
   ]);
 });

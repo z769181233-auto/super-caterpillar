@@ -41,6 +41,7 @@ export interface ProductionLegacyDataSummaryDTO {
   storyboardImageCount: number;
   videoJobCount: number;
   qualityScoreCount: number;
+  sceneCandidateCoverage?: ProductionSceneCandidateCoverageDTO;
 }
 
 export interface ProductionStateDTO {
@@ -51,6 +52,20 @@ export interface ProductionStateDTO {
   nextActions: string[];
   legacyDataSummary: ProductionLegacyDataSummaryDTO;
   riskFlags: string[];
+}
+
+export interface ProductionSceneCandidateCoverageDTO {
+  sceneDraftCount: number;
+  coverageReportCount: number;
+  sceneCandidateCount: number;
+  usableSceneCandidateCount: number;
+  chapterCount: number;
+  coverageStatus: 'missing' | 'insufficient' | 'ready';
+  qualityGateStatus: string | null;
+  qualityGateScore: number | null;
+  missingCapabilities: string[];
+  blockerReason: string | null;
+  nextAction: string | null;
 }
 
 export type StorySourceKind = 'novel_import' | 'ai_original' | 'legacy_novel_source' | 'unknown';
