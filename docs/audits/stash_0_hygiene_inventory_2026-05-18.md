@@ -92,3 +92,46 @@ The stash was inspected only with `git stash show -u`. It was not popped, applie
 ## Current Decision
 
 Keep `stash@{0}` intact. Use this inventory as the source of truth for the next restore milestone.
+
+## Follow-up Hygiene Progress
+
+The following slices have been extracted from the original stash into separate commits without applying or popping the full stash:
+
+| Commit | Slice | Notes |
+| --- | --- | --- |
+| `d17451558` | auth/security | Aligned budget guard organization context. |
+| `d019fa400` | display-only project-detail / structure UI | Restored read-only structure result display. |
+| `7c063116a` | review evidence display | Restored read-only review evidence queue display. |
+| `56ef0fbf9` | project overview proxy | Added read-only overview proxy. |
+| `b661d4121` | project structure proxy | Added read-only structure proxy. |
+| `a0aa5ab85` | smoke receipt dry-run | Added read-only smoke receipt dry-run script instead of restoring write-capable smoke scripts. |
+| `f7df4808c` | Common nav i18n | Added missing display-only navigation labels. |
+| `629083308` | Director Layer acceptance registry | Locked default acceptance profile to a minimal verified scene sample. |
+
+## Remaining Low-Risk Candidate Evaluation - 2026-05-21
+
+Current comparison used:
+
+`git diff --name-status HEAD stash@{0}`
+
+### Findings
+
+| Candidate | Current Assessment | Reason |
+| --- | --- | --- |
+| `apps/web/src/messages/{zh,en,vi}.json` | Do not restore as-is | Remaining diff mixes useful ProjectDetail text with auth/register indentation changes and broader project create/delete strings. Needs a dedicated display-only i18n slice if selected. |
+| `apps/api/src/film-ir/*.spec.ts` | Not safe as pure test slice | Test changes are coupled to Film IR runtime changes still in stash. Restoring only specs would likely fail or encode behavior not present in HEAD. |
+| `apps/api/src/project/project-studio-episode-plan.service.spec.ts` | Not safe as pure test slice | Coupled to project Studio generation service changes. This belongs to a later text-pipeline milestone, not hygiene-only recovery. |
+| Worker contract/spec files | Not safe as pure test slice | Coupled to worker processor changes and shot/video generation flow. Keep isolated. |
+| Storyboard asset/image tests | Explicitly excluded | They belong to storyboard image generation and must remain isolated until that milestone is explicitly opened. |
+| CI workflows | Not safe as low-risk slice | They can change required checks and deployment behavior. Require a dedicated CI milestone. |
+| Prisma migrations | Explicitly excluded | Require an explicit migration plan and database validation. |
+
+### Next Safe Options
+
+1. If continuing hygiene: create a dedicated ProjectDetail i18n display-only slice that manually selects only safe user-facing labels from the remaining messages diff and leaves auth/register formatting untouched.
+2. If moving back to product quality: start a new novel-analysis quality milestone with a clean worktree, not from `stash@{0}`.
+3. If addressing CI: open a dedicated CI workflow milestone and inspect current GitHub Actions state first.
+
+### Decision
+
+No additional pure test file should be restored blindly from `stash@{0}` at this point. Remaining test files are mostly coupled to unstaged runtime changes. Keep `stash@{0}` intact and continue with manually scoped slices only.
