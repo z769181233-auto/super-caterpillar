@@ -1,40 +1,46 @@
-# 当前计划：remaining stash risk ledger 文档切片
+# 当前计划：小说分析质量 M6/M7 - Studio 阻断原因透传
 
 ## 目标
-继续 hygiene，不恢复整包 `stash@{0}`。本轮只做低风险 spec/display 文档切片：基于当前 HEAD 与 `stash@{0}` 的剩余差异，更新 stash hygiene inventory，明确当前剩余内容中哪些不应被当作低风险切片恢复。继续排除 storyboard image / video generation。
+回到小说分析质量主线，做 M6/M7 极小切片：让 EpisodePlan / DirectorScript / ShotScript 生成失败时优先透传后端 `coverageReport.sceneCandidates` 阻断原因，并在 UI 上明确显示“小说分析质量门禁阻断”，避免用户误判为页面无响应或普通报错。继续排除 storyboard image / video generation。
 
 ## 请求流
-开发者查看 `docs/audits/stash_0_hygiene_inventory_2026-05-18.md` -> 确认已拆提交与剩余风险 -> 决定下一 milestone 是否继续 hygiene 或回到小说分析质量。
+Studio v2 页面点击生成按钮 -> `apps/web/src/features/studio-v2/api.ts` 调用 Next API 代理 -> API 返回 Nest 错误 JSON -> 前端解析错误原因 -> `formatStudioGenerationError` 展示可理解阻断提示。
 
 ## 数据流
-`git stash show -u --name-status stash@{0}` / `git diff HEAD stash@{0}` 输出 -> 手工分类 -> 文档记录。无运行时数据流。
+后端 `BadRequestException` 的顶层 `message` / `error.message` -> 前端 API error extractor -> Studio 页面错误态。无数据库写入、无 worker、无图片或视频生成。
 
 ## 状态流
-只更新文档与状态记录；不创建任务、不启动 worker、不改变项目生产状态、不生成图片或视频。
+生成被阻断时不改变 Studio metadata；只显示阻断原因。成功路径保持现状。
 
 ## 修改边界
-- 允许：只修改 `docs/audits/stash_0_hygiene_inventory_2026-05-18.md`、`PLANS.md`、`STATUS.md`。
-- 禁止：恢复整包 stash、修改业务代码、修改 API/worker/CI/Prisma、修改登录/项目创建删除、接 storyboard image / video generation。
+- 允许：`apps/web/src/features/studio-v2/api.ts`、新增/更新 studio-v2 纯函数测试与错误解析工具、`PLANS.md`、`STATUS.md`。
+- 禁止：修改 novel import、EpisodePlan/DirectorScript/ShotScript 后端生成算法、worker、Prisma、CI、图片生成、视频生成、stash。
 
-## Milestone Remaining Stash Risk Ledger Docs Slice
+## Milestone M6/M7 Studio Blocker Propagation
 
 ### 范围
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/docs/audits/stash_0_hygiene_inventory_2026-05-18.md`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/api.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-api-errors.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/web/src/features/studio-v2/studio-api-errors.test.ts`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- 文档记录 ProjectDetail i18n display-only 已拆提交。
-- 文档记录当前剩余 stash 的低风险候选复核结论。
-- 文档明确 storyboard image / video generation、CI、Prisma、worker、Film IR 仍不能混恢复。
-- 不修改任何业务逻辑、API、worker、Prisma、CI。
+- Nest 顶层 `message` 能被前端生成 API 正确透传。
+- `coverageReport.sceneCandidates` / `No usable scene candidates` / `scene candidate evidence` 阻断不会退化为 generic error。
+- UI 现有 `formatStudioGenerationError` 能拿到真实阻断原因。
+- 不修改图片/视频生成相关文件。
 - `stash@{0}` 不被 pop/drop。
 
 ### 验证命令
+- `pnpm exec tsx apps/web/src/features/studio-v2/studio-api-errors.test.ts`
+- `pnpm exec tsx apps/web/src/features/studio-v2/studio-generation-blockers.test.ts`
+- `pnpm --filter web exec tsc -p tsconfig.json --noEmit`
+- `pnpm --filter web exec eslint src/features/studio-v2/api.ts src/features/studio-v2/studio-api-errors.ts`
+- `pnpm --filter web build`
 - `git diff --check`
 - `git status --short --untracked-files=all`
 - `git stash list --date=local | head -3`
-- `git diff --name-status HEAD 'stash@{0}' -- docs apps/web/src/features apps/web/src/app apps/api/src apps/workers/src packages/shared-types .github packages/database/prisma | sed -n '1,220p'`
 
 ### 当前状态
 done

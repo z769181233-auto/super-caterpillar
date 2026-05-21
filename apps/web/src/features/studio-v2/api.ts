@@ -11,6 +11,7 @@ import type {
   StorySourceCompatibilityDTO,
   VideoPromptDTO,
 } from '@scu/shared-types';
+import { extractStudioApiErrorMessage } from './studio-api-errors';
 
 type ApiEnvelope<T> = {
   success?: boolean;
@@ -162,7 +163,9 @@ export async function generateStudioEpisodePlans(projectId: string): Promise<Epi
   const result = (await response.json()) as ApiEnvelope<EpisodePlanDTO[]>;
 
   if (!response.ok || !result.success || !result.data) {
-    throw new Error(result.error?.message || 'Failed to generate Studio EpisodePlan');
+    throw new Error(
+      extractStudioApiErrorMessage(result, 'Failed to generate Studio EpisodePlan')
+    );
   }
 
   return result.data;
@@ -193,7 +196,9 @@ export async function generateStudioDirectorScripts(
   const result = (await response.json()) as ApiEnvelope<DirectorScriptDTO[]>;
 
   if (!response.ok || !result.success || !result.data) {
-    throw new Error(result.error?.message || 'Failed to generate Studio DirectorScript');
+    throw new Error(
+      extractStudioApiErrorMessage(result, 'Failed to generate Studio DirectorScript')
+    );
   }
 
   return result.data;
@@ -222,7 +227,9 @@ export async function generateStudioShotScripts(projectId: string): Promise<Shot
   const result = (await response.json()) as ApiEnvelope<ShotScriptDTO[]>;
 
   if (!response.ok || !result.success || !result.data) {
-    throw new Error(result.error?.message || 'Failed to generate Studio ShotScript');
+    throw new Error(
+      extractStudioApiErrorMessage(result, 'Failed to generate Studio ShotScript')
+    );
   }
 
   return result.data;
