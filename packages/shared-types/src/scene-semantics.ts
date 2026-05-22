@@ -162,12 +162,12 @@ const CONFLICT_PRIORITY_KEYWORDS = [
 ];
 
 const CHARACTER_PATTERNS = [
-  /(?:^|[，。！？\s])([一-龥]{2,3})(?:已过|已经|忽然|才|便|只|也|仍|正|尚|从|在|把|被|将|随|向|对)?(?:抬头|低头|看见|看向|听见|知道|明白|想起|走进|进了|出了|抱着|攥着|翻开|拾起|拿起|跪下|坐下|站起|站在|跑出|哭|笑|问|说|答|唤|喊|行礼)/g,
+  /(?:^|[，。！？\s])([一-龥]{2,3})(?:已过|已经|忽然|才|便|只|也|仍|正|尚|从|在|把|被|将|随|向|对)?(?:抬头|低头|看见|看向|听见|知道|明白|想起|走进|走出|进了|出了|抱着|攥着|翻开|翻书|研读|藏起|收起|取出|放下|推开|拾起|拿起|跪下|坐下|站起|站在|跑出|哭|笑|问|说|答|唤|喊|行礼)/g,
   /看见([一-龥]{2,3})(?:立在|站在|坐在|走进|拿着|手中|没有|正)/g,
   /(?:^|[，。！？\s])([一-龥]{2,3})(?:没有|不曾|未曾)(?:进屋|进门|开口|回答|回头|推门)/g,
   /(?:^|[，。！？\s])([一-龥]{1,2}(?:嬷嬷|妈妈|夫人|太太|姑娘|小姐|公子|少爷|王爷|皇帝|太子|世子))(?:说|问|答|唤|走|站|看|笑|哭|递|拿|拦|劝|催|跪|行礼|进|出)?/g,
   /([一-龥]{2,3})的(?:脸|手|声音|心|目光|衣袖|书|名字|婚事|母亲|神色|眉眼)/g,
-  /(?:^|[，。！？\s])([一-龥]{2,3})(?:只|低声|轻声)?(说|问|答|看见|看到|盯着|来到|走进|冲向|拦住|质问|喊|叫|转身|抬头)/g,
+  /(?:^|[，。！？\s])([一-龥]{2,3})(?:只|低声|轻声)?(说|问|答|看见|看到|盯着|来到|走进|走出|冲向|拦住|质问|喊|叫|转身|抬头|翻书|研读|藏起|收起|推开)/g,
   /([一-龥]{2,3})[与和跟对]([一-龥]{2,3})/g,
   /([一-龥]{2,3})在[^，。！？\n]{0,20}?(?:看着|盯着|望向)([一-龥]{2,3})/g,
   /([一-龥]{2,3})(?:低声|大声|忽然)?(?:逼问|质问|追上|拉住|拦住)([一-龥]{2,3})/g,
@@ -326,20 +326,63 @@ function pickTopValues(counter: Map<string, number>, limit: number): string[] {
     .map(([value]) => value);
 }
 
+function splitSentenceBlocks(rawText: string): string[] {
+  const sentences = rawText
+    .split(/(?<=[。！？!?])/)
+    .map((sentence) => sentence.trim())
+    .filter((sentence) => sentence.length > 0);
+
+  if (sentences.length <= 1) {
+    return sentences;
+  }
+
+  const blocks: string[] = [];
+  let current = '';
+  for (const sentence of sentences) {
+    if (!current) {
+      current = sentence;
+      continue;
+    }
+    if (`${current}${sentence}`.length <= 220) {
+      current = `${current}${sentence}`;
+      continue;
+    }
+    blocks.push(current);
+    current = sentence;
+  }
+  if (current) {
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
 function splitSemanticBlocks(rawText: string): string[] {
-  const paragraphs = rawText
-    .split(/\n\n+/)
+  const normalizedText = rawText.replace(/\r\n/g, '\n').trim();
+  if (!normalizedText) {
+    return [];
+  }
+
+  const paragraphs = normalizedText
+    .split(/\n\s*\n+/)
     .map((paragraph) => paragraph.trim())
     .filter((paragraph) => paragraph.length > 0);
 
-  if (paragraphs.length > 0) {
-    return paragraphs;
-  }
-
-  return rawText
+  const lines = normalizedText
     .split(/\n+/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+
+  if (paragraphs.length > 1 && lines.length <= paragraphs.length + 1) {
+    return paragraphs;
+  }
+
+  if (lines.length > 1) {
+    return lines;
+  }
+
+  const sentenceBlocks = splitSentenceBlocks(normalizedText);
+  return sentenceBlocks.length > 0 ? sentenceBlocks : [normalizedText];
 }
 
 function buildSemanticWindows(blocks: string[]): string[] {
@@ -526,32 +569,46 @@ function extractConflictSummary(text: string): string | undefined {
 
 function extractDialogueBlocks(text: string, seededCharacters: string[]): NovelNarrativeBlock[] {
   const blocks: NovelNarrativeBlock[] = [];
-  const dialoguePattern = /([一-龥]{2,3})?(?:低声|轻声|冷声|柔声|急声|笑着|哭着)?(?:说|问|答|唤|喊|道|劝|催)?[：:]?[“「『]([^”」』]{1,160})[”」』]/g;
-  let match: RegExpExecArray | null;
-  let index = 1;
-  while ((match = dialoguePattern.exec(text)) !== null) {
-    const speaker = normalizeCharacterCandidate(match[1]);
-    const dialogueText = match[2]?.trim();
-    if (!dialogueText) continue;
-    const contextStart = Math.max(0, match.index - 80);
-    const contextEnd = Math.min(text.length, match.index + match[0].length + 80);
+  const pushDialogueBlock = (matchIndex: number, matchedLength: number, dialogueText: string, speaker?: string) => {
+    const contextStart = Math.max(0, matchIndex - 80);
+    const contextEnd = Math.min(text.length, matchIndex + matchedLength + 80);
     const context = text.slice(contextStart, contextEnd);
     blocks.push({
-      index,
+      index: blocks.length + 1,
       type: 'dialogue',
       text: dialogueText,
       speaker,
       characters: extractCharacters(context, speaker ? [...seededCharacters, speaker] : seededCharacters),
       location: extractLocation(context),
     });
-    index += 1;
+  };
+
+  const dialoguePattern = /([一-龥]{2,3})?(?:低声|轻声|冷声|柔声|急声|笑着|哭着)?(?:说|问|答|唤|喊|道|劝|催)?[：:]?[“「『]([^”」』]{1,160})[”」』]/g;
+  let match: RegExpExecArray | null;
+  while ((match = dialoguePattern.exec(text)) !== null) {
+    const speaker = normalizeCharacterCandidate(match[1]);
+    const dialogueText = match[2]?.trim();
+    if (!dialogueText) continue;
+    pushDialogueBlock(match.index, match[0].length, dialogueText, speaker);
+  }
+
+  const unquotedDialoguePattern =
+    /(?:^|[。！？\n])([^。！？\n]{0,60}?(?:说|问|答|唤|喊|道|劝|催)(?:他|她)?)[：:]([^“”「」『』。！？\n]{2,160})(?=[。！？\n]|$)/g;
+  while ((match = unquotedDialoguePattern.exec(text)) !== null) {
+    const dialoguePrefix = match[1] || '';
+    const prefixCharacters = extractCharacters(dialoguePrefix, seededCharacters);
+    const speaker = normalizeCharacterCandidate(prefixCharacters[prefixCharacters.length - 1]);
+    const dialogueText = match[2]?.trim();
+    if (!dialogueText || /^[“「『]/.test(dialogueText)) continue;
+    if (blocks.some((block) => block.text === dialogueText)) continue;
+    pushDialogueBlock(match.index, match[0].length, dialogueText, speaker);
   }
   return blocks;
 }
 
 function extractActionBlocks(text: string, seededCharacters: string[]): NovelNarrativeBlock[] {
   const actionPattern =
-    /(抬头|低头|转身|起身|坐下|站起|跪下|行礼|走进|进了|出了|推门|关门|抱着|攥着|握住|翻开|拾起|拿起|递给|藏起|跑出|追上|拦住|拉住|看向|望向|听见|哭|笑|叹息|摇头|点头)/;
+    /(抬头|低头|回头|转身|起身|坐下|站起|站在|跪下|跪坐|跪在|行礼|走进|走出|进了|出了|离开|推门|推开|关门|抱着|抱紧|攥着|攥紧|握住|捧着|翻开|翻书|研读|合上|拾起|拿起|取出|放下|收起|递给|藏书|藏起|奔出|跑出|追上|拦住|拉住|扶住|按住|逼近|靠近|退后|看向|望向|垂眼|垂眸|抿唇|听见|哭|笑|叹息|摇头|点头)/;
   const sentences = text
     .split(/(?<=[。！？!?])/)
     .map((sentence) => sentence.trim())
@@ -690,7 +747,8 @@ function buildNovelSceneCandidates(params: {
   };
 
   params.blocks.forEach((block, blockIndex) => addCandidate(block, 'paragraph', [blockIndex + 1]));
-  if (candidates.length === 0) {
+  const hasUsableCandidate = candidates.some((candidate) => candidate.confidence !== 'low');
+  if (candidates.length === 0 || !hasUsableCandidate) {
     params.windows.forEach((window, windowIndex) => addCandidate(window, 'semantic_window', [windowIndex + 1]));
   }
 

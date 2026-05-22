@@ -15,18 +15,63 @@ import {
 export class NovelAnalysisProcessorService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private splitMeaningfulParagraphs(rawText: string): string[] {
-    const paragraphs = rawText.split(/\n\n+/).filter((p: string) => p.trim().length > 10);
-    if (paragraphs.length > 0) {
-      return paragraphs;
+  private splitSentenceParagraphs(rawText: string): string[] {
+    const sentences = rawText
+      .split(/(?<=[。！？!?])/)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence.length > 0);
+
+    if (sentences.length <= 1) {
+      return sentences;
     }
 
-    const fallback = rawText
+    const paragraphs: string[] = [];
+    let current = '';
+    for (const sentence of sentences) {
+      if (!current) {
+        current = sentence;
+        continue;
+      }
+      if (`${current}${sentence}`.length <= 220) {
+        current = `${current}${sentence}`;
+        continue;
+      }
+      paragraphs.push(current);
+      current = sentence;
+    }
+    if (current) {
+      paragraphs.push(current);
+    }
+
+    return paragraphs;
+  }
+
+  private splitMeaningfulParagraphs(rawText: string): string[] {
+    const normalizedText = rawText.replace(/\r\n/g, '\n').trim();
+    if (!normalizedText) {
+      return [];
+    }
+
+    const paragraphs = normalizedText
+      .split(/\n\s*\n+/)
+      .map((paragraph: string) => paragraph.trim())
+      .filter((paragraph: string) => paragraph.length > 10);
+
+    const lines = normalizedText
       .split(/\n+/)
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
 
-    return fallback.length > 0 ? fallback : [rawText.trim()].filter((line) => line.length > 0);
+    if (paragraphs.length > 1 && lines.length <= paragraphs.length + 1) {
+      return paragraphs;
+    }
+
+    if (lines.length > 1) {
+      return lines;
+    }
+
+    const sentenceParagraphs = this.splitSentenceParagraphs(normalizedText);
+    return sentenceParagraphs.length > 0 ? sentenceParagraphs : [normalizedText];
   }
 
   /**

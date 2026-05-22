@@ -277,19 +277,35 @@ describe('novel-analysis-processor', () => {
         ])
       );
       expect(report.hasChapterMarkers).toBe(true);
-      expect(report.sceneCandidates.length).toBeGreaterThanOrEqual(1);
+      expect(report.sceneCandidates.length).toBeGreaterThanOrEqual(4);
+      expect(report.sceneCandidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            candidateId: expect.stringMatching(/^scene-candidate-/),
+            source: 'paragraph',
+            confidence: expect.stringMatching(/^(medium|high)$/),
+            traceReason: expect.stringContaining('人物:'),
+          }),
+        ])
+      );
+      expect(report.sceneCandidates.flatMap((candidate) => candidate.characters)).toEqual(
+        expect.arrayContaining(['薛知盈', '萧昀祈', '春桃', '王嬷嬷'])
+      );
+      expect(report.sceneCandidates.some((candidate) => candidate.location === '静水院')).toBe(true);
+      expect(report.sceneCandidates.some((candidate) => candidate.location === '云墨斋')).toBe(true);
+      expect(report.sceneCandidates.some((candidate) => candidate.dialogueBlockIndexes.length > 0)).toBe(
+        true
+      );
+      expect(report.sceneCandidates.some((candidate) => candidate.actionBlockIndexes.length > 0)).toBe(
+        true
+      );
       expect(report.sceneCandidates[0]).toEqual(
         expect.objectContaining({
           candidateId: expect.stringMatching(/^scene-candidate-/),
           source: 'paragraph',
-          characters: expect.arrayContaining(['薛知盈', '萧昀祈', '春桃', '王嬷嬷']),
-          location: '静水院',
-          confidence: 'high',
           traceReason: expect.stringContaining('人物:'),
         })
       );
-      expect(report.sceneCandidates[0].dialogueBlockIndexes.length).toBeGreaterThanOrEqual(3);
-      expect(report.sceneCandidates[0].actionBlockIndexes.length).toBeGreaterThanOrEqual(3);
       expect(report.dialogueBlockCount).toBeGreaterThanOrEqual(3);
       expect(report.actionBlockCount).toBeGreaterThanOrEqual(3);
       expect(report.missingCapabilities).not.toContain('characters');
@@ -298,6 +314,44 @@ describe('novel-analysis-processor', () => {
       expect(report.qualityGate.blockingReasons).toEqual([]);
       expect(context.summary).toContain('覆盖率：');
       expect(context.summary).toContain('质量门禁：pass');
+    });
+
+    it('keeps scene candidate recall when novel text uses single newlines and unquoted dialogue', () => {
+      const sample = [
+        '第一章 藏起律法书，只为等首辅回府',
+        '仲春，静水院一片寂静。薛知盈已过及笄年纪，却仍被萧家用婚事拿捏。',
+        '春桃抱着针线篮进门，低声说：姑娘，王嬷嬷来了，夫人请你去云墨斋。',
+        '薛知盈翻书，藏起律法书，抬头看见萧昀祈立在窗外回廊下。',
+        '王嬷嬷推门进来，笑着劝她：表姑娘，今日别再闹了。',
+        '萧昀祈没有进屋，只隔着窗说：若她不愿，这门亲事谁也不能替她定。',
+      ].join('\n');
+
+      const report = buildNovelAnalysisCoverageReport(sample);
+
+      expect(report.paragraphCount).toBeGreaterThanOrEqual(6);
+      expect(report.dialogueBlockCount).toBeGreaterThanOrEqual(3);
+      expect(report.actionBlockCount).toBeGreaterThanOrEqual(4);
+      expect(report.sceneCandidateCount).toBeGreaterThanOrEqual(4);
+      expect(report.extractedCharacters).toEqual(
+        expect.arrayContaining(['薛知盈', '萧昀祈', '春桃', '王嬷嬷'])
+      );
+      expect(report.extractedLocations).toEqual(expect.arrayContaining(['静水院', '云墨斋']));
+      expect(report.sceneCandidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: 'paragraph',
+            characters: expect.arrayContaining(['春桃', '王嬷嬷']),
+            location: '云墨斋',
+            dialogueBlockIndexes: expect.arrayContaining([1]),
+          }),
+          expect.objectContaining({
+            source: 'paragraph',
+            characters: expect.arrayContaining(['薛知盈', '萧昀祈']),
+            actionBlockIndexes: expect.any(Array),
+          }),
+        ])
+      );
+      expect(report.qualityGate.status).toBe('pass');
     });
 
     it('blocks weak story-source inputs before downstream studio generation', () => {

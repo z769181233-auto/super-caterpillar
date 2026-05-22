@@ -161,8 +161,6 @@ describe('NovelAnalysisProcessorService', () => {
                 expect.objectContaining({
                   candidateId: expect.stringMatching(/^scene-candidate-/),
                   source: 'paragraph',
-                  characters: expect.arrayContaining(['薛知盈', '萧昀祈', '春桃', '王嬷嬷']),
-                  location: '静水院',
                   dialogueBlockIndexes: expect.any(Array),
                   actionBlockIndexes: expect.any(Array),
                   traceReason: expect.stringContaining('人物:'),
@@ -188,12 +186,81 @@ describe('NovelAnalysisProcessorService', () => {
         (candidate: { canonicalName: string }) => candidate.canonicalName
       )
     ).not.toContain('表姑娘');
+    expect(createCall.data.analysisResult.coverageReport.sceneCandidates.length).toBeGreaterThanOrEqual(4);
     expect(
-      createCall.data.analysisResult.coverageReport.sceneCandidates[0].dialogueBlockIndexes.length
-    ).toBeGreaterThanOrEqual(3);
+      createCall.data.analysisResult.coverageReport.sceneCandidates.flatMap(
+        (candidate: { characters: string[] }) => candidate.characters
+      )
+    ).toEqual(expect.arrayContaining(['薛知盈', '萧昀祈', '春桃', '王嬷嬷']));
     expect(
-      createCall.data.analysisResult.coverageReport.sceneCandidates[0].actionBlockIndexes.length
-    ).toBeGreaterThanOrEqual(3);
+      createCall.data.analysisResult.coverageReport.sceneCandidates.some(
+        (candidate: { location?: string }) => candidate.location === '静水院'
+      )
+    ).toBe(true);
+    expect(
+      createCall.data.analysisResult.coverageReport.sceneCandidates.some(
+        (candidate: { dialogueBlockIndexes: number[] }) => candidate.dialogueBlockIndexes.length > 0
+      )
+    ).toBe(true);
+    expect(
+      createCall.data.analysisResult.coverageReport.sceneCandidates.some(
+        (candidate: { actionBlockIndexes: number[] }) => candidate.actionBlockIndexes.length > 0
+      )
+    ).toBe(true);
+  });
+
+  it('splits single-newline chapters into granular scene drafts and coverage candidates', async () => {
+    const { service, prisma } = createService();
+
+    prisma.novelChapter.findUnique.mockResolvedValue({
+      id: 'chapter-bg-single-newline',
+      volumeId: 'volume-1',
+      index: 1,
+      title: '第一章 藏起律法书，只为等首辅回府',
+      novelSource: { projectId: 'project-bg' },
+      rawContent: [
+        '第一章 藏起律法书，只为等首辅回府',
+        '仲春，静水院一片寂静。薛知盈已过及笄年纪，却仍被萧家用婚事拿捏。',
+        '春桃抱着针线篮进门，低声说：姑娘，王嬷嬷来了，夫人请你去云墨斋。',
+        '薛知盈翻书，藏起律法书，抬头看见萧昀祈立在窗外回廊下。',
+        '王嬷嬷推门进来，笑着劝她：表姑娘，今日别再闹了。',
+        '萧昀祈没有进屋，只隔着窗说：若她不愿，这门亲事谁也不能替她定。',
+      ].join('\n'),
+    });
+    prisma.novelChapter.findFirst.mockResolvedValue(null);
+    prisma.novelChapter.findMany.mockResolvedValue([]);
+    prisma.novelChapter.update.mockResolvedValue({ id: 'chapter-bg-single-newline' });
+    prisma.memoryShortTerm.findMany.mockResolvedValue([]);
+    prisma.memoryShortTerm.findFirst.mockResolvedValue(null);
+    prisma.memoryShortTerm.create.mockResolvedValue({ id: 'memory-bg-single-newline' });
+    prisma.$queryRawUnsafe.mockResolvedValue([]);
+    prisma.$executeRawUnsafe.mockResolvedValue(1);
+    prisma.sceneDraft.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.sceneDraft.create.mockResolvedValue({ id: 'draft-bg-single-newline' });
+
+    await service.analyzeChapter('chapter-bg-single-newline');
+
+    expect(prisma.sceneDraft.create).toHaveBeenCalledTimes(2);
+    const createCall = prisma.sceneDraft.create.mock.calls[0][0];
+    const coverageReport = createCall.data.analysisResult.coverageReport;
+    expect(coverageReport.paragraphCount).toBeGreaterThanOrEqual(6);
+    expect(coverageReport.sceneCandidateCount).toBeGreaterThanOrEqual(4);
+    expect(coverageReport.dialogueBlockCount).toBeGreaterThanOrEqual(3);
+    expect(coverageReport.actionBlockCount).toBeGreaterThanOrEqual(4);
+    expect(coverageReport.qualityGate.status).toBe('pass');
+    expect(coverageReport.sceneCandidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'paragraph',
+          characters: expect.arrayContaining(['春桃', '王嬷嬷']),
+          location: '云墨斋',
+        }),
+        expect.objectContaining({
+          source: 'paragraph',
+          characters: expect.arrayContaining(['薛知盈', '萧昀祈']),
+        }),
+      ])
+    );
   });
 
   it('marks low-quality story source as blocked instead of pretending it is studio-ready', async () => {
