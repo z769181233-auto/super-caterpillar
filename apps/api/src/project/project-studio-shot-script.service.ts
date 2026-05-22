@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   filterStableSceneCandidateEvidence,
   formatSceneCandidateEvidenceBlocker,
+  ParsedSceneCandidateEvidence,
   sceneCandidateEvidenceSummary,
 } from './project-studio-scene-candidate-evidence';
 
@@ -276,6 +277,33 @@ function buildVideoPrompt(input: {
   ].join('；');
 }
 
+function extractQuotedDialogue(text: string): string | null {
+  const quoted = text.match(/[“「](.+?)[”」]/);
+  if (quoted?.[1]) return quoted[1].trim();
+  const colonDialogue = text.match(/[：:]\s*([^。！？；;]+)/);
+  if (colonDialogue?.[1]) return colonDialogue[1].trim();
+  return null;
+}
+
+function buildDialogue(input: {
+  evidence: ParsedSceneCandidateEvidence;
+  primaryCharacter: ShotScriptCharacterDTO | null;
+  action: string;
+  emotion: string;
+}): ShotScriptDialogueDTO[] {
+  if (!input.primaryCharacter) return [];
+  const quotedDialogue = extractQuotedDialogue(input.evidence.text);
+  const text = quotedDialogue || `围绕“${truncate(input.action, 34)}”给出克制反应。`;
+  return [
+    {
+      character_id: input.primaryCharacter.character_id,
+      character_name: input.primaryCharacter.character_name,
+      text,
+      delivery: `${input.emotion}，语气需贴合人物身份，不使用摘要占位。`,
+    },
+  ];
+}
+
 function buildShotScripts(input: {
   projectId: string;
   directorScript: JsonRecord;
@@ -294,17 +322,19 @@ function buildShotScripts(input: {
       formatSceneCandidateEvidenceBlocker('ShotScript', evidence)
     );
   }
-  const finalBeats = candidateEvidence.map((item) => sceneCandidateEvidenceSummary(item)).slice(0, 8);
+  const finalBeats = candidateEvidence.slice(0, 8);
   const characterNames = textArray(input.directorScript.keyCharacters);
   const locationNames = textArray(input.directorScript.keyLocations);
   const defaultLighting = asString(input.directorScript.visualTone) || '以自然光与环境阴影塑造情绪压力';
   const soundDesign = [asString(input.directorScript.soundDesign) || '环境底噪', '衣料与脚步细节'];
 
-  return finalBeats.map((beat, index) => {
+  return finalBeats.map((evidenceItem, index) => {
+    const beat = sceneCandidateEvidenceSummary(evidenceItem);
     const shotNo = index + 1;
     const shotSize = SHOT_SIZES[index % SHOT_SIZES.length];
     const cameraMovement = CAMERA_MOVEMENTS[index % CAMERA_MOVEMENTS.length];
-    const locationName = locationNames[index % Math.max(locationNames.length, 1)] || '待定场景';
+    const locationName =
+      evidenceItem.location || locationNames[index % Math.max(locationNames.length, 1)] || '待定场景';
     const locationBible = input.locationBiblesByName.get(locationName);
     const locationId =
       asString(locationBible?.locationId) ||
@@ -312,8 +342,9 @@ function buildShotScripts(input: {
       (locationName === '待定场景' ? null : `location:${idSlug(locationName)}`);
     const sceneId = `${episodeId}:scene-${Math.floor(index / 2) + 1}`;
     const action = truncate(beat, 160);
+    const shotCharacterNames = evidenceItem.characters.length > 0 ? evidenceItem.characters : characterNames;
     const characters = buildShotCharacters({
-      names: characterNames,
+      names: shotCharacterNames,
       shotIndex: index,
       characterBiblesByName: input.characterBiblesByName,
       action,
@@ -357,17 +388,8 @@ function buildShotScripts(input: {
       action,
       shot_size: shotSize,
       camera_movement: cameraMovement,
-      dialogue: primaryCharacter
-        ? [
-            {
-              character_id: primaryCharacter.character_id,
-              character_name: primaryCharacter.character_name,
-              text: `（待编剧精修）${truncate(action, 46)}`,
-              delivery: `${emotion}，控制台词口吻与人物身份一致`,
-            },
-          ]
-        : [],
-      voiceover: index === 0 ? `旁白建立本集处境：${truncate(title, 60)}` : null,
+      dialogue: buildDialogue({ evidence: evidenceItem, primaryCharacter, action, emotion }),
+      voiceover: index === 0 ? `旁白建立本集处境：${truncate(action, 80)}` : null,
       sound_design: soundDesign,
       lighting,
       emotion,

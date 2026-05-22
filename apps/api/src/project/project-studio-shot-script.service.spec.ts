@@ -116,7 +116,8 @@ describe('ProjectStudioShotScriptService', () => {
     expect(shotScripts[0].storyboard_prompt).toContain('镜头 1');
     expect(shotScripts[0].source_evidence.join('\n')).toContain('scene-candidate:chapter-1:scene-candidate:1');
     expect(shotScripts[0].video_prompt).toContain('本阶段不调用视频生成');
-    expect(shotScripts[0].dialogue[0].text).toContain('待编剧精修');
+    expect(shotScripts[0].dialogue[0].text).not.toContain('待编剧精修');
+    expect(shotScripts[0].dialogue[0].delivery).toContain('不使用摘要占位');
     expect(shotScripts[0].continuity_notes.join('\n')).toContain('CharacterBible');
     expect(prisma.project.update).toHaveBeenCalledWith(
       expect.objectContaining({

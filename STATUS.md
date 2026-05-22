@@ -19,6 +19,7 @@
 - 小说分析质量 M7 已完成：ProductionState 只读聚合 `SceneDraft.analysisResult.coverageReport.sceneCandidates` 覆盖率，并在 Studio v2 总览 / 右侧风险面板显示质量不足原因。
 - 小说分析质量 M8 已完成：单换行 / 混合标题空行正文现在会拆成更细语义块；连续无换行正文有句子级 fallback；无引号对白、短动作块和人物动作召回已补强，并覆盖《表姑娘又又又又跑了》固定回归样本。
 - 小说分析质量 M9 已完成：EpisodePlan 现在只接受可追踪的 medium/high sceneCandidates；DirectorScript / ShotScript 会校验稳定 sourceEvidence，旧摘要或残缺 scene-candidate 字符串会明确阻断，不再伪装成可生产输入。
+- 小说分析质量 M10 已完成：新增固定《表姑娘又又又又跑了》文本链路验收，串联 `sceneCandidates -> EpisodePlan -> DirectorScript -> ShotScript`；ShotScript 现在优先消费 parsed scene candidate 的人物、场景、对白/动作证据，不再输出“待编剧精修”占位台词。
 
 ## 进行中
 - 无。
@@ -30,22 +31,22 @@
 - stash 中其他业务线改动仍需后续单独 milestone 消化。
 
 ## 当前风险
-- 本轮只改 Studio v2 文本层生成前置校验和 evidence 传递，未扩展图片/视频生成或 worker 执行链路。
+- 本轮只改 Studio v2 文本层生成质量验收和 ShotScript 文本输出，未扩展图片/视频生成或 worker 执行链路。
 - 仍不能进入 storyboard image / video generation。
 - `stash@{0}` 仍包含多业务线历史改动，不能 `git stash pop/apply` 整包恢复。
 
 ## 已知问题
-- M8 提升了规则召回，但仍是规则引擎，不等同于大厂级 StoryBible / CharacterBible / ShotScript 自动生成质量。
+- M10 证明固定样例文本链路可串联，但当前仍是规则驱动的最小导演/镜头文本，不等同于大厂级完整编剧、导演和分镜产线。
 - 当前仍不生成 Storyboard 图片或视频资产。
 
 ## 验证状态
+- `pnpm --filter api exec jest src/project/project-studio-text-pipeline.acceptance.spec.ts src/project/project-studio-shot-script.service.spec.ts --runInBand` 通过，6 tests。
 - `pnpm --filter api exec jest src/project/project-studio-episode-plan.service.spec.ts src/project/project-studio-director-script.service.spec.ts src/project/project-studio-shot-script.service.spec.ts --runInBand` 通过，18 tests。
 - `pnpm --filter api exec tsc -p tsconfig.json --noEmit` 通过。
-- `pnpm --filter web exec tsx src/features/studio-v2/studio-generation-blockers.test.ts && pnpm --filter web exec tsx src/features/studio-v2/studio-api-errors.test.ts` 通过。
 - `pnpm --filter web build` 通过。
 
 ## 当前是否允许恢复新功能开发
 no
 
 ## 原因
-小说分析质量主线可以继续做 M9，但仍不进入图片、视频或大范围 Studio 新功能。
+小说分析质量主线可以继续做 M11，但仍不进入图片、视频或大范围 Studio 新功能。
