@@ -136,6 +136,10 @@ describe('ProjectStudioEpisodePlanService', () => {
     expect(episodePlans[0].coolPoints.length).toBeGreaterThan(0);
     expect(episodePlans[0].plotGoal).toContain('薛知盈在静水院');
     expect(episodePlans[0].sourceEvidence.join('\n')).toContain('scene-candidate:chapter-1:scene-candidate:1');
+    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('confidence:high');
+    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('sourceBlocks:1');
+    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('dialogueBlocks:1,2,3');
+    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('actionBlocks:1,2,3');
     expect(prisma.project.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'project-1' },
@@ -360,6 +364,68 @@ describe('ProjectStudioEpisodePlanService', () => {
     );
     await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
       /missing:character_extraction/
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks EpisodePlan generation when scene candidates are not traceable enough for downstream scripts', async () => {
+    const prisma = createPrismaMock({
+      novelSource: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-source-1',
+          fileName: '表姑娘又又又又跑了.txt',
+        }),
+      },
+      novel: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'novel-1',
+          title: '表姑娘又又又又跑了',
+          chapters: [
+            {
+              id: 'chapter-1',
+              index: 1,
+              title: '第一章',
+              summary: '候选缺少来源块和叙事证据。',
+              rawContent: '旧正文。',
+            },
+          ],
+        }),
+      },
+      sceneDraft: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            chapterId: 'chapter-1',
+            analysisResult: {
+              coverageReport: {
+                sceneCandidateCount: 1,
+                characterCount: 1,
+                locationCount: 0,
+                dialogueBlockCount: 0,
+                actionBlockCount: 0,
+                qualityGate: {
+                  status: 'warning',
+                  warnings: ['scene_candidate_trace_incomplete'],
+                },
+                sceneCandidates: [
+                  {
+                    ...sceneCandidate,
+                    location: undefined,
+                    dialogueBlockIndexes: [],
+                    actionBlockIndexes: [],
+                    sourceBlockIndexes: [],
+                    confidence: 'medium',
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+      },
+    });
+    const service = new ProjectStudioEpisodePlanService(prisma as any);
+
+    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
+      /usable scene candidates below threshold[\s\S]*warning:scene_candidate_trace_incomplete/
     );
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

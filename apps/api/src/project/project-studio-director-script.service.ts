@@ -2,12 +2,16 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DirectorScriptDTO } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  filterStableSceneCandidateEvidence,
+  formatSceneCandidateEvidenceBlocker,
+  ParsedSceneCandidateEvidence,
+  sceneCandidateEvidenceSummary,
+} from './project-studio-scene-candidate-evidence';
 
 type JsonRecord = Record<string, unknown>;
 
 const DIRECTOR_SCRIPT_VERSION = 'studio-director-script-v1';
-const SCENE_CANDIDATE_EVIDENCE_PREFIX = 'scene-candidate:';
-
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
@@ -39,18 +43,6 @@ function textArray(value: unknown): string[] {
 
 function metadataNames(items: unknown[]): string[] {
   return uniq(items.map((item) => asString(asRecord(item).name)).filter(Boolean) as string[]);
-}
-
-function sceneCandidateEvidence(value: unknown): string[] {
-  return textArray(value).filter((item) => item.includes(SCENE_CANDIDATE_EVIDENCE_PREFIX));
-}
-
-function evidenceSummary(value: string): string {
-  const textPart = value
-    .split('|')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith('text:'));
-  return textPart ? textPart.replace(/^text:/, '').trim() : value;
 }
 
 function buildMissing(projectId: string, reason: string): DirectorScriptDTO[] {
@@ -131,12 +123,12 @@ function buildBeats(input: {
 function buildSceneBeats(input: {
   emotionCurve: string[];
   plotGoal: string | null;
-  sceneCandidateEvidence: string[];
+  sceneCandidateEvidence: ParsedSceneCandidateEvidence[];
 }): string[] {
   if (input.sceneCandidateEvidence.length > 0) {
     return input.sceneCandidateEvidence.slice(0, 8).map((evidence, index) => {
-      const sourceText = evidenceSummary(evidence);
-      return `场次 ${index + 1}：基于 ${evidence.split('|')[0].trim()}。导演目标：${truncate(sourceText, 120)}。`;
+      const sourceText = sceneCandidateEvidenceSummary(evidence);
+      return `场次 ${index + 1}：基于 scene-candidate:${evidence.candidateId}。导演目标：${truncate(sourceText, 120)}。`;
     });
   }
   const curve =
@@ -163,10 +155,10 @@ function buildDirectorScript(input: {
   const coolPoints = textArray(input.episodePlan.coolPoints);
   const hook = asString(input.episodePlan.hook);
   const sourceEvidence = textArray(input.episodePlan.sourceEvidence).slice(0, 6);
-  const candidateEvidence = sceneCandidateEvidence(sourceEvidence);
+  const candidateEvidence = filterStableSceneCandidateEvidence(sourceEvidence);
   if (candidateEvidence.length === 0) {
     throw new BadRequestException(
-      'No scene candidate evidence found for DirectorScript generation; regenerate EpisodePlan from coverageReport.sceneCandidates first'
+      formatSceneCandidateEvidenceBlocker('DirectorScript', sourceEvidence)
     );
   }
   const keyCharacters =

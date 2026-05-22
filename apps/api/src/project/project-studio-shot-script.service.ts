@@ -7,11 +7,15 @@ import {
 } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  filterStableSceneCandidateEvidence,
+  formatSceneCandidateEvidenceBlocker,
+  sceneCandidateEvidenceSummary,
+} from './project-studio-scene-candidate-evidence';
 
 type JsonRecord = Record<string, unknown>;
 
 const SHOT_SCRIPT_VERSION = 'studio-shot-script-v1';
-const SCENE_CANDIDATE_EVIDENCE_PREFIX = 'scene-candidate:';
 
 const SHOT_SIZES = ['大全景', '中景', '近景', '特写'];
 const CAMERA_MOVEMENTS = ['固定镜头', '缓慢推进', '横移跟拍', '轻微推近'];
@@ -45,18 +49,6 @@ function uniq(values: string[]): string[] {
 
 function textArray(value: unknown): string[] {
   return uniq(asArray(value).map((item) => asString(item)).filter(Boolean) as string[]);
-}
-
-function sceneCandidateEvidence(value: unknown): string[] {
-  return textArray(value).filter((item) => item.includes(SCENE_CANDIDATE_EVIDENCE_PREFIX));
-}
-
-function evidenceSummary(value: string): string {
-  const textPart = value
-    .split('|')
-    .map((part) => part.trim())
-    .find((part) => part.startsWith('text:'));
-  return textPart ? textPart.replace(/^text:/, '').trim() : value;
 }
 
 function idSlug(value: string): string {
@@ -296,13 +288,13 @@ function buildShotScripts(input: {
   const directorId =
     asString(input.directorScript.id) || `project-metadata:${input.projectId}:director-script:${episodeId}`;
   const evidence = textArray(input.directorScript.sourceEvidence);
-  const candidateEvidence = sceneCandidateEvidence(evidence);
+  const candidateEvidence = filterStableSceneCandidateEvidence(evidence);
   if (candidateEvidence.length === 0) {
     throw new BadRequestException(
-      'No scene candidate evidence found for ShotScript generation; regenerate DirectorScript from coverageReport.sceneCandidates first'
+      formatSceneCandidateEvidenceBlocker('ShotScript', evidence)
     );
   }
-  const finalBeats = candidateEvidence.map((item) => evidenceSummary(item)).slice(0, 8);
+  const finalBeats = candidateEvidence.map((item) => sceneCandidateEvidenceSummary(item)).slice(0, 8);
   const characterNames = textArray(input.directorScript.keyCharacters);
   const locationNames = textArray(input.directorScript.keyLocations);
   const defaultLighting = asString(input.directorScript.visualTone) || '以自然光与环境阴影塑造情绪压力';

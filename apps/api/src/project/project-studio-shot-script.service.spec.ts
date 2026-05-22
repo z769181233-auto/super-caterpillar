@@ -77,10 +77,10 @@ describe('ProjectStudioShotScriptService', () => {
                   visualTone: '古风宅院、压抑光影、细腻人物表演',
                   soundDesign: '院落风声、衣料摩擦、木门轻响',
                   sourceEvidence: [
-                    'scene-candidate:chapter-1:scene-candidate:1 | location:静水院 | characters:薛知盈、王嬷嬷 | text:薛知盈在静水院偷读律法书。',
-                    'scene-candidate:chapter-1:scene-candidate:2 | location:静水院 | characters:薛知盈、王嬷嬷 | text:王嬷嬷临近，薛知盈必须藏书。',
-                    'scene-candidate:chapter-1:scene-candidate:3 | location:静水院 | characters:薛知盈、王嬷嬷 | text:主仆压力转为正面对抗。',
-                    'scene-candidate:chapter-1:scene-candidate:4 | location:静水院 | characters:薛知盈、王嬷嬷 | text:秘密即将暴露。',
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈在静水院偷读律法书。',
+                    'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:2 | actionBlocks:2 | text:王嬷嬷临近，薛知盈必须藏书。',
+                    'scene-candidate:chapter-1:scene-candidate:3 | confidence:medium | sourceBlocks:3 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:3 | actionBlocks:3 | text:主仆压力转为正面对抗。',
+                    'scene-candidate:chapter-1:scene-candidate:4 | confidence:medium | sourceBlocks:4 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:4 | actionBlocks:4 | text:秘密即将暴露。',
                   ],
                 },
               ],
@@ -190,6 +190,41 @@ describe('ProjectStudioShotScriptService', () => {
 
     await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toBeInstanceOf(
       BadRequestException
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks ShotScript generation when scene candidate evidence is not stable enough', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集：弱导演剧本',
+                  status: 'done',
+                  sceneBeats: ['场次 1：弱候选。导演目标：不可追踪。'],
+                  keyCharacters: ['薛知盈'],
+                  keyLocations: ['静水院'],
+                  sourceEvidence: [
+                    'scene-candidate:chapter-1:scene-candidate:weak | confidence:medium | characters:薛知盈 | text:薛知盈在静水院。',
+                  ],
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioShotScriptService(prisma as any);
+
+    await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
+      /No stable scene candidate evidence found for ShotScript generation[\s\S]*missing sourceBlocks/
     );
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

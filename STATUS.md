@@ -18,6 +18,7 @@
 - 小说分析质量 M6/M7 阻断原因透传已完成：Studio v2 的 EpisodePlan / DirectorScript / ShotScript 生成接口现在可以读取 Nest 顶层 `message`，保留 `coverageReport.sceneCandidates` 质量门禁阻断详情，不再退化为 generic error。
 - 小说分析质量 M7 已完成：ProductionState 只读聚合 `SceneDraft.analysisResult.coverageReport.sceneCandidates` 覆盖率，并在 Studio v2 总览 / 右侧风险面板显示质量不足原因。
 - 小说分析质量 M8 已完成：单换行 / 混合标题空行正文现在会拆成更细语义块；连续无换行正文有句子级 fallback；无引号对白、短动作块和人物动作召回已补强，并覆盖《表姑娘又又又又跑了》固定回归样本。
+- 小说分析质量 M9 已完成：EpisodePlan 现在只接受可追踪的 medium/high sceneCandidates；DirectorScript / ShotScript 会校验稳定 sourceEvidence，旧摘要或残缺 scene-candidate 字符串会明确阻断，不再伪装成可生产输入。
 
 ## 进行中
 - 无。
@@ -29,7 +30,7 @@
 - stash 中其他业务线改动仍需后续单独 milestone 消化。
 
 ## 当前风险
-- 本轮只改小说语义抽取规则、API 分析器段落切分和 worker Jest path alias，不扩展 Studio 生成算法或 worker 执行链路。
+- 本轮只改 Studio v2 文本层生成前置校验和 evidence 传递，未扩展图片/视频生成或 worker 执行链路。
 - 仍不能进入 storyboard image / video generation。
 - `stash@{0}` 仍包含多业务线历史改动，不能 `git stash pop/apply` 整包恢复。
 
@@ -38,10 +39,9 @@
 - 当前仍不生成 Storyboard 图片或视频资产。
 
 ## 验证状态
-- `pnpm --filter @scu/shared-types build` 通过。
-- `pnpm --filter api exec jest src/novel-import/novel-analysis-processor.service.spec.ts --runInBand` 通过，12 tests。
-- `pnpm --filter @scu/worker exec jest src/novel-analysis-processor.spec.ts --runInBand` 通过，30 tests。
+- `pnpm --filter api exec jest src/project/project-studio-episode-plan.service.spec.ts src/project/project-studio-director-script.service.spec.ts src/project/project-studio-shot-script.service.spec.ts --runInBand` 通过，18 tests。
 - `pnpm --filter api exec tsc -p tsconfig.json --noEmit` 通过。
+- `pnpm --filter web exec tsx src/features/studio-v2/studio-generation-blockers.test.ts && pnpm --filter web exec tsx src/features/studio-v2/studio-api-errors.test.ts` 通过。
 - `pnpm --filter web build` 通过。
 
 ## 当前是否允许恢复新功能开发

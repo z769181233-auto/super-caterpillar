@@ -59,7 +59,7 @@ describe('ProjectStudioDirectorScriptService', () => {
                   appearingCharacterNames: ['薛知盈', '王嬷嬷'],
                   appearingLocationNames: ['静水院', '云墨斋'],
                   sourceEvidence: [
-                    'scene-candidate:chapter-1:scene-candidate:1 | location:静水院 | characters:薛知盈、王嬷嬷 | text:薛知盈在静水院偷读律法书，王嬷嬷忽然来查。',
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈在静水院偷读律法书，王嬷嬷忽然来查。',
                   ],
                 },
               ],
@@ -165,6 +165,42 @@ describe('ProjectStudioDirectorScriptService', () => {
 
     await expect(service.generateDirectorScripts('project-1', 'org-1')).rejects.toBeInstanceOf(
       BadRequestException
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks DirectorScript generation when scene candidate evidence is not traceable enough', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              episodePlans: [
+                {
+                  id: 'episode-plan-1',
+                  episodeId: 'episode-1',
+                  episodeNo: 1,
+                  title: '第一集：弱候选',
+                  status: 'done',
+                  plotGoal: '只有文本，缺少可追踪来源块和人物。',
+                  emotionCurve: ['开场铺陈'],
+                  coolPoints: [],
+                  sourceEvidence: [
+                    'scene-candidate:chapter-1:scene-candidate:weak | confidence:medium | text:薛知盈在静水院。',
+                  ],
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioDirectorScriptService(prisma as any);
+
+    await expect(service.generateDirectorScripts('project-1', 'org-1')).rejects.toThrow(
+      /No stable scene candidate evidence found for DirectorScript generation[\s\S]*missing sourceBlocks/
     );
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

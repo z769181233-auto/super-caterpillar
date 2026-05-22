@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { EpisodePlanDTO, NovelSceneCandidate } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
+import { formatSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
 
 type JsonRecord = Record<string, unknown>;
 type EpisodePlanInput = {
@@ -20,7 +21,6 @@ type SceneCandidateExtraction = {
 };
 
 const EPISODE_PLAN_VERSION = 'studio-episode-plan-v1';
-const SCENE_CANDIDATE_EVIDENCE_PREFIX = 'scene-candidate:';
 const MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER = 1;
 
 function asRecord(value: unknown): JsonRecord {
@@ -78,7 +78,26 @@ function isUsableSceneCandidate(value: unknown): value is NovelSceneCandidate {
   const candidateId = asString(record.candidateId);
   const text = asString(record.text);
   const confidence = asString(record.confidence);
-  return Boolean(candidateId && text && confidence !== 'low');
+  const characters = asArray(record.characters).map((item) => asString(item)).filter(Boolean);
+  const sourceBlockIndexes = asArray(record.sourceBlockIndexes).filter(
+    (item) => typeof item === 'number' && Number.isFinite(item)
+  );
+  const dialogueBlockIndexes = asArray(record.dialogueBlockIndexes).filter(
+    (item) => typeof item === 'number' && Number.isFinite(item)
+  );
+  const actionBlockIndexes = asArray(record.actionBlockIndexes).filter(
+    (item) => typeof item === 'number' && Number.isFinite(item)
+  );
+  const location = asString(record.location);
+  return Boolean(
+    candidateId &&
+      text &&
+      confidence &&
+      confidence !== 'low' &&
+      characters.length > 0 &&
+      sourceBlockIndexes.length > 0 &&
+      (location || dialogueBlockIndexes.length > 0 || actionBlockIndexes.length > 0)
+  );
 }
 
 function formatCount(value: unknown): string {
@@ -91,7 +110,7 @@ function textList(value: unknown): string[] {
     .filter(Boolean) as string[];
 }
 
-function summarizeCoverageReport(coverageReport: JsonRecord): string {
+function formatCoverageReportSummary(coverageReport: JsonRecord): string {
   const qualityGate = asRecord(coverageReport.qualityGate);
   const blockingReasons = textList(qualityGate.blockingReasons);
   const warnings = textList(qualityGate.warnings);
@@ -129,7 +148,7 @@ function sceneCandidateExtractionFromAnalysisResult(value: unknown): SceneCandid
   if (asString(qualityGate.status) === 'blocked') {
     return {
       candidates: [],
-      blockedReason: `coverage quality gate blocked: ${summarizeCoverageReport(coverageReport)}`,
+      blockedReason: `coverage quality gate blocked: ${formatCoverageReportSummary(coverageReport)}`,
     };
   }
 
@@ -140,7 +159,7 @@ function sceneCandidateExtractionFromAnalysisResult(value: unknown): SceneCandid
   if (usableCandidates.length < MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER) {
     return {
       candidates: [],
-      blockedReason: `usable scene candidates below threshold (${usableCandidates.length}/${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER}): ${summarizeCoverageReport(coverageReport)}`,
+      blockedReason: `usable scene candidates below threshold (${usableCandidates.length}/${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER}): ${formatCoverageReportSummary(coverageReport)}`,
     };
   }
 
@@ -163,17 +182,6 @@ function formatEpisodePlanBlockerMessage(reasons: string[]): string {
     reasonText,
     'Next action: rerun novel analysis quality pipeline and ensure chapter split, character extraction, location extraction, dialogue/action blocks, and scene candidates are present before generating EpisodePlan.',
   ].join('\n');
-}
-
-function formatSceneCandidateEvidence(candidate: NovelSceneCandidate): string {
-  const parts = [
-    `${SCENE_CANDIDATE_EVIDENCE_PREFIX}${candidate.candidateId}`,
-    candidate.location ? `location:${candidate.location}` : null,
-    candidate.characters.length > 0 ? `characters:${candidate.characters.join('、')}` : null,
-    candidate.conflictSummary ? `conflict:${candidate.conflictSummary}` : null,
-    `text:${truncate(candidate.text, 180)}`,
-  ].filter(Boolean);
-  return parts.join(' | ');
 }
 
 function isEpisodePlanInput(value: EpisodePlanInput | null): value is EpisodePlanInput {

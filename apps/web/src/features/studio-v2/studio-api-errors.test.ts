@@ -15,7 +15,7 @@ test('extractStudioApiErrorMessage reads Nest top-level message', () => {
   const message = extractStudioApiErrorMessage(
     {
       message:
-        'No scene candidate evidence found for DirectorScript generation; regenerate EpisodePlan from coverageReport.sceneCandidates first',
+        'No stable scene candidate evidence found for DirectorScript generation.\nNext action: rerun novel analysis quality pipeline and regenerate upstream Studio text outputs from coverageReport.sceneCandidates.',
     },
     'fallback'
   );

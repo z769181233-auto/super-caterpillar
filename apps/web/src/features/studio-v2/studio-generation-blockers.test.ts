@@ -11,7 +11,7 @@ assert.match(episodePlanBlocker, /不是页面卡住/);
 assert.match(episodePlanBlocker, /章节拆分、人物抽取、场景抽取、对白块、动作块和 scene candidates/);
 
 const directorBlocker = formatStudioGenerationError(
-  'No scene candidate evidence found for DirectorScript generation; regenerate EpisodePlan from coverageReport.sceneCandidates first',
+  'No stable scene candidate evidence found for DirectorScript generation.\nRequired evidence: scene-candidate id, confidence, sourceBlocks, text, characters, and at least one location/dialogue/action trace.',
   '导演剧本'
 );
 
