@@ -1,37 +1,38 @@
-# 当前计划：小说分析质量 M10 - 文本产物端到端验收
+# 当前计划：小说分析质量 M11 - 文本质量门槛
 
 ## 目标
-继续小说分析质量主线，只做 M10 极小切片：用固定《表姑娘又又又又跑了》样例验收 `sceneCandidates -> EpisodePlan -> DirectorScript -> ShotScript` 文本产物，确认输出是可拍摄的动漫制作文本，而不是章节摘要或占位文本。继续排除 storyboard image / video generation。
+继续小说分析质量主线，只做 M11 极小切片：把固定样例验收扩展为 ShotScript 文本质量门槛。质量不过关时明确失败，不继续写入低质量镜头台本。继续排除 storyboard image / video generation。
 
 ## 请求流
-Studio v2 文本生成请求 -> EpisodePlan 消费 SceneDraft coverageReport.sceneCandidates -> DirectorScript 消费 EpisodePlan.sourceEvidence -> ShotScript 消费 DirectorScript.sourceEvidence -> API metadata 只读/写入项目 metadata。
+Studio v2 ShotScript 生成请求 -> DirectorScript.sourceEvidence -> sceneCandidates -> 构造 ShotScript -> 文本质量门槛校验 -> 通过才写入 Project.metadata。
 
 ## 数据流
-固定样例 sceneCandidates -> 稳定 scene-candidate evidence -> EpisodePlan 剧集目标/情绪/爽点/钩子 -> DirectorScript 场次节奏 -> ShotScript 镜头级时长、景别、运镜、动作、对白/旁白、光影、提示词。无图片、无视频、无 Prisma migration。
+scene-candidate evidence -> ShotScript 镜头文本 -> 质量门槛统计：镜头数量、对白抽取率、角色绑定率、场景绑定率、占位文本、每镜头 evidence 绑定率。无图片、无视频、无 Prisma migration。
 
 ## 状态流
-只影响 Studio v2 文本层产物质量与回归测试；不改变旧小说导入、旧结构页、worker 执行链路或数据库 schema。
+只影响 Studio v2 ShotScript 文本生成后的写入前校验；不改变旧小说导入、旧结构页、worker 执行链路或数据库 schema。
 
 ## 修改边界
-- 允许：`apps/api/src/project/project-studio-shot-script.service.ts`、新增/更新 Studio 文本链路 spec、`PLANS.md`、`STATUS.md`。
+- 允许：`apps/api/src/project/project-studio-shot-script.service.ts`、相关 ShotScript / 文本链路 spec、`PLANS.md`、`STATUS.md`。
 - 禁止：修改图片生成、视频生成、Storyboard image、Prisma schema/migration、旧 novel import、worker 执行链路、stash。
 
-## Milestone M10 Text Pipeline Acceptance
+## Milestone M11 ShotScript Text Quality Gate
 
 ### 范围
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-shot-script.service.ts`
-- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-text-pipeline.acceptance.spec.ts`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-shot-script.service.spec.ts`
+- `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/apps/api/src/project/project-studio-text-pipeline.acceptance.spec.ts`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/PLANS.md`
 - `/Users/adam/Desktop/adam/毛毛虫宇宙/Super Caterpillar/STATUS.md`
 
 ### 验收标准
-- 固定样例能串联生成 EpisodePlan、DirectorScript、ShotScript。
-- EpisodePlan 必须来自 sceneCandidates evidence，不允许旧摘要替代。
-- DirectorScript 必须包含可追踪 scene-candidate 场次。
-- ShotScript 必须至少生成 4 个镜头，并包含镜头时长、景别、运镜、人物动作、对白或旁白、音效、光影、情绪、storyboard_prompt、video_prompt。
-- ShotScript 不允许出现“待编剧精修”这类占位文本。
-- ShotScript 的每个镜头必须绑定 source_evidence，不允许脱离 sceneCandidates。
+- ShotScript 少于 4 个镜头时阻断。
+- 对白抽取率低于 50% 时阻断，不能全靠生成式占位反应。
+- 角色绑定率低于 100% 时阻断。
+- 场景绑定率低于 100% 时阻断。
+- 任一镜头缺失 source_evidence / scene-candidate 时阻断。
+- 任一镜头出现“待编剧精修 / 旧摘要 / 未生成 / 待识别 / 待定场景”等占位文本时阻断。
+- 固定《表姑娘又又又又跑了》样例仍能通过。
 - 不接图片/视频生成，不做 migration，不恢复 stash。
 
 ### 验证命令

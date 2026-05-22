@@ -77,9 +77,9 @@ describe('ProjectStudioShotScriptService', () => {
                   visualTone: '古风宅院、压抑光影、细腻人物表演',
                   soundDesign: '院落风声、衣料摩擦、木门轻响',
                   sourceEvidence: [
-                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈在静水院偷读律法书。',
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈在静水院偷读律法书，低声说：“这本书不能让嬷嬷看见。”',
                     'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:2 | actionBlocks:2 | text:王嬷嬷临近，薛知盈必须藏书。',
-                    'scene-candidate:chapter-1:scene-candidate:3 | confidence:medium | sourceBlocks:3 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:3 | actionBlocks:3 | text:主仆压力转为正面对抗。',
+                    'scene-candidate:chapter-1:scene-candidate:3 | confidence:medium | sourceBlocks:3 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:3 | actionBlocks:3 | text:王嬷嬷推门问：“表姑娘，书藏在哪里？”',
                     'scene-candidate:chapter-1:scene-candidate:4 | confidence:medium | sourceBlocks:4 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:4 | actionBlocks:4 | text:秘密即将暴露。',
                   ],
                 },
@@ -226,6 +226,149 @@ describe('ProjectStudioShotScriptService', () => {
 
     await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
       /No stable scene candidate evidence found for ShotScript generation[\s\S]*missing sourceBlocks/
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks ShotScript generation when generated shots are below the text quality gate minimum', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集：镜头不足',
+                  status: 'done',
+                  keyCharacters: ['薛知盈', '王嬷嬷'],
+                  keyLocations: ['静水院'],
+                  sourceEvidence: [
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈说：“不能让书被发现。”',
+                    'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:王嬷嬷、薛知盈 | dialogueBlocks:2 | actionBlocks:2 | text:王嬷嬷说：“表姑娘，开门。”',
+                  ],
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioShotScriptService(prisma as any);
+
+    await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
+      /ShotScript text quality gate failed[\s\S]*shot_count 2\/4/
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks ShotScript generation when dialogue extraction rate is too low', async () => {
+    const sourceEvidence = [1, 2, 3, 4].map(
+      (index) =>
+        `scene-candidate:chapter-1:scene-candidate:${index} | confidence:high | sourceBlocks:${index} | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:${index} | actionBlocks:${index} | text:薛知盈在静水院与王嬷嬷形成第 ${index} 次对峙。`
+    );
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集：对白不足',
+                  status: 'done',
+                  keyCharacters: ['薛知盈', '王嬷嬷'],
+                  keyLocations: ['静水院'],
+                  sourceEvidence,
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioShotScriptService(prisma as any);
+
+    await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
+      /ShotScript text quality gate failed[\s\S]*dialogue_extraction_rate 0%\/50%/
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks ShotScript generation when locations cannot be bound', async () => {
+    const sourceEvidence = [1, 2, 3, 4].map(
+      (index) =>
+        `scene-candidate:chapter-1:scene-candidate:${index} | confidence:high | sourceBlocks:${index} | characters:薛知盈、王嬷嬷 | dialogueBlocks:${index} | actionBlocks:${index} | text:薛知盈说：“第 ${index} 个选择必须现在做。”`
+    );
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集：场景缺失',
+                  status: 'done',
+                  keyCharacters: ['薛知盈', '王嬷嬷'],
+                  keyLocations: [],
+                  sourceEvidence,
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioShotScriptService(prisma as any);
+
+    await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
+      /ShotScript text quality gate failed[\s\S]*location_binding_rate 0%\/100%/
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks ShotScript generation when placeholder summary text leaks into shots', async () => {
+    const sourceEvidence = [1, 2, 3, 4].map(
+      (index) =>
+        `scene-candidate:chapter-1:scene-candidate:${index} | confidence:high | sourceBlocks:${index} | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:${index} | actionBlocks:${index} | text:旧摘要：薛知盈说：“第 ${index} 个秘密不能暴露。”`
+    );
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集：占位泄漏',
+                  status: 'done',
+                  keyCharacters: ['薛知盈', '王嬷嬷'],
+                  keyLocations: ['静水院'],
+                  sourceEvidence,
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioShotScriptService(prisma as any);
+
+    await expect(service.generateShotScripts('project-1', 'org-1')).rejects.toThrow(
+      /ShotScript text quality gate failed[\s\S]*placeholder_text_in_shots/
     );
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

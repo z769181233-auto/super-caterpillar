@@ -22,6 +22,11 @@ const SHOT_SIZES = ['大全景', '中景', '近景', '特写'];
 const CAMERA_MOVEMENTS = ['固定镜头', '缓慢推进', '横移跟拍', '轻微推近'];
 const EXPRESSIONS = ['克制', '警觉', '犹豫', '决断'];
 const POSITIONS = ['画面前景', '画面中景', '侧身入画', '门窗边缘'];
+const MIN_TEXT_GATE_SHOTS = 4;
+const MIN_DIALOGUE_EXTRACTION_RATE = 0.5;
+const MIN_CHARACTER_BINDING_RATE = 1;
+const MIN_LOCATION_BINDING_RATE = 1;
+const PLACEHOLDER_TEXT_PATTERN = /待编剧精修|旧摘要|未生成|待识别|待定场景/;
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -304,6 +309,105 @@ function buildDialogue(input: {
   ];
 }
 
+function formatRate(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function hasExtractedDialogue(shot: ShotScriptDTO): boolean {
+  return shot.dialogue.some((item) => {
+    const text = item.text.trim();
+    return Boolean(text && !text.startsWith('围绕“') && !PLACEHOLDER_TEXT_PATTERN.test(text));
+  });
+}
+
+function shotTextPayload(shot: ShotScriptDTO): string {
+  return [
+    shot.action,
+    shot.shot_size,
+    shot.camera_movement,
+    shot.dialogue.map((item) => item.text).join('\n'),
+    shot.voiceover || '',
+    shot.sound_design.join('\n'),
+    shot.lighting,
+    shot.emotion,
+    shot.visual_goal,
+    shot.plot_function,
+    shot.storyboard_prompt,
+    shot.video_prompt,
+  ].join('\n');
+}
+
+function validateShotScriptTextQuality(shots: ShotScriptDTO[]): void {
+  const reasons: string[] = [];
+  if (shots.length < MIN_TEXT_GATE_SHOTS) {
+    reasons.push(`shot_count ${shots.length}/${MIN_TEXT_GATE_SHOTS}`);
+  }
+
+  const dialogueExtractionRate =
+    shots.length > 0 ? shots.filter((shot) => hasExtractedDialogue(shot)).length / shots.length : 0;
+  if (dialogueExtractionRate < MIN_DIALOGUE_EXTRACTION_RATE) {
+    reasons.push(
+      `dialogue_extraction_rate ${formatRate(dialogueExtractionRate)}/${formatRate(MIN_DIALOGUE_EXTRACTION_RATE)}`
+    );
+  }
+
+  const characterBindingRate =
+    shots.length > 0
+      ? shots.filter(
+          (shot) =>
+            shot.characters.length > 0 &&
+            shot.characters.every(
+              (character) =>
+                character.character_id &&
+                character.character_name &&
+                !PLACEHOLDER_TEXT_PATTERN.test(character.character_name)
+            )
+        ).length / shots.length
+      : 0;
+  if (characterBindingRate < MIN_CHARACTER_BINDING_RATE) {
+    reasons.push(
+      `character_binding_rate ${formatRate(characterBindingRate)}/${formatRate(MIN_CHARACTER_BINDING_RATE)}`
+    );
+  }
+
+  const locationBindingRate =
+    shots.length > 0
+      ? shots.filter((shot) => Boolean(shot.location_id && shot.scene_id)).length / shots.length
+      : 0;
+  if (locationBindingRate < MIN_LOCATION_BINDING_RATE) {
+    reasons.push(
+      `location_binding_rate ${formatRate(locationBindingRate)}/${formatRate(MIN_LOCATION_BINDING_RATE)}`
+    );
+  }
+
+  const evidenceBindingRate =
+    shots.length > 0
+      ? shots.filter((shot) => shot.source_evidence.some((item) => item.includes('scene-candidate:'))).length /
+        shots.length
+      : 0;
+  if (evidenceBindingRate < 1) {
+    reasons.push(`evidence_binding_rate ${formatRate(evidenceBindingRate)}/100%`);
+  }
+
+  const placeholderShots = shots
+    .filter((shot) => PLACEHOLDER_TEXT_PATTERN.test(shotTextPayload(shot)))
+    .map((shot) => shot.shot_no);
+  if (placeholderShots.length > 0) {
+    reasons.push(`placeholder_text_in_shots ${placeholderShots.join(',')}`);
+  }
+
+  if (reasons.length > 0) {
+    throw new BadRequestException(
+      [
+        'ShotScript text quality gate failed.',
+        'Required quality: at least 4 shots, dialogue extraction rate >= 50%, character/location/evidence binding = 100%, and no placeholder summary text.',
+        `Quality problems: ${reasons.join('; ')}.`,
+        'Next action: improve sceneCandidates, dialogue/action extraction, CharacterBible, and LocationBible before regenerating ShotScript.',
+      ].join('\n')
+    );
+  }
+}
+
 function buildShotScripts(input: {
   projectId: string;
   directorScript: JsonRecord;
@@ -328,7 +432,7 @@ function buildShotScripts(input: {
   const defaultLighting = asString(input.directorScript.visualTone) || '以自然光与环境阴影塑造情绪压力';
   const soundDesign = [asString(input.directorScript.soundDesign) || '环境底噪', '衣料与脚步细节'];
 
-  return finalBeats.map((evidenceItem, index) => {
+  const shots: ShotScriptDTO[] = finalBeats.map((evidenceItem, index) => {
     const beat = sceneCandidateEvidenceSummary(evidenceItem);
     const shotNo = index + 1;
     const shotSize = SHOT_SIZES[index % SHOT_SIZES.length];
@@ -411,6 +515,8 @@ function buildShotScripts(input: {
       missing_reason: null,
     };
   });
+  validateShotScriptTextQuality(shots);
+  return shots;
 }
 
 @Injectable()
