@@ -44,6 +44,25 @@ export interface ProductionLegacyDataSummaryDTO {
   sceneCandidateCoverage?: ProductionSceneCandidateCoverageDTO;
 }
 
+export interface ShotScriptQualityGateDTO {
+  status: 'passed' | 'blocked' | 'prerequisite_missing' | 'not_evaluated';
+  source: 'studio_shot_scripts' | 'studio_director_scripts' | 'none';
+  candidateShotCount: number;
+  minShotCount: number;
+  dialogueExtractionRate: number | null;
+  minDialogueExtractionRate: number;
+  characterBindingRate: number | null;
+  minCharacterBindingRate: number;
+  locationBindingRate: number | null;
+  minLocationBindingRate: number;
+  evidenceBindingRate: number | null;
+  minEvidenceBindingRate: number;
+  hasPlaceholderText: boolean;
+  reasons: string[];
+  nextAction: string | null;
+  checkedAt: string | null;
+}
+
 export interface ProductionStateDTO {
   projectId: string;
   currentStage: ProductionStage;
@@ -51,6 +70,7 @@ export interface ProductionStateDTO {
   missingCapabilities: string[];
   nextActions: string[];
   legacyDataSummary: ProductionLegacyDataSummaryDTO;
+  shotScriptQualityGate: ShotScriptQualityGateDTO;
   riskFlags: string[];
 }
 

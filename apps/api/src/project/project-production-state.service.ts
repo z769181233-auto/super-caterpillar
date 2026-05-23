@@ -5,10 +5,12 @@ import {
   ProductionStage,
   ProductionStageDTO,
   ProductionStateDTO,
+  ShotScriptQualityGateDTO,
   StorySourceCompatibilityDTO,
   StudioCapabilityStatus,
 } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
+import { filterStableSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   imported: '已导入故事来源',
@@ -48,6 +50,13 @@ const STAGE_ORDER: ProductionStage[] = [
   'failed',
 ];
 
+const MIN_SHOT_SCRIPT_GATE_SHOTS = 4;
+const MIN_SHOT_SCRIPT_DIALOGUE_RATE = 0.5;
+const MIN_SHOT_SCRIPT_CHARACTER_RATE = 1;
+const MIN_SHOT_SCRIPT_LOCATION_RATE = 1;
+const MIN_SHOT_SCRIPT_EVIDENCE_RATE = 1;
+const SHOT_SCRIPT_PLACEHOLDER_PATTERN = /待编剧精修|旧摘要|未生成|待识别|待定场景/;
+
 function stage(
   key: ProductionStage,
   status: StudioCapabilityStatus,
@@ -83,6 +92,158 @@ function stringList(value: unknown): string[] {
   return asArray(value)
     .map((item) => (typeof item === 'string' ? item.trim() : null))
     .filter(Boolean) as string[];
+}
+
+function formatRate(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
+function extractQuotedDialogue(text: string): string | null {
+  const quoted = text.match(/[“「](.+?)[”」]/);
+  if (quoted?.[1]) return quoted[1].trim();
+  const colonDialogue = text.match(/[：:]\s*([^。！？；;]+)/);
+  if (colonDialogue?.[1]) return colonDialogue[1].trim();
+  return null;
+}
+
+function buildShotScriptQualityGate(input: {
+  hasStudioShotScripts: boolean;
+  shotScriptCount: number;
+  studioDirectorScripts: unknown;
+  checkedAt: string;
+}): ShotScriptQualityGateDTO {
+  if (input.hasStudioShotScripts) {
+    return {
+      status: 'passed',
+      source: 'studio_shot_scripts',
+      candidateShotCount: input.shotScriptCount,
+      minShotCount: MIN_SHOT_SCRIPT_GATE_SHOTS,
+      dialogueExtractionRate: null,
+      minDialogueExtractionRate: MIN_SHOT_SCRIPT_DIALOGUE_RATE,
+      characterBindingRate: null,
+      minCharacterBindingRate: MIN_SHOT_SCRIPT_CHARACTER_RATE,
+      locationBindingRate: null,
+      minLocationBindingRate: MIN_SHOT_SCRIPT_LOCATION_RATE,
+      evidenceBindingRate: null,
+      minEvidenceBindingRate: MIN_SHOT_SCRIPT_EVIDENCE_RATE,
+      hasPlaceholderText: false,
+      reasons: [],
+      nextAction: null,
+      checkedAt: input.checkedAt,
+    };
+  }
+
+  const directorScripts = asArray(input.studioDirectorScripts)
+    .map((item) => asRecord(item))
+    .filter((item) => String(item.status || '').toLowerCase() === 'done');
+
+  if (directorScripts.length === 0) {
+    return {
+      status: 'prerequisite_missing',
+      source: 'none',
+      candidateShotCount: 0,
+      minShotCount: MIN_SHOT_SCRIPT_GATE_SHOTS,
+      dialogueExtractionRate: null,
+      minDialogueExtractionRate: MIN_SHOT_SCRIPT_DIALOGUE_RATE,
+      characterBindingRate: null,
+      minCharacterBindingRate: MIN_SHOT_SCRIPT_CHARACTER_RATE,
+      locationBindingRate: null,
+      minLocationBindingRate: MIN_SHOT_SCRIPT_LOCATION_RATE,
+      evidenceBindingRate: null,
+      minEvidenceBindingRate: MIN_SHOT_SCRIPT_EVIDENCE_RATE,
+      hasPlaceholderText: false,
+      reasons: ['DirectorScript 未生成，无法预检镜头台本文本质量。'],
+      nextAction: '先生成 DirectorScript，再预检 ShotScript 文本质量门槛。',
+      checkedAt: input.checkedAt,
+    };
+  }
+
+  const candidateInputs = directorScripts.flatMap((directorScript) => {
+    const stableEvidence = filterStableSceneCandidateEvidence(stringList(directorScript.sourceEvidence));
+    const fallbackLocations = stringList(directorScript.keyLocations);
+    return stableEvidence.slice(0, 8).map((evidence, index) => ({
+      evidence,
+      fallbackLocation: fallbackLocations[index % Math.max(fallbackLocations.length, 1)] || null,
+    }));
+  });
+  const candidateShotCount = candidateInputs.length;
+  const dialogueExtractionRate =
+    candidateShotCount > 0
+      ? candidateInputs.filter((item) => Boolean(extractQuotedDialogue(item.evidence.text))).length /
+        candidateShotCount
+      : 0;
+  const characterBindingRate =
+    candidateShotCount > 0
+      ? candidateInputs.filter((item) => item.evidence.characters.length > 0).length / candidateShotCount
+      : 0;
+  const locationBindingRate =
+    candidateShotCount > 0
+      ? candidateInputs.filter((item) => Boolean(item.evidence.location || item.fallbackLocation)).length /
+        candidateShotCount
+      : 0;
+  const evidenceBindingRate =
+    candidateShotCount > 0
+      ? candidateInputs.filter((item) => Boolean(item.evidence.candidateId)).length / candidateShotCount
+      : 0;
+  const hasPlaceholderText = directorScripts.some((directorScript) =>
+    SHOT_SCRIPT_PLACEHOLDER_PATTERN.test(
+      [
+        ...stringList(directorScript.sourceEvidence),
+        ...stringList(directorScript.sceneBeats),
+        ...stringList(directorScript.beats),
+      ].join('\n')
+    )
+  );
+
+  const reasons: string[] = [];
+  if (candidateShotCount < MIN_SHOT_SCRIPT_GATE_SHOTS) {
+    reasons.push(`镜头候选数不足：${candidateShotCount}/${MIN_SHOT_SCRIPT_GATE_SHOTS}`);
+  }
+  if (dialogueExtractionRate < MIN_SHOT_SCRIPT_DIALOGUE_RATE) {
+    reasons.push(
+      `对白抽取率不足：${formatRate(dialogueExtractionRate)}/${formatRate(MIN_SHOT_SCRIPT_DIALOGUE_RATE)}`
+    );
+  }
+  if (characterBindingRate < MIN_SHOT_SCRIPT_CHARACTER_RATE) {
+    reasons.push(
+      `角色绑定率不足：${formatRate(characterBindingRate)}/${formatRate(MIN_SHOT_SCRIPT_CHARACTER_RATE)}`
+    );
+  }
+  if (locationBindingRate < MIN_SHOT_SCRIPT_LOCATION_RATE) {
+    reasons.push(
+      `场景绑定率不足：${formatRate(locationBindingRate)}/${formatRate(MIN_SHOT_SCRIPT_LOCATION_RATE)}`
+    );
+  }
+  if (evidenceBindingRate < MIN_SHOT_SCRIPT_EVIDENCE_RATE) {
+    reasons.push(
+      `证据绑定率不足：${formatRate(evidenceBindingRate)}/${formatRate(MIN_SHOT_SCRIPT_EVIDENCE_RATE)}`
+    );
+  }
+  if (hasPlaceholderText) {
+    reasons.push('存在占位或旧摘要文本，不能作为正式镜头台本输入。');
+  }
+
+  return {
+    status: reasons.length > 0 ? 'blocked' : 'passed',
+    source: 'studio_director_scripts',
+    candidateShotCount,
+    minShotCount: MIN_SHOT_SCRIPT_GATE_SHOTS,
+    dialogueExtractionRate,
+    minDialogueExtractionRate: MIN_SHOT_SCRIPT_DIALOGUE_RATE,
+    characterBindingRate,
+    minCharacterBindingRate: MIN_SHOT_SCRIPT_CHARACTER_RATE,
+    locationBindingRate,
+    minLocationBindingRate: MIN_SHOT_SCRIPT_LOCATION_RATE,
+    evidenceBindingRate,
+    minEvidenceBindingRate: MIN_SHOT_SCRIPT_EVIDENCE_RATE,
+    hasPlaceholderText,
+    reasons,
+    nextAction:
+      reasons.length > 0
+        ? '修复 sceneCandidates、对白/动作块抽取、CharacterBible 和 LocationBible 后，再重新生成 ShotScript。'
+        : '可以尝试生成 ShotScript；本预检不写入镜头台本。',
+    checkedAt: input.checkedAt,
+  };
 }
 
 function isUsableSceneCandidate(value: unknown): boolean {
@@ -432,6 +593,12 @@ export class ProjectProductionStateService {
     const hasStudioDirectorScripts = directorScriptCount > 0;
     const shotScriptCount = Array.isArray(studioShotScripts) ? studioShotScripts.length : 0;
     const hasStudioShotScripts = shotScriptCount > 0;
+    const shotScriptQualityGate = buildShotScriptQualityGate({
+      hasStudioShotScripts,
+      shotScriptCount,
+      studioDirectorScripts,
+      checkedAt: new Date().toISOString(),
+    });
     const storyboardAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.length
       : 0;
@@ -562,13 +729,23 @@ export class ProjectProductionStateService {
       ),
       stage(
         'shot_script_ready',
-        hasStudioShotScripts ? 'done' : 'missing',
+        hasStudioShotScripts
+          ? 'done'
+          : shotScriptQualityGate.status === 'blocked'
+            ? 'blocked'
+            : 'missing',
         hasStudioShotScripts
           ? [`Project.metadata.animationStudio.shotScripts:${shotScriptCount}`]
+          : shotScriptQualityGate.status === 'blocked'
+            ? shotScriptQualityGate.reasons
           : hasLegacyStructure
             ? [`旧 Shot 数量：${shotCount}`]
             : [],
-        hasStudioShotScripts ? null : '当前没有标准 ShotScript；不能把旧摘要伪装成镜头台本',
+        hasStudioShotScripts
+          ? null
+          : shotScriptQualityGate.status === 'blocked'
+            ? `镜头台本文本质量门槛未通过：${shotScriptQualityGate.reasons.join('；')}`
+            : '当前没有标准 ShotScript；不能把旧摘要伪装成镜头台本',
         hasStudioShotScripts ? '进入分镜图生成阶段' : 'Phase 2F 生成标准镜头台本'
       ),
       stage(
@@ -668,6 +845,7 @@ export class ProjectProductionStateService {
       videoJobCount,
       qualityScoreCount,
       sceneCandidateCoverage,
+      shotScriptQualityGate,
     });
 
     return {
@@ -677,6 +855,7 @@ export class ProjectProductionStateService {
       missingCapabilities,
       nextActions,
       legacyDataSummary,
+      shotScriptQualityGate,
       riskFlags,
     };
   }
@@ -713,6 +892,7 @@ export class ProjectProductionStateService {
     videoJobCount: number;
     qualityScoreCount: number;
     sceneCandidateCoverage: ProductionSceneCandidateCoverageDTO;
+    shotScriptQualityGate: ShotScriptQualityGateDTO;
   }): string[] {
     const flags: string[] = [];
 
@@ -745,6 +925,11 @@ export class ProjectProductionStateService {
         : '';
       flags.push(
         `小说分析质量不足：${input.sceneCandidateCoverage.blockerReason}${missing} ${input.sceneCandidateCoverage.nextAction}`
+      );
+    }
+    if (input.shotScriptQualityGate.status === 'blocked') {
+      flags.push(
+        `镜头台本文本质量不足：${input.shotScriptQualityGate.reasons.join('；')}。${input.shotScriptQualityGate.nextAction}`
       );
     }
 

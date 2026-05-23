@@ -360,11 +360,132 @@ describe('ProjectProductionStateService', () => {
       'Project.metadata.animationStudio.directorScripts:1'
     );
     expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
-      'missing'
+      'blocked'
     );
+    expect(state.shotScriptQualityGate).toEqual(
+      expect.objectContaining({
+        status: 'blocked',
+        source: 'studio_director_scripts',
+        candidateShotCount: 0,
+      })
+    );
+    expect(state.riskFlags.join('\n')).toContain('镜头台本文本质量不足');
     expect(state.riskFlags.join('\n')).toContain(
       'StoryBible、CharacterBible、LocationBible、EpisodePlan 与 DirectorScript 已生成'
     );
+  });
+
+  it('surfaces ShotScript quality gate blockers from DirectorScript evidence', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: { id: 'story-bible-1', status: 'done' },
+              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
+              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集',
+                  status: 'done',
+                  keyLocations: ['静水院'],
+                  sourceEvidence: [
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈说：“不能被发现。”',
+                    'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:薛知盈 | dialogueBlocks:2 | actionBlocks:2 | text:旧摘要：薛知盈藏起书页。',
+                  ],
+                },
+              ],
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.shotScriptQualityGate).toEqual(
+      expect.objectContaining({
+        status: 'blocked',
+        source: 'studio_director_scripts',
+        candidateShotCount: 2,
+        minShotCount: 4,
+        dialogueExtractionRate: 1,
+        characterBindingRate: 1,
+        locationBindingRate: 1,
+        evidenceBindingRate: 1,
+        hasPlaceholderText: true,
+      })
+    );
+    expect(state.shotScriptQualityGate.reasons).toEqual(
+      expect.arrayContaining([
+        '镜头候选数不足：2/4',
+        '存在占位或旧摘要文本，不能作为正式镜头台本输入。',
+      ])
+    );
+    expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.missingReason).toContain(
+      '镜头台本文本质量门槛未通过'
+    );
+    expect(state.riskFlags.join('\n')).toContain('镜头台本文本质量不足');
+  });
+
+  it('marks ShotScript quality gate passed before generation when DirectorScript evidence is complete', async () => {
+    const sourceEvidence = [1, 2, 3, 4].map(
+      (index) =>
+        `scene-candidate:chapter-1:scene-candidate:${index} | confidence:high | sourceBlocks:${index} | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:${index} | actionBlocks:${index} | text:薛知盈说：“第 ${index} 个秘密不能暴露。”`
+    );
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: { id: 'story-bible-1', status: 'done' },
+              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
+              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
+              directorScripts: [
+                {
+                  id: 'director-script-1',
+                  episodeId: 'episode-1',
+                  title: '第一集',
+                  status: 'done',
+                  keyLocations: ['静水院'],
+                  sourceEvidence,
+                },
+              ],
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.shotScriptQualityGate).toEqual(
+      expect.objectContaining({
+        status: 'passed',
+        source: 'studio_director_scripts',
+        candidateShotCount: 4,
+        reasons: [],
+      })
+    );
+    expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
+      'missing'
+    );
+    expect(state.riskFlags.join('\n')).not.toContain('镜头台本文本质量不足');
   });
 
   it('summarizes legacy episode scene and shot counts without treating them as ShotScript', async () => {
