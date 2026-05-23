@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildApiUrl, extractForwardHeaders } from '@/lib/server/novel-import-proxy';
+import { buildApiUrl, extractForwardHeaders, forwardSetCookies } from '@/lib/server/novel-import-proxy';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -19,9 +19,6 @@ export async function POST(request: NextRequest) {
     status: response.status,
     headers: { 'content-type': response.headers.get('content-type') || 'application/json' },
   });
-  const setCookie = response.headers.get('set-cookie');
-  if (setCookie) {
-    next.headers.set('set-cookie', setCookie);
-  }
+  forwardSetCookies(response.headers, next.headers);
   return next;
 }

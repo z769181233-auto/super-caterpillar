@@ -15,16 +15,24 @@ export class CE03LocalAdapter implements EngineAdapter {
     return engineKey === 'ce03_visual_density';
   }
 
+  private requireProjectId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[CE03LocalAdapter] Missing context.projectId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     this.logger.log(`Invoking CE03 Local Adapter for jobType=${input.jobType}`);
 
     try {
+      const projectId = this.requireProjectId(input.context?.projectId);
       // Transform common EngineInvokeInput to specific CE03Input
       const engineInput = {
         structured_text: input.payload?.structured_text || '',
         context: {
           ...input.context,
-          projectId: input.context?.projectId || 'unknown',
+          projectId,
         },
       };
 

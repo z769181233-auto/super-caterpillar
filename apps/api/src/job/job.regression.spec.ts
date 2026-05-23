@@ -57,7 +57,7 @@ describe('job regressions', () => {
     let service: JobUpdateOpsService;
 
     beforeEach(() => {
-      service = new JobUpdateOpsService(noop, noop, noop, noop, noop, { emit: jest.fn() } as any);
+      service = new JobUpdateOpsService(noop, noop, noop, { emit: jest.fn() } as any);
     });
 
     it('normalizes pg fallback verification flag to camelCase', () => {

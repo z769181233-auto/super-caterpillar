@@ -23,21 +23,24 @@ export class QC03IdentityContinuityAdapter extends QcBaseEngine implements Engin
     input: EngineInvokeInput
   ): Promise<{ status: 'PASS' | 'FAIL' | 'WARN'; reportUrl?: string; meta?: any; metrics?: any }> {
     // QC03: Identity Continuity - Use deterministic score check
-    const characterId = payload.characterId || 'unknown';
+    const characterId =
+      typeof payload.characterId === 'string' && payload.characterId.trim().length > 0
+        ? payload.characterId
+        : null;
     const identityScore = payload.identityScore || payload.score || 0;
 
     // Threshold-based check (simulating ce23_identity_consistency)
     const threshold = 0.85;
     const reasons: string[] = [];
 
-    if (!characterId || characterId === 'unknown') {
+    if (!characterId) {
       reasons.push('Missing characterId');
     }
     if (identityScore < threshold) {
       reasons.push(`Identity score ${identityScore} below threshold ${threshold}`);
     }
 
-    const passed = characterId && characterId !== 'unknown' && identityScore >= threshold;
+    const passed = Boolean(characterId) && identityScore >= threshold;
     const score = passed ? 95 : identityScore * 100;
 
     const hash = createHash('sha256')

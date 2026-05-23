@@ -124,16 +124,16 @@ export interface ProjectJobsSummaryDTO {
 export interface ProjectQualitySummaryDTO {
   structure: 'OK' | 'WARN' | 'FAIL';
   semantic: 'OK' | 'WARN' | 'FAIL';
-  visual: 'OK' | 'WARN' | 'FAIL';
+  visual: 'OK' | 'WARN' | 'FAIL' | 'UNKNOWN';
   lastReport?: { id: string; createdAt: string; href: string };
   topProblems?: Array<{ code: string; title: string; count: number; href?: string }>;
 }
 
 export interface ProjectCostSummaryDTO {
-  total: { money?: number; tokens?: number; gpuSec?: number };
-  last24h?: { money?: number; tokens?: number; gpuSec?: number };
-  last1h?: { money?: number; tokens?: number; gpuSec?: number };
-  currentRunEstimate?: { money?: number; tokens?: number; gpuSec?: number };
+  total: { money?: number | null; tokens?: number | null; gpuSec?: number | null };
+  last24h?: { money?: number | null; tokens?: number | null; gpuSec?: number | null };
+  last1h?: { money?: number | null; tokens?: number | null; gpuSec?: number | null };
+  currentRunEstimate?: { money?: number | null; tokens?: number | null; gpuSec?: number | null };
   alert?: { level: 'OK' | 'WARN' | 'FAIL'; reason?: string };
 }
 

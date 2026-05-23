@@ -15,6 +15,13 @@ type CE03VisualDensityOutput = {
   };
 };
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * CE02 Visual Density Processor (Facade over CE03 core)
  * 遵循 Bible V3.0 协议：
@@ -31,7 +38,7 @@ export async function processCE02VisualDensityJob(
   try {
     const payload = job.payload || {};
     const text = payload.text || payload.structured_text || '';
-    const traceId = payload.traceId || job.id;
+    const traceId = requireNonEmptyString(payload.traceId ?? job.traceId, 'CE02', 'traceId');
     const projectId = job.projectId || payload.projectId;
     const orgId = job.organizationId;
 
@@ -129,7 +136,7 @@ export async function processCE02VisualDensityJob(
       userId: project.ownerId,
       orgId,
       engineKey: 'ce02_visual_density',
-      runId: payload.pipelineRunId as string,
+      runId: requireNonEmptyString(payload.pipelineRunId, 'CE02', 'pipelineRunId'),
       billingUsage,
       cost: 0,
     });

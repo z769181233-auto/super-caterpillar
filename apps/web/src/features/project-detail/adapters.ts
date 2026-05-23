@@ -12,6 +12,10 @@ export interface ProjectDetailView {
     buildsCount: number;
     structuralStatus: 'Audited' | 'Pending' | 'Unknown';
     usage: string;
+    novelAnalysisStatus: string;
+    latestNovelJobId: string;
+    latestNovelJobType: string;
+    latestNovelJobUpdatedAt: string;
   };
   audit: {
     fingerprintStatus: 'AUDITED' | 'SEALED' | 'UNKNOWN';
@@ -81,6 +85,10 @@ export function adaptProjectDetail(raw: RawProjectDetail): ProjectDetailView {
       buildsCount: raw?.stats?.buildsCount ?? 0,
       structuralStatus: raw?.stats?.structuralStatus ?? 'Unknown',
       usage: raw?.stats?.usage ?? '--',
+      novelAnalysisStatus: raw?.stats?.novelAnalysisStatus ?? 'NO_TASK',
+      latestNovelJobId: raw?.stats?.latestNovelJobId ?? '--',
+      latestNovelJobType: raw?.stats?.latestNovelJobType ?? '--',
+      latestNovelJobUpdatedAt: raw?.stats?.latestNovelJobUpdatedAt ?? '--',
     },
     audit: {
       fingerprintStatus: raw?.audit?.fingerprintStatus ?? 'UNKNOWN',

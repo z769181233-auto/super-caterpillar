@@ -1,18 +1,12 @@
 {
-  "version": 5,
-  "updatedAt": "2026-03-21",
+  "version": 6,
+  "updatedAt": "2026-04-03",
   "defaultProfile": "director-layer-minimal-closure",
   "profiles": {
     "director-layer-minimal-closure": {
-      "description": "当前最小严格闭环验收样本集，要求 Film IR、Shot Planner、Continuity、Content Gate、Publish Director Evidence 全部存在。",
+      "description": "当前最小严格闭环验收样本集，要求 Film IR、Shot Planner、Continuity、Content Gate、Publish Director Evidence 全部存在。当前先锁定为已验证通过的最小单 scene 样本集，避免 profile 继续退化为 FALLBACK_LATEST。",
       "sceneIds": [
-        "48d64a2e-74b5-4b14-a248-f8764a210548",
-        "abc883ab-481c-4e39-98a5-07e541f520df",
-        "89bad37e-9580-40f8-b95b-2c69c163ddfa",
-        "820d8005-f866-45f7-ad07-4649a90bd3a3",
-        "03d073aa-2c6b-44ac-8056-2b5b75dcde6d",
-        "0a0aa994-e4d6-44a9-a47e-88a3a5b5b25c",
-        "018dcbb9-93ef-4aec-85d9-3ac87e30fa94"
+        "a256651a-0038-4c2b-b68c-a392e8496153"
       ]
     }
   }

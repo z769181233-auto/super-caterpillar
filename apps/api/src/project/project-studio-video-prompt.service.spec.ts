@@ -1,0 +1,143 @@
+import { BadRequestException } from '@nestjs/common';
+import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
+
+function createPrismaMock(overrides: Record<string, any> = {}) {
+  return {
+    project: {
+      findFirst: jest.fn().mockResolvedValue({
+        id: 'project-1',
+        metadata: {},
+      }),
+      update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+    },
+    ...overrides,
+  };
+}
+
+describe('ProjectStudioVideoPromptService', () => {
+  it('returns a missing VideoPrompt DTO when metadata has no video prompts', async () => {
+    const prisma = createPrismaMock();
+    const service = new ProjectStudioVideoPromptService(prisma as any);
+
+    const prompts = await service.getVideoPrompts('project-1', 'org-1');
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0].status).toBe('missing');
+    expect(prompts[0].prompt).toBeNull();
+    expect(prompts[0].missingReason).toBe('视频提示词未生成');
+  });
+
+  it('generates deterministic VideoPrompt text output from ShotScript and StoryboardAsset metadata', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              shotScripts: [
+                {
+                  shot_id: 'shot-script-1',
+                  episode_id: 'episode-1',
+                  shot_no: 1,
+                  scene_id: 'episode-1:scene-1',
+                  location_id: 'loc-jingshui',
+                  duration_sec: 5,
+                  characters: [
+                    { character_id: 'char-xue', character_name: '薛知盈' },
+                    { character_id: 'char-wang', character_name: '王嬷嬷' },
+                  ],
+                  dialogue: [{ character_name: '王嬷嬷', text: '大公子已回府。' }],
+                  sound_design: ['纸页翻动', '脚步逼近'],
+                  action: '薛知盈藏起律法书，王嬷嬷推门而入。',
+                  shot_size: '近景',
+                  camera_movement: '缓慢推进',
+                  lighting: '春日柔光与室内暗影形成压迫反差',
+                  emotion: '压力上升',
+                  visual_goal: '呈现秘密即将暴露的压力。',
+                  continuity_notes: ['沿用 CharacterBible 的服装设定。'],
+                  status: 'ready',
+                },
+              ],
+              storyboardAssets: [
+                {
+                  id: 'storyboard-asset-1',
+                  shotId: 'shot-script-1',
+                  status: 'done',
+                  prompt: '近景，缓慢推进，薛知盈藏书。',
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioVideoPromptService(prisma as any);
+
+    const prompts = await service.generateVideoPrompts('project-1', 'org-1');
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toEqual(
+      expect.objectContaining({
+        id: 'project-metadata:project-1:video-prompt:shot-script-1',
+        projectId: 'project-1',
+        shotId: 'shot-script-1',
+        episodeId: 'episode-1',
+        shotNo: 1,
+        sceneId: 'episode-1:scene-1',
+        status: 'done',
+        durationSec: 5,
+        aspectRatio: '16:9',
+        cameraLanguage: '近景 / 缓慢推进',
+        sourceShotScriptId: 'shot-script-1',
+        sourceStoryboardAssetId: 'storyboard-asset-1',
+        version: 'studio-video-prompt-v1',
+      })
+    );
+    expect(prompts[0].prompt).toContain('本阶段只输出视频提示词，不创建视频任务');
+    expect(prompts[0].negativePrompt).toContain('角色变脸');
+    expect(prompts[0].dialogueCue).toContain('王嬷嬷');
+    expect(prompts[0].characters).toEqual(expect.arrayContaining(['薛知盈', '王嬷嬷']));
+    expect(prompts[0].continuityNotes.join('\n')).toContain('未创建 VideoJob');
+    expect(prisma.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'project-1' },
+        data: {
+          metadata: expect.objectContaining({
+            animationStudio: expect.objectContaining({
+              videoPrompts: expect.arrayContaining([
+                expect.objectContaining({
+                  shotId: 'shot-script-1',
+                  status: 'done',
+                  version: 'studio-video-prompt-v1',
+                }),
+              ]),
+            }),
+          }),
+        },
+      })
+    );
+  });
+
+  it('does not generate VideoPrompt without a real Studio ShotScript', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              shotScripts: [{ shot_id: 'missing', status: 'missing' }],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioVideoPromptService(prisma as any);
+
+    await expect(service.generateVideoPrompts('project-1', 'org-1')).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+});

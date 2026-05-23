@@ -27,10 +27,12 @@ async function main() {
 
   // 2) 确保有组织
   const orgName = 'Dev Org';
-  let org = await prisma.organization.findFirst({
+  const orgs = await prisma.organization.findMany({
     where: { name: orgName },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let org = orgs[0] ?? null;
   if (!org) {
     org = await prisma.organization.create({
       data: {
@@ -57,10 +59,12 @@ async function main() {
 
   // 4) 确保项目
   const projectName = 'Dev Project - Novel Analysis';
-  let project = await prisma.project.findFirst({
+  const projects = await prisma.project.findMany({
     where: { name: projectName, organizationId: org.id },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let project = projects[0] ?? null;
   if (!project) {
     project = await prisma.project.create({
       data: {
@@ -74,10 +78,12 @@ async function main() {
   }
 
   // 5) Season / Episode / Scene / Shot（若不存在则创建最小结构）
-  let season = await prisma.season.findFirst({
+  const seasons = await prisma.season.findMany({
     where: { projectId: project.id },
-    orderBy: { index: 'asc' },
+    orderBy: [{ index: 'asc' }, { id: 'asc' }],
+    take: 1,
   });
+  let season = seasons[0] ?? null;
   if (!season) {
     season = await prisma.season.create({
       data: {
@@ -90,10 +96,12 @@ async function main() {
     });
   }
 
-  let episode = await prisma.episode.findFirst({
+  const episodes = await prisma.episode.findMany({
     where: { seasonId: season.id },
-    orderBy: { index: 'asc' },
+    orderBy: [{ index: 'asc' }, { id: 'asc' }],
+    take: 1,
   });
+  let episode = episodes[0] ?? null;
   if (!episode) {
     episode = await prisma.episode.create({
       data: {
@@ -106,10 +114,12 @@ async function main() {
     });
   }
 
-  let scene = await prisma.scene.findFirst({
+  const scenes = await prisma.scene.findMany({
     where: { episodeId: episode.id },
-    orderBy: { index: 'asc' },
+    orderBy: [{ index: 'asc' }, { id: 'asc' }],
+    take: 1,
   });
+  let scene = scenes[0] ?? null;
   if (!scene) {
     scene = await prisma.scene.create({
       data: {
@@ -121,10 +131,12 @@ async function main() {
     });
   }
 
-  let shot = await prisma.shot.findFirst({
+  const shots = await prisma.shot.findMany({
     where: { sceneId: scene.id },
-    orderBy: { index: 'asc' },
+    orderBy: [{ index: 'asc' }, { id: 'asc' }],
+    take: 1,
   });
+  let shot = shots[0] ?? null;
   if (!shot) {
     shot = await prisma.shot.create({
       data: {

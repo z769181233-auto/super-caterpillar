@@ -1,5 +1,4 @@
 import React, { ReactNode } from 'react';
-import { Nav } from '@/app/[locale]/Nav';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -15,7 +14,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         flexDirection: 'column',
       }}
     >
-      <Nav />
       <main
         style={{
           flex: 1,

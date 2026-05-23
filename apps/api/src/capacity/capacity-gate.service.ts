@@ -4,7 +4,6 @@ import { Prisma } from 'database';
 import { JobStatus, JobType } from 'database';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -46,12 +45,8 @@ export class CapacityGateService {
     return isPrismaFallbackEligibleError(error);
   }
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowCapacityPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_CAPACITY_PG_FALLBACK === '1';
+    return process.env.FORCE_CAPACITY_PG_FALLBACK === '1';
   }
 
   private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -335,7 +330,7 @@ export class CapacityGateService {
       }
       if (!this.shouldAllowCapacityPgFallback()) {
         this.logger.error(
-          `[CapacityGate] Prisma getCapacityUsage degraded for ${organizationId}, but pg fallback is disabled outside CI/test/gate unless FORCE_CAPACITY_PG_FALLBACK=1`
+          `[CapacityGate] Prisma getCapacityUsage degraded for ${organizationId}, but pg fallback is disabled unless FORCE_CAPACITY_PG_FALLBACK=1`
         );
         throw error;
       }

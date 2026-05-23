@@ -21,6 +21,17 @@ export class ApiKeyService {
     private readonly secretEncryptionService: SecretEncryptionService
   ) {}
 
+  private stripSensitiveFields<T extends Record<string, any>>(record: T | null | undefined) {
+    if (!record) {
+      return record ?? null;
+    }
+    const sanitized = { ...record };
+    delete sanitized.secretEnc;
+    delete sanitized.secretEncIv;
+    delete sanitized.secretEncTag;
+    return sanitized;
+  }
+
   /**
    * 生成 API Key
    * @returns { key: string, secret: string } - 返回公钥和密钥（密钥只显示一次）
@@ -45,32 +56,21 @@ export class ApiKeyService {
   async createApiKey(userId?: string, orgId?: string, name?: string) {
     const { key, secret } = this.generateApiKey();
 
-    // CE10 v2: 使用 AES-256-GCM 加密存储 secret
-    let secretEnc: string | undefined;
-    let secretEncIv: string | undefined;
-    let secretEncTag: string | undefined;
-    let secretVersion: number | undefined;
-    let secretHash: string | undefined;
+    if (!this.secretEncryptionService.isMasterKeyConfigured()) {
+      throw new BadRequestException('API_KEY_MASTER_KEY_B64 is required for API key creation.');
+    }
+
+    let secretEnc: string;
+    let secretEncIv: string;
+    let secretEncTag: string;
+    let secretVersion: number;
 
     try {
-      // CE10 v2: Always use encrypted storage even in dev/test to avoid plain text in DB
       const encrypted = this.secretEncryptionService.encryptSecret(secret);
       secretEnc = encrypted.enc;
       secretEncIv = encrypted.iv;
       secretEncTag = encrypted.tag;
       secretVersion = 1;
-
-      if (!this.secretEncryptionService.isMasterKeyConfigured()) {
-        const isProduction = process.env.NODE_ENV === 'production';
-        if (isProduction) {
-          throw new BadRequestException(
-            'API_KEY_MASTER_KEY_B64 is required in production environment.'
-          );
-        }
-        this.logger.warn(
-          'API_KEY_MASTER_KEY_B64 not configured. Using internally generated transient key for dev/test.'
-        );
-      }
     } catch (error: any) {
       this.logger.error(`Failed to secure API secret: ${error.message}`);
       throw new BadRequestException('Failed to secure API secret for storage.');
@@ -79,8 +79,7 @@ export class ApiKeyService {
     const apiKey = await (this.prisma as any).apiKey.create({
       data: {
         key,
-        secretHash, // 仅 dev/test fallback 使用
-        secretEnc, // 新字段（优先）
+        secretEnc,
         secretEncIv,
         secretEncTag,
         secretVersion,
@@ -98,26 +97,21 @@ export class ApiKeyService {
       secret, // 只返回一次，客户端应保存
     };
 
-    // 从返回结果中删除敏感字段（避免意外泄露）
-    delete (result as any).secretHash;
-    delete (result as any).secretEnc;
-    delete (result as any).secretEncIv;
-    delete (result as any).secretEncTag;
-
-    return result;
+    return this.stripSensitiveFields(result);
   }
 
   /**
    * 根据 key 查找 API Key 记录
    */
   async findByKey(key: string) {
-    return (this.prisma as any).apiKey.findUnique({
+    const record = await (this.prisma as any).apiKey.findUnique({
       where: { key },
       include: {
         ownerUser: true,
         ownerOrg: true,
       },
     });
+    return this.stripSensitiveFields(record);
   }
 
   /**
@@ -162,7 +156,7 @@ export class ApiKeyService {
       where.ownerOrgId = orgId;
     }
 
-    return (this.prisma as any).apiKey.findMany({
+    const records = await (this.prisma as any).apiKey.findMany({
       where,
       include: {
         ownerUser: {
@@ -174,5 +168,6 @@ export class ApiKeyService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return records.map((record: Record<string, any>) => this.stripSensitiveFields(record));
   }
 }

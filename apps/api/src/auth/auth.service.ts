@@ -13,8 +13,9 @@ import bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import { env } from '@scu/config';
-import { UserRole, UserTier } from 'database';
+import { UserRole, UserTier, UserType } from 'database';
 import { RedisService } from '../redis/redis.service';
+import { ProjectPermissions, SystemPermissions } from '../permission/permission.constants';
 
 type RefreshTokenPayload = {
   sub: string;
@@ -30,6 +31,24 @@ type RefreshTokenPayload = {
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly inMemoryRevokedRefreshTokens = new Map<string, number>();
+  private readonly ownerBaselinePermissions = [
+    SystemPermissions.AUTH,
+    SystemPermissions.PROJECT_CREATE,
+    SystemPermissions.NOVEL_UPLOAD,
+    SystemPermissions.NOVEL_READ,
+    SystemPermissions.NOVEL_UPDATE,
+    SystemPermissions.STRUCTURE_READ,
+    SystemPermissions.BILLING_VIEW,
+    SystemPermissions.BILLING_MANAGE,
+    SystemPermissions.MODEL_USE_BASE,
+    ProjectPermissions.PROJECT_READ,
+    ProjectPermissions.PROJECT_WRITE,
+    ProjectPermissions.PROJECT_UPDATE,
+    ProjectPermissions.PROJECT_GENERATE,
+    ProjectPermissions.PROJECT_REVIEW,
+    ProjectPermissions.PROJECT_PUBLISH,
+    ProjectPermissions.PROJECT_DELETE,
+  ] as const;
   constructor(
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
@@ -39,8 +58,45 @@ export class AuthService {
     private readonly redisService: RedisService
   ) { }
 
+  private shouldAllowRefreshRevocationMemoryFallback(): boolean {
+    return process.env.ALLOW_REFRESH_TOKEN_MEMORY_FALLBACK === '1';
+  }
+
+  private async ensureOwnerRolePermissions(
+    tx: Pick<PrismaService, 'role' | 'permission' | 'rolePermission'>
+  ): Promise<void> {
+    const ownerRole = await tx.role.upsert({
+      where: { name: 'OWNER' },
+      update: { level: 100 },
+      create: { name: 'OWNER', level: 100 },
+    });
+
+    for (const key of this.ownerBaselinePermissions) {
+      const scope = key.startsWith('project.') ? 'project' : 'system';
+      const permission = await tx.permission.upsert({
+        where: { key },
+        update: { scope },
+        create: { key, scope },
+      });
+
+      await tx.rolePermission.upsert({
+        where: {
+          roleId_permissionId: {
+            roleId: ownerRole.id,
+            permissionId: permission.id,
+          },
+        },
+        update: {},
+        create: {
+          roleId: ownerRole.id,
+          permissionId: permission.id,
+        },
+      });
+    }
+  }
+
   async register(registerDto: RegisterDto) {
-    const { email, password, userType = 'individual' as any } = registerDto;
+    const { email, password, userType = UserType.individual } = registerDto;
     this.logger.log(`[AUTH_FLOW] register lookup existing user email=${email}`);
 
     // 1. 预检查 email 是否已存在 (外部快速失败，减少事务开销)
@@ -60,6 +116,8 @@ export class AuthService {
     // 3. 事务处理：User + Org + Membership
     this.logger.log(`[AUTH_FLOW] register transaction start email=${email}`);
     const { user, organizationId } = await this.prisma.$transaction(async (tx) => {
+      await this.ensureOwnerRolePermissions(tx);
+
       // a) 创建用户
       const newUser = await tx.user.create({
         data: {
@@ -148,6 +206,8 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
     this.logger.log(`[AUTH_FLOW] login lookup user email=${email}`);
+
+    await this.ensureOwnerRolePermissions(this.prisma);
 
     // 查询用户
     const user = await this.prisma.user.findUnique({
@@ -245,21 +305,25 @@ export class AuthService {
         requestId: randomUUID(),
         timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   async revokeRefreshToken(refreshToken: string): Promise<void> {
+    let payload: RefreshTokenPayload;
     try {
-      const payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
-      if (payload.type !== 'refresh' || !payload.jti) {
-        return;
-      }
-      await this.revokeRefreshTokenPayload(payload);
+      payload = jwt.verify(refreshToken, env.jwtRefreshSecret) as RefreshTokenPayload;
     } catch {
       // Ignore invalid tokens during logout.
+      return;
     }
+
+    if (payload.type !== 'refresh' || !payload.jti) {
+      return;
+    }
+
+    await this.revokeRefreshTokenPayload(payload);
   }
 
   async generateTokens(userId: string, email: string, tier: string, organizationId: string | null) {
@@ -346,9 +410,12 @@ export class AuthService {
     );
 
     if (!storedInRedis) {
+      if (!this.shouldAllowRefreshRevocationMemoryFallback()) {
+        throw new UnauthorizedException('Refresh token revocation storage unavailable');
+      }
       this.inMemoryRevokedRefreshTokens.set(payload.jti, Date.now() + expiresInMs);
       this.logger.warn(
-        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation for jti=${payload.jti}`
+        `[AUTH_REFRESH] Redis unavailable; using in-memory refresh token revocation via explicit override for jti=${payload.jti}`
       );
     }
   }
@@ -385,10 +452,12 @@ export class AuthService {
     }
 
     this.logger.log(`[AUTH_FLOW] getCurrentOrganization userId=${userId} lookup first membership`);
-    const firstMembership = await this.prisma.organizationMember.findFirst({
+    const firstMemberships = await this.prisma.organizationMember.findMany({
       where: { userId },
-      orderBy: { createdAt: 'asc' },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      take: 1,
     });
+    const firstMembership = firstMemberships[0] ?? null;
     this.logger.log(
       `[AUTH_FLOW] getCurrentOrganization userId=${userId} first membership orgId=${firstMembership?.organizationId ?? 'null'}`
     );

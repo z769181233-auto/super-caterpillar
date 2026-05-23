@@ -3,6 +3,26 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { JobService } from '../../job/job.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
+type JsonRecord = Record<string, unknown>;
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function getStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
+function getTrimmedStringField(source: JsonRecord, key: string): string | undefined {
+  const value = source[key];
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 /**
  * Stage 1 验证钩子（仅 GATE_MODE=1 && VERIFICATION_MODE=1 生效）
  *
@@ -60,15 +80,47 @@ export class Stage1VerificationHook {
     }
 
     // 4. 提取必要上下文
-    const parentPayload = (parentJob.payload as any) || {};
-    const pipelineRunId = parentPayload.pipelineRunId || parentJob.traceId;
+    const parentPayload = isRecord(parentJob.payload) ? parentJob.payload : {};
+    const pipelineRunId = getStringField(parentPayload, 'pipelineRunId');
+    const traceId =
+      typeof parentJob.traceId === 'string' && parentJob.traceId.length > 0
+        ? parentJob.traceId
+        : undefined;
     const episodeId = parentPayload.episodeId || parentJob.episodeId;
     const projectId = parentPayload.projectId || parentJob.projectId;
+    const parentShot =
+      typeof parentJob.shotId === 'string' && parentJob.shotId.length > 0
+        ? await this.prisma.shot.findUnique({
+            where: { id: parentJob.shotId },
+            select: {
+              sceneId: true,
+              scene: {
+                select: {
+                  enrichedText: true,
+                },
+              },
+            },
+          })
+        : null;
+    const sceneId = getStringField(parentPayload, 'sceneId') ?? parentJob.sceneId ?? parentShot?.sceneId;
+    const audioText =
+      getTrimmedStringField(parentPayload, 'text') ??
+      getTrimmedStringField(parentPayload, 'audioText') ??
+      (typeof parentShot?.scene?.enrichedText === 'string'
+        ? parentShot.scene.enrichedText.trim() || undefined
+        : undefined);
 
     // 必须：pipelineRunId（DAG 聚合依赖此字段）
     if (!pipelineRunId) {
       this.logger.error(
         `[VerificationHook] Missing pipelineRunId for parentJobId=${parentJob.id}. Cannot inject Hardened SHOT_RENDER.`
+      );
+      return;
+    }
+
+    if (!traceId) {
+      this.logger.error(
+        `[VerificationHook] Missing traceId for parentJobId=${parentJob.id}. Cannot inject verification jobs.`
       );
       return;
     }
@@ -82,24 +134,11 @@ export class Stage1VerificationHook {
       const dedupeKey = `gate_shot:${parentJob.id}:${i}`;
 
       try {
-        // 幂等检查：如果已存在则跳过
-        const existing = await this.prisma.shotJob.findUnique({
-          where: { dedupeKey },
-        });
-
-        if (existing) {
-          this.logger.log(
-            `[VerificationHook] Hardened job already exists for dedupeKey=${dedupeKey}, skipping.`
-          );
-          continue;
-        }
-
-        // 创建 Hardened SHOT_RENDER 作业（包含完整 DAG 上下文）
-        await this.jobService.createCECoreJob({
+        const ensuredJob = await this.jobService.createCECoreJob({
           projectId: parentJob.projectId,
           organizationId: parentJob.organizationId,
           jobType: 'SHOT_RENDER' as any,
-          traceId: parentJob.traceId ?? undefined,
+          traceId,
           isVerification: true,
           dedupeKey,
           payload: {
@@ -116,7 +155,7 @@ export class Stage1VerificationHook {
         });
 
         this.logger.log(
-          `[VerificationHook] Injected Hardened SHOT_RENDER ${i + 1}/3 with dedupeKey=${dedupeKey}, pipelineRunId=${pipelineRunId}`
+          `[VerificationHook] Ensured Hardened SHOT_RENDER ${i + 1}/3 jobId=${ensuredJob.id} dedupeKey=${dedupeKey}, pipelineRunId=${pipelineRunId}`
         );
       } catch (err: any) {
         this.logger.error(
@@ -127,19 +166,27 @@ export class Stage1VerificationHook {
 
     // 6. 注入并发 AUDIO 作业（P5 Parallel Track 验证）
     const audioDedupeKey = `gate_audio:${parentJob.id}`;
+    if (!sceneId || !audioText) {
+      this.logger.warn(
+        `[VerificationHook] Skipping Hardened AUDIO for pipelineRunId=${pipelineRunId}: missing sceneId or authoritative text.`
+      );
+      return;
+    }
     try {
         await this.jobService.createCECoreJob({
           projectId: parentJob.projectId,
           organizationId: parentJob.organizationId,
           jobType: 'AUDIO' as any,
-        traceId: parentJob.traceId ?? undefined,
+        traceId,
         isVerification: true,
         dedupeKey: audioDedupeKey,
         payload: {
           pipelineRunId,
           projectId,
           episodeId,
-          audioText: 'Hardened Audio Content for L2 Verification',
+          sceneId,
+          shotId: parentJob.shotId,
+          text: audioText,
           isVerification: true,
         },
       });

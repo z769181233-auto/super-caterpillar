@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildChapterSemanticContext, extractSceneSemanticsFromText } from '@scu/shared-types';
+import {
+  buildSemanticMemoryContextForChapter,
+  upsertChapterSemanticMemory,
+} from '../memory/semantic-memory-context';
 
 /**
  * 小说分析处理器
@@ -8,6 +14,65 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class NovelAnalysisProcessorService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private splitSentenceParagraphs(rawText: string): string[] {
+    const sentences = rawText
+      .split(/(?<=[。！？!?])/)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence.length > 0);
+
+    if (sentences.length <= 1) {
+      return sentences;
+    }
+
+    const paragraphs: string[] = [];
+    let current = '';
+    for (const sentence of sentences) {
+      if (!current) {
+        current = sentence;
+        continue;
+      }
+      if (`${current}${sentence}`.length <= 220) {
+        current = `${current}${sentence}`;
+        continue;
+      }
+      paragraphs.push(current);
+      current = sentence;
+    }
+    if (current) {
+      paragraphs.push(current);
+    }
+
+    return paragraphs;
+  }
+
+  private splitMeaningfulParagraphs(rawText: string): string[] {
+    const normalizedText = rawText.replace(/\r\n/g, '\n').trim();
+    if (!normalizedText) {
+      return [];
+    }
+
+    const paragraphs = normalizedText
+      .split(/\n\s*\n+/)
+      .map((paragraph: string) => paragraph.trim())
+      .filter((paragraph: string) => paragraph.length > 10);
+
+    const lines = normalizedText
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    if (paragraphs.length > 1 && lines.length <= paragraphs.length + 1) {
+      return paragraphs;
+    }
+
+    if (lines.length > 1) {
+      return lines;
+    }
+
+    const sentenceParagraphs = this.splitSentenceParagraphs(normalizedText);
+    return sentenceParagraphs.length > 0 ? sentenceParagraphs : [normalizedText];
+  }
 
   /**
    * 分析章节并生成 SceneDraft
@@ -31,10 +96,31 @@ export class NovelAnalysisProcessorService {
 
     // 读取章节原文
     const rawText = chapter.rawContent || chapter.content || '';
+    const chapterContext = buildChapterSemanticContext(rawText);
+    const memoryContext = await buildSemanticMemoryContextForChapter({
+      prisma: this.prisma,
+      projectId: chapter.novelSource?.projectId,
+      chapterId: chapter.id,
+      chapterIndex: chapter.index,
+      currentTextOrSummary: rawText,
+    });
+
+    await this.prisma.novelChapter.update({
+      where: { id: chapterId },
+      data: { summary: chapterContext.summary },
+    });
+    await upsertChapterSemanticMemory({
+      prisma: this.prisma,
+      projectId: chapter.novelSource?.projectId,
+      chapterId,
+      chapterSummary: chapterContext.summary,
+      characters: chapterContext.characters,
+      dominantLocation: chapterContext.dominantLocation,
+    });
 
     // 简单规则：按段落切分场景
     // 未来替换为 LLM 调用
-    const paragraphs = rawText.split(/\n\n+/).filter((p: string) => p.trim().length > 50);
+    const paragraphs = this.splitMeaningfulParagraphs(rawText);
     const sceneCount = Math.min(3, Math.max(1, Math.ceil(paragraphs.length / 3)));
 
     // 删除旧的 SceneDraft（如果存在）
@@ -43,6 +129,7 @@ export class NovelAnalysisProcessorService {
     });
 
     // 为每个场景创建 SceneDraft
+    let previousSceneContext: ReturnType<typeof extractSceneSemanticsFromText> | undefined;
     for (let scIdx = 0; scIdx < sceneCount; scIdx++) {
       const startIdx = Math.floor((paragraphs.length / sceneCount) * scIdx);
       const endIdx = Math.floor((paragraphs.length / sceneCount) * (scIdx + 1));
@@ -51,10 +138,14 @@ export class NovelAnalysisProcessorService {
 
       // 提取场景摘要（前100字）
       const summary = sceneText.substring(0, 100).trim() || `场景 ${scIdx + 1}`;
-
-      // 简单提取角色和地点（占位实现）
-      const characters: Array<{ name: string; role?: string }> = [];
-      const location = this.extractLocation(sceneText);
+      const semantics = extractSceneSemanticsFromText(sceneText, {
+        chapterContext,
+        previousSceneContext,
+        memoryContext,
+      });
+      previousSceneContext = semantics;
+      const characters = semantics.characters.map((name) => ({ name }));
+      const location = semantics.location;
 
       await this.prisma.sceneDraft.create({
         data: {
@@ -70,29 +161,26 @@ export class NovelAnalysisProcessorService {
           },
           status: 'ANALYZED', // 标记为已分析
           analysisResult: {
-            method: 'rule-based', // 标记为规则分析，未来LLM会改为 'llm'
+            method: semantics.semanticMethod ?? 'contextual-semantic-engine-v1',
             timestamp: new Date().toISOString(),
+            chapterContextSummary: chapterContext.summary,
+            coverageReport: chapterContext.coverageReport as unknown as Prisma.InputJsonValue,
+            semanticExtraction: {
+              characters: semantics.characters,
+              location: semantics.location ?? null,
+              timeOfDay: semantics.timeOfDay ?? null,
+              emotionalTone: semantics.emotionalTone ?? null,
+              conflictSummary: semantics.conflictSummary ?? null,
+              semanticSummary: semantics.semanticSummary,
+              chapterContextSummary: semantics.chapterContextSummary ?? chapterContext.summary,
+              memoryContextSummary: semantics.memoryContextSummary ?? memoryContext?.summary ?? null,
+              memoryContextSource: semantics.memoryContextSource ?? memoryContext?.source ?? null,
+              crossChapterMemoryHit: semantics.crossChapterMemoryHit ?? false,
+              fallbackStrategy: semantics.fallbackStrategy ?? 'rule-based-fallback-v1',
+            },
           },
         },
       });
     }
-  }
-
-  /**
-   * 简单提取地点（占位实现）
-   * 未来用 LLM 提取
-   */
-  private extractLocation(text: string): string | undefined {
-    // 简单规则：查找包含"在"、"到"、"来到"等词的句子
-    const locationPatterns = [/在([^，。！？\n]+)/, /到([^，。！？\n]+)/, /来到([^，。！？\n]+)/];
-
-    for (const pattern of locationPatterns) {
-      const match = text.match(pattern);
-      if (match && match[1] && match[1].length < 20) {
-        return match[1].trim();
-      }
-    }
-
-    return undefined;
   }
 }

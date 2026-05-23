@@ -20,18 +20,54 @@ export class VideoMergeLocalAdapter implements EngineAdapter {
     return engineKey === 'video_merge';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    throw new Error('[VideoMergeLocal] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     this.logger.log(`Invoking VIDEO_RENDER Real Adapter for jobType=${input.jobType}`);
 
     try {
+      const jobId =
+        typeof input.payload?.jobId === 'string' && input.payload.jobId.trim().length > 0
+          ? input.payload.jobId
+          : null;
+      const framePaths = Array.isArray(input.payload?.framePaths)
+        ? input.payload.framePaths.filter(
+            (value): value is string => typeof value === 'string' && value.trim().length > 0
+          )
+        : [];
+      const fps = typeof input.payload?.fps === 'number' ? input.payload.fps : NaN;
+      const width = typeof input.payload?.width === 'number' ? input.payload.width : NaN;
+      const height = typeof input.payload?.height === 'number' ? input.payload.height : NaN;
+
+      if (!jobId) {
+        throw new Error('VIDEO_RENDER_JOB_ID_REQUIRED');
+      }
+      if (framePaths.length === 0) {
+        throw new Error('VIDEO_RENDER_FRAME_PATHS_REQUIRED');
+      }
+      if (!Number.isFinite(fps) || fps <= 0) {
+        throw new Error('VIDEO_RENDER_FPS_REQUIRED');
+      }
+      if (!Number.isFinite(width) || width <= 0 || !Number.isInteger(width)) {
+        throw new Error('VIDEO_RENDER_WIDTH_REQUIRED');
+      }
+      if (!Number.isFinite(height) || height <= 0 || !Number.isInteger(height)) {
+        throw new Error('VIDEO_RENDER_HEIGHT_REQUIRED');
+      }
+
       // 转换通用输入为底层引擎输入
       const engineInput = {
-        jobId: input.payload?.jobId || 'unknown',
-        traceId: input.context?.traceId || 'unknown',
-        framePaths: input.payload?.framePaths || [], // 如果没有，底层可能会 fallback 或报错
-        fps: input.payload?.fps || 24,
-        width: input.payload?.width || 512,
-        height: input.payload?.height || 512,
+        jobId,
+        traceId: this.requireTraceId(input.context?.traceId),
+        framePaths,
+        fps,
+        width,
+        height,
       };
 
       const output = await videoMergeRealEngine(engineInput, input.context);

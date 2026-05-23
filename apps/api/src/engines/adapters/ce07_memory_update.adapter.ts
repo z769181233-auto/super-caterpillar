@@ -8,7 +8,6 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { CostLedgerService } from '../../cost/cost-ledger.service';
-import { randomUUID } from 'crypto';
 import { performance } from 'perf_hooks';
 
 export type CE07MemoryType = 'relationship' | 'knowledge' | 'emotion' | 'skill';
@@ -36,13 +35,18 @@ export class CE07MemoryUpdateAdapter implements EngineAdapter {
     return engineKey === 'ce07_memory_update';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.length > 0) {
+      return value;
+    }
+    throw new Error('[CE07MemoryUpdate] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     // Cast payload and context safely
-    const payload = input.payload as unknown as CE07MemoryInput & { projectId?: string };
+    const payload = input.payload as unknown as CE07MemoryInput;
     const context = input.context || {};
-    const traceId = context.traceId || `ce07_${randomUUID()}`;
-    // Fallback: extract projectId from payload or context
-    const projectId = context.projectId || payload.projectId;
+    const traceId = this.requireTraceId(context.traceId);
 
     const t0 = performance.now();
 
@@ -51,8 +55,16 @@ export class CE07MemoryUpdateAdapter implements EngineAdapter {
       if (!payload.characterId || !payload.sceneId || !payload.content || !payload.memoryType) {
         throw new Error('Missing required fields: characterId, sceneId, content, memoryType');
       }
+      const scene = await this.prisma.scene.findUnique({
+        where: { id: payload.sceneId },
+        select: { projectId: true },
+      });
+      const projectId =
+        typeof context.projectId === 'string' && context.projectId.length > 0
+          ? context.projectId
+          : scene?.projectId;
       if (!projectId) {
-        throw new Error('Missing projectId in context/payload');
+        throw new Error('Missing authoritative projectId in context/scene');
       }
 
       // 2. Write to DB (REAL)

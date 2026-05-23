@@ -1,4 +1,12 @@
-import { Controller, Get, Query, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { SignedUrlService } from '../storage/signed-url.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,9 +25,9 @@ export class InternalAssetController {
       throw new BadRequestException('key is required');
     }
 
-    const found = await this.prisma.asset.findFirst({
+    const matches = await this.prisma.asset.findMany({
       where: { storageKey: key },
-      orderBy: { createdAt: 'desc' },
+      take: 2,
       select: {
         project: {
           select: {
@@ -30,8 +38,19 @@ export class InternalAssetController {
       },
     });
 
-    const tenantId = found?.project?.organizationId;
-    const userId = found?.project?.ownerId;
+    if (matches.length === 0) {
+      throw new NotFoundException('Asset context not found');
+    }
+
+    const distinctContexts = new Set(
+      matches.map((asset) => `${asset.project?.organizationId ?? 'null'}:${asset.project?.ownerId ?? 'null'}`)
+    );
+    if (distinctContexts.size > 1) {
+      throw new ConflictException('Ambiguous asset context for storage key');
+    }
+
+    const tenantId = matches[0]?.project?.organizationId;
+    const userId = matches[0]?.project?.ownerId;
 
     if (!tenantId || !userId) {
       throw new NotFoundException('Asset context not found');

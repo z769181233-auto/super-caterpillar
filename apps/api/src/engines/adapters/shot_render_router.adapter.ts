@@ -250,11 +250,15 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
     if (!output) return;
     const renderMeta = output.render_meta || {};
     const asset = output.asset || {};
-    const traceId = input.context?.traceId || input.context?.jobId;
+    const traceId = input.context?.traceId;
     const jobId = input.context?.jobId;
 
     if (!jobId) {
       this.logger.warn(`[ShotRenderRouter] No jobId found in context for provenance tracking.`);
+      return;
+    }
+    if (!traceId) {
+      this.logger.warn(`[ShotRenderRouter] No traceId found in context for provenance tracking.`);
       return;
     }
 
@@ -316,7 +320,12 @@ export class ShotRenderRouterAdapter implements EngineAdapter, OnModuleInit {
         kind: 'SHOT_RENDER',
         mode: 'REAL_ENGINE',
         engine_provider: provider,
-        engine_model: renderMeta.engine_model || renderMeta.engine || 'unknown',
+        engine_model:
+          typeof renderMeta.engine_model === 'string' && renderMeta.engine_model.trim().length > 0
+            ? renderMeta.engine_model
+            : typeof renderMeta.engine === 'string' && renderMeta.engine.trim().length > 0
+              ? renderMeta.engine
+              : null,
         engine_run_id: renderMeta.engine_run_id || traceId,
         adapter: renderMeta.engine || this.name,
         adapter_version: adapterVer,

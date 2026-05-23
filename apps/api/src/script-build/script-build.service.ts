@@ -36,6 +36,10 @@ export class ScriptBuildService {
 
       if (!build) throw new NotFoundException(`Build ${buildId} not found`);
 
+      const characterCount = await this.prisma.character.count({
+        where: { projectId: build.projectId },
+      });
+
       // Aggregate Stats
       const stats = {
         episodes: build.episodes?.length || 0,
@@ -46,7 +50,7 @@ export class ScriptBuildService {
               acc + (ep.scenes?.reduce((sAcc, sc) => sAcc + (sc.shots?.length || 0), 0) || 0),
             0
           ) || 0,
-        characters: 0, // Placeholder for aggregation logic
+        characters: characterCount,
         coveragePercent: (build.metadata as any)?.coveragePercent || 0,
         totalBytes: build.storySource?.size || 0,
       };

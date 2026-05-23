@@ -1,6 +1,7 @@
-import { AssetOwnerType, AssetType, ReviewResult, ReviewType, PrismaClient } from 'database';
+import { AssetOwnerType, AssetRole, AssetType, ReviewResult, ReviewType, PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
 import { ProcessorContext } from '../types/processor-context';
+import { randomUUID } from 'crypto';
 
 /**
  * Media Security Processor - Hub-only Architecture (PLAN-5)
@@ -51,7 +52,8 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     } else if (!targetAssetId && shotId) {
       resolvedAsset = await prisma.asset.findUnique({
         where: {
-          ownerType_ownerId_type: {
+          ownerType_ownerId_type_role: {
+            role: AssetRole.SHOT_SOURCE,
             ownerType: AssetOwnerType.SHOT,
             ownerId: shotId,
             type: AssetType.VIDEO,
@@ -127,7 +129,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
         checksum: sha256,
         status: 'PUBLISHED',
         hlsPlaylistUrl: hlsPlaylistKey,
-        signedUrl: resolvedAsset?.signedUrl ?? `/api/assets/${targetAssetId}/secure-url`,
+        signedUrl: resolvedAsset?.signedUrl ?? null,
         watermarkMode: 'SCU_VISIBLE_V1_ASYNC',
         fingerprintId: fpRecord.id,
       },
@@ -155,7 +157,7 @@ export async function processMediaSecurityJob(context: ProcessorContext) {
     // 5. Audit
     await prisma.auditLog.create({
       data: {
-        id: `audit-sec-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        id: randomUUID(),
         resourceType: 'asset',
         resourceId: targetAssetId,
         action: 'ce09.media_security.hub_success',

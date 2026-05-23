@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
   Inject,
   forwardRef,
@@ -14,7 +15,6 @@ import { assertTransition } from '../job/job.rules';
 import { randomUUID } from 'crypto';
 import {
   getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
   isPrismaFallbackEligibleError,
   withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -58,6 +58,13 @@ function getStringArrayField(value: unknown, key: string): string[] {
   return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === 'string') : [];
 }
 
+function requireTraceId(value: unknown, contextTag: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing traceId`);
+}
+
 /**
  * Worker 管理服务
  * 负责 Worker 注册、心跳、状态管理
@@ -81,16 +88,42 @@ export class WorkerService {
   private readonly CASCADE_LIMIT = 100; // max 100 jobs per 10s per worker node
   private readonly CASCADE_WINDOW = 10000;
 
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
   private shouldAllowDirectPgDispatchFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
+    return process.env.FORCE_WORKER_PG_DISPATCH_FALLBACK === '1';
   }
 
   private shouldAllowWorkerLifecyclePgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
+    return process.env.FORCE_WORKER_LIFECYCLE_PG_FALLBACK === '1';
+  }
+
+  private async getSingleDispatchedJobForWorker(
+    workerDbId: string,
+    context: string
+  ): Promise<{ id: string; status: JobStatus; createdAt: Date } | null> {
+    const jobs = await this.prisma.shotJob.findMany({
+      where: {
+        workerId: workerDbId,
+        status: JobStatus.DISPATCHED,
+      },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        status: true,
+        createdAt: true,
+      },
+      take: 2,
+    });
+
+    if (jobs.length > 1) {
+      this.logger.error(
+        `[WorkerService] ${context} detected multiple DISPATCHED jobs for workerDbId=${workerDbId}: ${jobs
+          .map((job) => job.id)
+          .join(', ')}`
+      );
+      throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+    }
+
+    return jobs[0] ?? null;
   }
 
   /**
@@ -160,7 +193,7 @@ export class WorkerService {
       }
       if (!this.shouldAllowWorkerLifecyclePgFallback()) {
         this.logger.error(
-          `[WorkerService] Prisma registerWorker degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+          `[WorkerService] Prisma registerWorker degraded for ${workerId}, but lifecycle pg fallback is disabled unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -289,7 +322,7 @@ export class WorkerService {
       }
       if (!this.shouldAllowWorkerLifecyclePgFallback()) {
         this.logger.error(
-          `[WorkerService] Prisma heartbeat degraded for ${workerId}, but lifecycle pg fallback is disabled outside CI/test/gate unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
+          `[WorkerService] Prisma heartbeat degraded for ${workerId}, but lifecycle pg fallback is disabled unless FORCE_WORKER_LIFECYCLE_PG_FALLBACK=1`
         );
         throw error;
       }
@@ -536,11 +569,13 @@ export class WorkerService {
     }
 
     // 查找分配给该 Worker 的 DISPATCHED Job（Stage2-A：Worker 只能领取 DISPATCHED 状态的 Job）
-    const job = await this.prisma.shotJob.findFirst({
-      where: {
-        workerId: worker.id,
-        status: JobStatus.DISPATCHED, // Stage2-A: 改为 DISPATCHED
-      },
+    const singleJob = await this.getSingleDispatchedJobForWorker(worker.id, 'getNextDispatchedJob');
+    if (!singleJob) {
+      return null;
+    }
+
+    const job = await this.prisma.shotJob.findUnique({
+      where: { id: singleJob.id },
       include: {
         task: true,
         shot: {
@@ -556,9 +591,6 @@ export class WorkerService {
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'asc',
       },
     });
 
@@ -936,13 +968,25 @@ export class WorkerService {
       // 2. Atomic Claim via Transaction
       const dispatchedJob = await this.prisma.$transaction(async (tx) => {
         // 2.0 Recovery: Check if worker already has a DISPATCHED job (e.g. restart/crash recovery)
-        const existingJob = await tx.shotJob.findFirst({
+        const existingJobs = await tx.shotJob.findMany({
           where: {
             workerId: workerNode.id,
             status: JobStatus.DISPATCHED,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'asc' },
+          take: 2,
         });
+
+        if (existingJobs.length > 1) {
+          this.logger.error(
+            `[WorkerService] dispatchNextJobForWorker detected multiple DISPATCHED jobs for worker ${workerId}: ${existingJobs
+              .map((job) => job.id)
+              .join(', ')}`
+          );
+          throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+        }
+
+        const existingJob = existingJobs[0] ?? null;
 
         if (existingJob) {
           this.logger.log(
@@ -1082,15 +1126,16 @@ export class WorkerService {
           return null; // Wait for concurrent jobs to finish
         }
 
-        const candidate = await tx.shotJob.findFirst({
+        const candidates = await tx.shotJob.findMany({
           where: {
             organizationId: selectedOrgId,
             status: JobStatus.PENDING,
             type: { in: supportedJobTypes },
           },
-          orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+          orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }, { id: 'asc' }],
           take: 1,
         });
+        const candidate = candidates[0] ?? null;
 
         if (!candidate) {
           return null;
@@ -1114,10 +1159,21 @@ export class WorkerService {
 
         // P3-A: Dual State Machine Physical Binding - RESERVED
         try {
+          let traceId = candidate.traceId;
+          if (typeof traceId !== 'string' || traceId.length === 0) {
+            // Historical or ad-hoc jobs may be missing a traceId. Backfill a stable one
+            // before reserving billing state so worker dispatch can continue safely.
+            traceId = candidate.id;
+            await tx.shotJob.update({
+              where: { id: candidate.id },
+              data: { traceId },
+            });
+          }
+          const resolvedTraceId = requireTraceId(traceId, `WorkerService.RESERVE.${candidate.id}`);
           await tx.billingLedger.create({
             data: buildBillingLedgerCreateData({
               tenantId: candidate.organizationId || candidate.projectId,
-              traceId: candidate.traceId || candidate.id,
+              traceId: resolvedTraceId,
               itemType: 'JOB',
               itemId: candidate.id,
               chargeCode: 'JOB_RESERVED',
@@ -1231,7 +1287,7 @@ export class WorkerService {
       if (this.shouldFallbackToPg(error)) {
         if (!this.shouldAllowDirectPgDispatchFallback()) {
           this.logger.error(
-            `[WorkerService] Prisma dispatch degraded for ${workerId}, but direct pg dispatch fallback is disabled outside CI/test/gate unless FORCE_WORKER_PG_DISPATCH_FALLBACK=1`
+            `[WorkerService] Prisma dispatch degraded for ${workerId}, but direct pg dispatch fallback is disabled unless FORCE_WORKER_PG_DISPATCH_FALLBACK=1`
           );
           throw error;
         }
@@ -1271,14 +1327,24 @@ export class WorkerService {
 
         const existingDispatchedResult = await client.query(
           `
-            SELECT 1
+            SELECT id
             FROM shot_jobs
             WHERE "workerId" = $1
               AND status = $2
-            LIMIT 1
+            ORDER BY "createdAt" ASC
+            LIMIT 2
           `,
           [workerNode.id, JobStatus.DISPATCHED]
         );
+
+        if ((existingDispatchedResult.rowCount ?? 0) > 1) {
+          this.logger.error(
+            `[WorkerService] PG preflight detected multiple DISPATCHED jobs for worker ${workerId}: ${existingDispatchedResult.rows
+              .map((row) => row.id)
+              .join(', ')}`
+          );
+          return true;
+        }
 
         if (existingDispatchedResult.rowCount && existingDispatchedResult.rowCount > 0) {
           return true;
@@ -1324,6 +1390,7 @@ export class WorkerService {
       const workerNode = workerResult.rows[0];
       if (!workerNode) {
         this.logger.warn(`[WorkerService] PG fallback: worker not found for dispatch: ${workerId}`);
+        await client.query('ROLLBACK');
         return null;
       }
 
@@ -1334,6 +1401,7 @@ export class WorkerService {
         this.logger.warn(
           `[WorkerService] PG fallback throttling worker ${workerId} (${history.length}/${this.CASCADE_LIMIT})`
         );
+        await client.query('ROLLBACK');
         return null;
       }
       this.dispatchHistory.set(workerId, history);
@@ -1345,6 +1413,7 @@ export class WorkerService {
         this.logger.warn(
           `[WorkerService] PG fallback: worker ${workerId} has no supportedJobTypes defined.`
         );
+        await client.query('ROLLBACK');
         return null;
       }
 
@@ -1380,10 +1449,19 @@ export class WorkerService {
           WHERE "workerId" = $1
             AND status = $2
           ORDER BY "createdAt" ASC
-          LIMIT 1
+          LIMIT 2
         `,
         [workerNode.id, JobStatus.DISPATCHED]
       );
+
+      if ((existingJobResult.rowCount ?? 0) > 1) {
+        this.logger.error(
+          `[WorkerService] PG fallback detected multiple DISPATCHED jobs for worker ${workerId}: ${existingJobResult.rows
+            .map((row) => row.id)
+            .join(', ')}`
+        );
+        throw new ConflictException('Multiple dispatched jobs assigned to the same worker');
+      }
 
       if (existingJobResult.rows[0]) {
         await client.query('COMMIT');

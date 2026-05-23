@@ -1,80 +1,48 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FormField } from '@/components/ui/FormField';
 import { Alert } from '@/components/ui/Alert';
-import { getSafeRedirect } from '@/lib/nav/safeRedirect';
+import { getAuthErrorMessageKey, getAuthModeMeta } from './auth-mode-meta';
 
 interface AuthShellProps {
   mode: 'login' | 'register';
 }
 
-interface AuthResponse {
-  success?: boolean;
-  data?: {
-    message?: string;
-  };
-  error?: {
-    message?: string;
-  };
-}
-
 export function AuthShell({ mode }: AuthShellProps) {
   const t = useTranslations('Auth');
   const locale = useLocale();
-  const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const resolveErrorMessage = (errorCode: string | null | undefined) =>
+    t(getAuthErrorMessageKey(errorCode));
+
+  const [errorMsg] = useState<string | null>(() =>
+    searchParams.has('error') ? resolveErrorMessage(searchParams.get('error')) : null
+  );
+  const [successMsg] = useState<string | null>(() =>
+    searchParams.get('registered') === '1' ? t('registerSuccess') : null
+  );
 
   const isLogin = mode === 'login';
   const title = isLogin ? t('titleLogin') : t('titleRegister');
   const submitText = isLogin ? t('submitLogin') : t('submitRegister');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg(null);
-
-    try {
-      const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const result = (await response.json()) as AuthResponse;
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.data?.message || result.error?.message || t('errorInvalid'));
-      }
-
-      // Success: accessToken is already set in httpOnly cookie by the backend
-      // Read fallback route if provided by middleware
-      const fromParam = searchParams.get('from');
-      const safePath = getSafeRedirect(fromParam, locale, `/${locale}/projects`);
-
-      // Using replace to prevent back button from returning to login form
-      router.replace(safePath);
-    } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : t('errorInvalid'));
-      setLoading(false);
-    }
-  };
+  const authModeMeta = getAuthModeMeta({
+    mode,
+    locale,
+    fromParam: searchParams.get('from'),
+  });
 
   return (
     <Card
       style={{
-        padding: '3rem 2.5rem',
+        padding: '2.25rem 2rem',
         width: '100%',
         border: '1px solid var(--border-subtle)',
       }}
@@ -101,43 +69,104 @@ export function AuthShell({ mode }: AuthShellProps) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+      {successMsg && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <Alert variant="info">
+            <div style={{ display: 'grid', gap: '0.75rem' }}>
+              <div>{successMsg}</div>
+            </div>
+          </Alert>
+        </div>
+      )}
+
+      <form
+        action={authModeMeta.formAction}
+        method="post"
+        style={{ width: '100%' }}
+      >
         <FormField label={t('emailLabel')}>
           <Input
             type="email"
+            name="email"
             required
+            autoComplete="email"
             placeholder="engineer@super-caterpillar.com"
-            disabled={loading}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            defaultValue={searchParams.get('email') || ''}
           />
         </FormField>
 
         <FormField label={t('passwordLabel')}>
           <Input
             type="password"
+            name="password"
             required
+            minLength={6}
+            autoComplete={isLogin ? 'current-password' : 'new-password'}
             placeholder="••••••••"
-            disabled={loading}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
         </FormField>
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          style={{ width: '100%', marginTop: '1rem' }}
-          disabled={loading}
+        <div
+          style={{
+            display: 'grid',
+            gap: '0.75rem',
+            marginTop: '0.75rem',
+          }}
         >
-          {loading ? t('loading') : submitText}
-        </Button>
+          <div
+            style={{
+              fontSize: '0.8rem',
+              color: 'var(--text-muted)',
+              textAlign: 'center',
+            }}
+          >
+            {t('submitHint')}
+          </div>
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            style={{
+              width: '100%',
+              minHeight: '3.5rem',
+              background: 'linear-gradient(135deg, var(--gold-hover), var(--gold))',
+              borderColor: 'var(--gold-hover)',
+              color: 'var(--on-gold)',
+              boxShadow: '0 12px 28px rgba(200, 164, 93, 0.28)',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            {submitText}
+          </Button>
+
+          <div
+            style={{
+              textAlign: 'center',
+              fontSize: '0.9rem',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            {t(authModeMeta.promptKey)}{' '}
+            <Link
+              href={authModeMeta.switchHref}
+              style={{
+                color: 'var(--gold)',
+                fontWeight: 600,
+                textDecoration: 'underline',
+                textUnderlineOffset: '0.18rem',
+              }}
+            >
+              {t(authModeMeta.actionKey)}
+            </Link>
+          </div>
+        </div>
       </form>
 
       <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-        <button
-          onClick={() => router.push('/')}
+        <Link
+          href={`/${locale}`}
           style={{
             background: 'none',
             border: 'none',
@@ -148,7 +177,7 @@ export function AuthShell({ mode }: AuthShellProps) {
           }}
         >
           &larr; {t('backToLanding')}
-        </button>
+        </Link>
       </div>
     </Card>
   );

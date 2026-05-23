@@ -11,6 +11,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  HttpException,
   Req,
   Inject,
   Logger,
@@ -32,12 +33,7 @@ import { JobService } from '../job/job.service';
 import { StructureGenerateService } from '../project/structure-generate.service';
 import { SceneGraphService } from '../project/scene-graph.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import {
-  TaskType as TaskTypeEnum,
-  TaskStatus as TaskStatusEnum,
-  JobType as JobTypeEnum,
-} from 'database';
-import { NovelAnalysisStatus } from '@scu/shared-types';
+import { JobType as JobTypeEnum } from 'database';
 import { randomUUID } from 'crypto';
 import { Request } from 'express';
 import * as path from 'path';
@@ -48,9 +44,7 @@ import { AuditActions } from '../audit/audit.constants';
 import { Permissions } from '../auth/permissions.decorator';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { ProjectPermissions } from '../permission/permission.constants';
-import { OrchestratorService } from '../orchestrator/orchestrator.service';
 import { RequireSignature } from '../security/api-security/api-security.decorator';
-import { ApiSecurityGuard } from '../security/api-security/api-security.guard';
 import { FeatureFlagService } from '../feature-flag/feature-flag.service';
 import { TextSafetyService } from '../text-safety/text-safety.service';
 import { UnprocessableEntityException } from '@nestjs/common';
@@ -148,6 +142,54 @@ export class NovelImportController {
         `该项目已存在小说源（${existingNovel.title || existingNovel.id}）。请使用新项目导入，或后续接入重导入流程。`
       );
     }
+  }
+
+  private async ensureNoActiveNovelAnalysisJob(projectId: string): Promise<void> {
+    const activeAnalysisJob = await this.prisma.novelAnalysisJob.findFirst({
+      where: {
+        projectId,
+        status: {
+          in: ['PENDING', 'RUNNING'],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        jobType: true,
+        status: true,
+        progress: true,
+      },
+    });
+
+    if (!activeAnalysisJob) return;
+
+    const progress =
+      activeAnalysisJob.progress &&
+      typeof activeAnalysisJob.progress === 'object' &&
+      !Array.isArray(activeAnalysisJob.progress)
+        ? (activeAnalysisJob.progress as Record<string, any>)
+        : {};
+    const backingJobId = typeof progress.jobId === 'string' ? progress.jobId : null;
+
+    if (backingJobId) {
+      const backingJob = await this.prisma.shotJob.findUnique({
+        where: { id: backingJobId },
+        select: { status: true },
+      });
+
+      if (!backingJob || backingJob.status === 'SUCCEEDED' || backingJob.status === 'FAILED') {
+        return;
+      }
+    }
+
+    throw new ConflictException({
+      message: '当前项目已有分析任务正在执行，请等待完成后再重新发起分析。',
+      code: 'NOVEL_ANALYSIS_ALREADY_RUNNING',
+      activeAnalysisJobId: activeAnalysisJob.id,
+      activeStatus: activeAnalysisJob.status,
+      activeJobType: activeAnalysisJob.jobType,
+      activeProgress: progress,
+    });
   }
 
   @Post('import-file')
@@ -403,7 +445,7 @@ export class NovelImportController {
       };
     } catch (error: any) {
       if (storedFileKey) await unlinkNovelUploadPath(storedFileKey).catch(() => {});
-      if (error instanceof UnprocessableEntityException) throw error;
+      if (error instanceof HttpException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
   }
@@ -585,7 +627,7 @@ export class NovelImportController {
       };
     } catch (error: any) {
       if (tempFileKey) await unlinkNovelUploadPath(tempFileKey).catch(() => {});
-      if (error instanceof UnprocessableEntityException) throw error;
+      if (error instanceof HttpException) throw error;
       throw new BadRequestException(error.message || 'Import failed');
     }
   }
@@ -605,9 +647,51 @@ export class NovelImportController {
       take: 10,
     });
 
+    const backingJobIds = jobs
+      .map((job) => {
+        const progress =
+          job.progress && typeof job.progress === 'object' && !Array.isArray(job.progress)
+            ? (job.progress as Record<string, unknown>)
+            : null;
+        return typeof progress?.jobId === 'string' ? progress.jobId : null;
+      })
+      .filter((value): value is string => Boolean(value));
+
+    const backingJobs =
+      backingJobIds.length > 0
+        ? await this.prisma.shotJob.findMany({
+            where: { id: { in: backingJobIds } },
+            select: {
+              id: true,
+              type: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          })
+        : [];
+    const backingJobById = new Map(backingJobs.map((job) => [job.id, job]));
+
+    const syncedJobs = jobs.map((job) => {
+      const progress =
+        job.progress && typeof job.progress === 'object' && !Array.isArray(job.progress)
+          ? (job.progress as Record<string, unknown>)
+          : {};
+      const backingJobId = typeof progress.jobId === 'string' ? progress.jobId : null;
+      const backingJob = backingJobId ? backingJobById.get(backingJobId) : null;
+
+      return {
+        ...job,
+        status: backingJob?.status ?? job.status,
+        type: backingJob?.type ?? job.jobType,
+        updatedAt: backingJob?.updatedAt ?? job.updatedAt,
+        createdAt: backingJob?.createdAt ?? job.createdAt,
+      };
+    });
+
     return {
       success: true,
-      data: { jobs },
+      data: { jobs: syncedJobs },
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };
@@ -652,7 +736,7 @@ export class NovelImportController {
   @Permissions(ProjectPermissions.PROJECT_GENERATE)
   async analyzeNovel(
     @Param('projectId') projectId: string,
-    @Body() body: { chapterId?: string },
+    @Body() body: { chapterId?: string; traceId?: string },
     @CurrentUser() user: { userId: string },
     @CurrentOrganization() organizationId: string | null,
     @Req() request: Request
@@ -664,6 +748,12 @@ export class NovelImportController {
       where: { projectId },
     });
     if (!novelSource) throw new NotFoundException('找不到小说源');
+    await this.ensureNoActiveNovelAnalysisJob(projectId);
+
+    const resolvedTraceId =
+      body.traceId ||
+      (typeof request.headers['x-trace-id'] === 'string' ? request.headers['x-trace-id'] : undefined) ||
+      randomUUID();
 
     const analysisJob = await this.prisma.novelAnalysisJob.create({
       data: {
@@ -684,10 +774,12 @@ export class NovelImportController {
     const job = await this.jobService.createNovelAnalysisJob(
       {
         type: JobTypeEnum.NOVEL_ANALYSIS as any,
+        traceId: resolvedTraceId,
         payload: {
           projectId,
           novelSourceId: novelSource.id,
           chapterId: body.chapterId,
+          traceId: resolvedTraceId,
           organizationId,
           userId: user.userId,
         },

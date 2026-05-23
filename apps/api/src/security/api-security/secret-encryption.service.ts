@@ -17,6 +17,13 @@ export class SecretEncryptionService {
   private readonly ivLength = 12; // 12 bytes for GCM (recommended)
   private readonly tagLength = 16; // 16 bytes for GCM tag
 
+  private getDevFallbackMasterKeyB64(): string | undefined {
+    if (process.env.NODE_ENV === 'production') {
+      return undefined;
+    }
+    return Buffer.alloc(this.keyLength, 7).toString('base64');
+  }
+
   /**
    * 获取主密钥（从环境变量读取）
    *
@@ -24,7 +31,7 @@ export class SecretEncryptionService {
    * @throws {InternalServerErrorException} 如果主密钥不存在或格式错误
    */
   private getMasterKey(): Buffer {
-    const masterKeyB64 = process.env.API_KEY_MASTER_KEY_B64;
+    const masterKeyB64 = process.env.API_KEY_MASTER_KEY_B64 || this.getDevFallbackMasterKeyB64();
 
     if (!masterKeyB64) {
       throw new InternalServerErrorException(

@@ -10,6 +10,7 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { StoryService } from '../story/story.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AssetReceiptResolverService } from './asset-receipt-resolver.service';
@@ -23,6 +24,19 @@ export class ContractStoryController {
     private readonly prisma: PrismaService,
     private readonly assetResolver: AssetReceiptResolverService
   ) {}
+
+  private emptyReceipt(errorCode: string) {
+    return {
+      asset_id: null,
+      hls_url: null,
+      mp4_url: null,
+      checksum: null,
+      storage_key: null,
+      duration_sec: null,
+      fallback_reason: null,
+      error_code: errorCode,
+    };
+  }
 
   @Post('parse')
   async parseStory(
@@ -50,7 +64,7 @@ export class ContractStoryController {
     }
 
     try {
-      const customTraceId = body.trace_id || body.traceId;
+      const customTraceId = body.trace_id || body.traceId || randomUUID();
       const result = await this.storyService.parseStory(
         {
           projectId: body.project_id,
@@ -235,12 +249,14 @@ export class ContractStoryController {
 
     let resultPreview = null;
     if (v3Status === 'SUCCEEDED') {
-      const assetReceipt = await this.assetResolver.resolveAsset({
-        projectId: job.projectId,
-        traceId: job.traceId || '',
-        jobId: job.id,
-        jobCreatedAt: job.createdAt,
-      });
+      const assetReceipt = job.traceId
+        ? await this.assetResolver.resolveAsset({
+            projectId: job.projectId,
+            traceId: job.traceId,
+            jobId: job.id,
+            jobCreatedAt: job.createdAt,
+          })
+        : this.emptyReceipt('ERR_TRACE_ID_MISSING');
       resultPreview = {
         ...assetReceipt,
         scenes_count: scenesCount,

@@ -41,10 +41,12 @@ async function ensureUserOrgProject() {
   }
 
   // 组织
-  let organization = await prisma.organization.findFirst({
+  const organizations = await prisma.organization.findMany({
     where: { name: orgName },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let organization = organizations[0] ?? null;
   if (!organization) {
     organization = await prisma.organization.create({
       data: {
@@ -58,10 +60,12 @@ async function ensureUserOrgProject() {
   }
 
   // 项目
-  let project = await prisma.project.findFirst({
+  const projects = await prisma.project.findMany({
     where: { name: projectName, organizationId: organization.id },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let project = projects[0] ?? null;
   if (!project) {
     project = await prisma.project.create({
       data: {
@@ -94,10 +98,12 @@ async function ensureHierarchy(projectId: string, organizationId: string) {
   }
 
   // episode
-  let episode = await prisma.episode.findFirst({
+  const episodes = await prisma.episode.findMany({
     where: { seasonId: season.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let episode = episodes[0] ?? null;
   if (!episode) {
     episode = await prisma.episode.create({
       data: {
@@ -110,10 +116,12 @@ async function ensureHierarchy(projectId: string, organizationId: string) {
   }
 
   // scene
-  let scene = await prisma.scene.findFirst({
+  const scenes = await prisma.scene.findMany({
     where: { episodeId: episode.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let scene = scenes[0] ?? null;
   if (!scene) {
     scene = await prisma.scene.create({
       data: {
@@ -126,10 +134,12 @@ async function ensureHierarchy(projectId: string, organizationId: string) {
   }
 
   // shot
-  let shot = await prisma.shot.findFirst({
+  const shots = await prisma.shot.findMany({
     where: { sceneId: scene.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let shot = shots[0] ?? null;
   if (!shot) {
     shot = await prisma.shot.create({
       data: {

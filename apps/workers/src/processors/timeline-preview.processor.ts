@@ -1,6 +1,5 @@
-import { JobType, AssetOwnerType, AssetStatus, AssetType, PrismaClient } from 'database';
+import { AssetOwnerType, AssetRole, AssetStatus, AssetType, PrismaClient } from 'database';
 import { ApiClient } from '../api-client';
-import { EngineHubClient } from '../engine-hub-client';
 import { readFileUnderLimit } from '../../../../packages/shared/fs_safe';
 import { promises as fsp } from 'fs';
 import * as path from 'path';
@@ -25,16 +24,24 @@ export interface TimelinePreviewParams {
   apiClient: ApiClient;
 }
 
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * CE11: Timeline Preview Processor
- * 职责：执行时间轴渲染，生成预览资产（绑定至 Scene），并触发 CE09 安全处理。
- * 策略：Asset 物理隔离（OwnerType=SCENE），安全链路统一（CE09）。
+ * 职责：执行时间轴渲染，生成预览文件供 CE DAG/界面回显。
+ * 策略：预览不落正式 Asset，不触发 CE09，避免覆盖正式场景成片归属。
  */
 export async function processTimelinePreviewJob({ prisma, job, apiClient }: TimelinePreviewParams) {
   const startTime = Date.now();
-  const { timelineStorageKey, pipelineRunId } = job.payload;
-  const traceId = job.traceId || `trace-${Date.now()}`;
-  const projectId = job.projectId;
+  const timelineStorageKey = requireNonEmptyString(job.payload?.timelineStorageKey, 'TimelinePreview', 'timelineStorageKey');
+  const pipelineRunId = requireNonEmptyString(job.payload?.pipelineRunId, 'TimelinePreview', 'pipelineRunId');
+  const traceId = requireNonEmptyString(job.traceId ?? (job.payload as any)?.traceId, 'TimelinePreview', 'traceId');
+  const projectId = requireNonEmptyString(job.projectId, 'TimelinePreview', 'projectId');
   const organizationId = job.organizationId;
 
   const timelineAbsPath = path.resolve(process.cwd(), '.runtime', timelineStorageKey);
@@ -46,14 +53,30 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
   const timelineJson = await readFileUnderLimit(timelineAbsPath, 10 * 1024 * 1024);
   const timeline: TimelineData = JSON.parse(timelineJson);
 
-  if (!projectId) {
-    throw new Error('[TimelinePreview] Missing projectId');
-  }
   if (!organizationId) {
     throw new Error('[TimelinePreview] Missing organizationId');
   }
+  if (!timeline.projectId) {
+    throw new Error('[TimelinePreview] Missing projectId in timeline');
+  }
+  if (!timeline.organizationId) {
+    throw new Error('[TimelinePreview] Missing organizationId in timeline');
+  }
+  if (!timeline.episodeId) {
+    throw new Error('[TimelinePreview] Missing episodeId in timeline');
+  }
   if (!timeline.sceneId) {
     throw new Error('[TimelinePreview] Missing sceneId in timeline');
+  }
+  if (timeline.projectId !== projectId) {
+    throw new Error(
+      `[TimelinePreview] Project ownership mismatch: job=${projectId} timeline=${timeline.projectId}`
+    );
+  }
+  if (timeline.organizationId !== organizationId) {
+    throw new Error(
+      `[TimelinePreview] Organization ownership mismatch: job=${organizationId} timeline=${timeline.organizationId}`
+    );
   }
 
   // Validation
@@ -61,9 +84,19 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     throw new Error(`[TimelinePreview] Fail - fast: Timeline must contain at least 1 shot.`);
   }
 
-  const fps = timeline.fps || 24;
-  const width = timeline.width || 1280;
-  const height = timeline.height || 720;
+  if (!Number.isFinite(timeline.fps) || timeline.fps <= 0) {
+    throw new Error('[TimelinePreview] Invalid timeline fps. Explicit positive value required.');
+  }
+  if (!Number.isInteger(timeline.width) || timeline.width <= 0) {
+    throw new Error('[TimelinePreview] Invalid timeline width. Explicit positive integer required.');
+  }
+  if (!Number.isInteger(timeline.height) || timeline.height <= 0) {
+    throw new Error('[TimelinePreview] Invalid timeline height. Explicit positive integer required.');
+  }
+
+  const fps = timeline.fps;
+  const width = timeline.width;
+  const height = timeline.height;
 
   // FFmpeg Fail-fast check
   try {
@@ -91,7 +124,8 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     // SSOT Check: Check DB for existing valid Asset (Formal Render)
     const existingAsset = await prisma.asset.findUnique({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
+          role: AssetRole.SHOT_SOURCE,
           ownerType: AssetOwnerType.SHOT,
           ownerId: shot.shotId,
           type: AssetType.VIDEO,
@@ -111,7 +145,7 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
       }
     }
 
-    // Fallback: Generate if missing
+    // Real derivation: generate preview mp4 from authoritative frames.txt
     const framesTxt = path.resolve(process.cwd(), '.runtime', shot.framesTxtStorageKey);
     if (!(await fileExists(framesTxt))) {
       throw new Error(
@@ -190,6 +224,8 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
   if (!forcePathB) {
     // Path A: Simple Concat
     const concatListPath = path.join(tempMp4Dir, 'scene_concat.txt');
+    const concatContent = shotMp4Paths.map((p) => `file '${p}'`).join('\n');
+    await fsp.writeFile(concatListPath, concatContent);
 
     const concatArgs = ['-f', 'concat', '-safe', '0', '-i', concatListPath];
 
@@ -311,62 +347,14 @@ export async function processTimelinePreviewJob({ prisma, job, apiClient }: Time
     await runFfmpeg(complexArgs, `Stage2_AdvancedCompose`);
   }
 
-  // Stage 3: Persistence (Preview Asset linked to Scene)
-  // Isolation: OwnerType=SCENE, OwnerId=SceneId
-  const asset = await prisma.asset.upsert({
-    where: {
-      ownerType_ownerId_type: {
-        ownerType: AssetOwnerType.SCENE,
-        ownerId: timeline.sceneId,
-        type: AssetType.VIDEO,
-      },
-    },
-    update: { storageKey: finalOutputRelative, status: 'GENERATED' },
-    create: {
-      projectId: projectId,
-      ownerId: timeline.sceneId, // Binds to Scene for Isolation
-      ownerType: AssetOwnerType.SCENE,
-      type: AssetType.VIDEO,
-      storageKey: finalOutputRelative,
-      status: 'GENERATED',
-      createdByJobId: job.id,
-    },
-  });
-
-  // Stage 4: Trigger CE09_MEDIA_SECURITY with AssetId
-  // Unified Entry Point
-  const ce09DedupeKey = `ce09_${pipelineRunId}_${asset.id}`;
-  await prisma.shotJob.upsert({
-    where: { dedupeKey: ce09DedupeKey },
-    update: {},
-    create: {
-      dedupeKey: ce09DedupeKey,
-      type: JobType.CE09_MEDIA_SECURITY,
-      organizationId,
-      projectId,
-      episodeId: job.episodeId || timeline.episodeId,
-      sceneId: job.sceneId || timeline.sceneId,
-      shotId: timeline.shots[0].shotId, // 可选，兼容仍按 shotId 查询的旧入口
-      payload: {
-        assetId: asset.id, // Primary Entry Point
-        videoAssetStorageKey: finalOutputRelative, // Legacy/Backup
-        pipelineRunId,
-        traceId,
-        projectId,
-      },
-    },
-  });
-
-  // Stage 5: Metrics & Audit (Commercial Grade)
+  // Stage 3: Metrics & Audit (Commercial Grade)
   const latencyMs = Date.now() - startTime;
-  const costAmount = 0.05; // Dummy cost for 2 shots
 
   return {
     success: true,
     output: {
-      assetId: asset.id,
       storageKey: finalOutputRelative,
-      metrics: { durationMs: latencyMs, cost: costAmount, shots: timeline.shots.length },
+      metrics: { durationMs: latencyMs, shots: timeline.shots.length },
       directorTimelineSummary,
     },
     audit: {

@@ -27,6 +27,7 @@ type RawProjectCard = {
   id?: string;
   name?: string;
   createdAt?: string;
+  updatedAt?: string;
   status?: string;
   hasVideo?: boolean;
   stats?: RawProjectStats;
@@ -39,17 +40,25 @@ export function adaptProjects(rawProjects: RawProjectCard[]): ProjectCardView[] 
   if (!Array.isArray(rawProjects)) return [];
 
   return rawProjects.map((raw, index) => {
-    // Determine status string
     let latestStatus: 'READY' | 'RUNNING' | 'ERROR' | 'DONE' = 'READY';
-    const rawStatus = (raw.status || '').toUpperCase();
-    if (PROJECT_CARD_STATUSES.includes(rawStatus as (typeof PROJECT_CARD_STATUSES)[number])) {
+    const rawStatus = String(raw.status || '').toUpperCase();
+
+    if (rawStatus === 'IN_PROGRESS' || rawStatus === 'PENDING' || rawStatus === 'RUNNING') {
+      latestStatus = 'RUNNING';
+    } else if (rawStatus === 'FAILED' || rawStatus === 'ERROR') {
+      latestStatus = 'ERROR';
+    } else if (rawStatus === 'DONE' || rawStatus === 'SUCCEEDED' || rawStatus === 'COMPLETED') {
+      latestStatus = 'DONE';
+    } else if (
+      PROJECT_CARD_STATUSES.includes(rawStatus as (typeof PROJECT_CARD_STATUSES)[number])
+    ) {
       latestStatus = rawStatus as 'READY' | 'RUNNING' | 'ERROR' | 'DONE';
     }
 
     return {
       id: raw.id || `temp-project-${index}`,
       title: raw.name || 'Untitled Project',
-      updatedAt: raw.createdAt || new Date().toISOString(),
+      updatedAt: raw.updatedAt || raw.createdAt || new Date().toISOString(),
       latestBuild: {
         id: `build-${raw.id || 'x'}`,
         status: latestStatus,

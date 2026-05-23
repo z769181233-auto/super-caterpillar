@@ -10,6 +10,7 @@ export interface Stage1OrchestratorPayload {
   projectId: string;
   episodeId: string;
   pipelineRunId: string;
+  sceneId?: string;
   traceId?: string;
 }
 
@@ -17,6 +18,13 @@ type Stage1OrchestratorPayloadInput = Stage1OrchestratorPayload & {
   sourceText?: string;
   rawText?: string;
 };
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
 
 export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
   const { prisma, job, logger } = ctx;
@@ -31,10 +39,11 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
     // NOTE: novelText might be undefined if payload mismatch. handled below.
     // P1-2 FIX: projectId is in job object, NOT necessarily in payload.
-    const { novelText, episodeId, pipelineRunId } = payload;
+    const { novelText, episodeId } = payload;
+    const pipelineRunId = requireNonEmptyString(payload.pipelineRunId, 'Stage1', 'pipelineRunId');
     const projectId = job.projectId;
     const organizationId = job.organizationId;
-    const traceId = job.traceId || payload.traceId;
+    const traceId = requireNonEmptyString(job.traceId || payload.traceId, 'Stage1', 'traceId');
 
     if (!projectId) {
       throw new Error(`[Stage1] Missing projectId in job ${job.id}`);
@@ -62,22 +71,39 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       paragraphs = [userText.trim()];
     }
 
-    // 获取当前 Episode 下的 Scene 结构（Stage-1 默认将所有 Shot 放入第一个 Scene）
-    // Ensure we fetch graph_state_snapshot
-    let scene = await prisma.scene.findUnique({
-      where: { episodeId_sceneIndex: { episodeId, sceneIndex: 1 } },
-    });
-    if (!scene) {
-      scene = await prisma.scene.create({
-        data: {
-          episodeId,
-          projectId,
-          sceneIndex: 1,
-          title: 'Main Scene',
-          summary: 'Auto-generated for Stage-1',
-          // P0-2: Ensure snapshot logic handled elsewhere or default null
-        },
-      });
+    // 绑定真实 Scene：单场景可自动绑定，多场景必须显式 sceneId，禁止再隐式挑第一条
+    const explicitSceneId =
+      typeof payload.sceneId === 'string' && payload.sceneId.length > 0 ? payload.sceneId : undefined;
+    const scene = explicitSceneId
+      ? await prisma.scene.findUnique({
+          where: { id: explicitSceneId },
+        })
+      : null;
+
+    if (explicitSceneId && (!scene || scene.episodeId !== episodeId || scene.projectId !== projectId)) {
+      throw new Error(
+        `[Stage1] sceneId ${explicitSceneId} is invalid for episode ${episodeId} / project ${projectId}.`
+      );
+    }
+
+    const sceneCandidates = scene
+      ? [scene]
+      : await prisma.scene.findMany({
+          where: { episodeId, projectId },
+          orderBy: [{ sceneIndex: 'asc' }, { createdAt: 'asc' }],
+          take: 2,
+        });
+
+    const boundScene = sceneCandidates[0];
+    if (!boundScene) {
+      throw new Error(
+        `[Stage1] Missing real scene for episode ${episodeId}. Stage-1 no longer creates synthetic 'Main Scene'.`
+      );
+    }
+    if (!explicitSceneId && sceneCandidates.length > 1) {
+      throw new Error(
+        `[Stage1] Episode ${episodeId} has multiple scenes. Stage-1 now requires explicit payload.sceneId.`
+      );
     }
 
     // P1-2: Refactored - Resolve Reference Sheet BEFORE creating shots to enable binding
@@ -132,7 +158,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       // Note: scene.graphStateSnapshot is typed as Json? (any)
       const { settings: controlNetSettings, bindings: assetBindings } =
         ControlNetMapper.mapFromGraphState(
-          scene.graphStateSnapshot,
+          boundScene.graphStateSnapshot,
           refSheetId // Now resolved!
         );
       const controlNetJson = controlNetSettings as unknown as Prisma.InputJsonValue;
@@ -153,7 +179,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
 
       const shotData = hydrateShotWithDirectorControls(
         {
-          sceneId: scene.id,
+          sceneId: boundScene.id,
           organizationId,
           index: i + 1,
           title: `Shot ${i + 1}`,
@@ -169,7 +195,7 @@ export async function processStage1OrchestratorJob(ctx: ProcessorContext) {
       const shot = await prisma.shot.upsert({
         where: {
           sceneId_index: {
-            sceneId: scene.id,
+            sceneId: boundScene.id,
             index: i + 1,
           },
         },

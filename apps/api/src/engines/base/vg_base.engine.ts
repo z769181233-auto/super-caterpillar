@@ -59,6 +59,14 @@ export abstract class VgBaseEngine {
     return `vg_cache:${this.name}:v1:${hash}`;
   }
 
+  private requireTraceId(input: EngineInvokeInput): string {
+    const traceId = input.context.traceId;
+    if (typeof traceId === 'string' && traceId.length > 0) {
+      return traceId;
+    }
+    throw new Error(`[${this.name}] Missing context.traceId`);
+  }
+
   /**
    * 核心模板方法
    */
@@ -132,11 +140,12 @@ export abstract class VgBaseEngine {
   ): Promise<{ assetUrl: string; meta?: any; metrics?: any }>;
 
   private async auditHelper(input: EngineInvokeInput, type: 'HIT' | 'MISS', resourceId: string) {
+    const traceId = this.requireTraceId(input);
     await this.audit.log({
       action: `VG_${this.name.toUpperCase()}`,
       resourceId: resourceId,
       resourceType: 'vg_result',
-      traceId: input.context.traceId || 'unknown',
+      traceId,
       details: {
         projectId: input.context.projectId,
         userId: input.context.userId,
@@ -149,6 +158,7 @@ export abstract class VgBaseEngine {
   }
 
   private async recordCost(input: EngineInvokeInput, amount: number, extra: any = {}) {
+    const traceId = this.requireTraceId(input);
     await this.cost.recordFromEvent({
       userId: input.context.userId || 'system',
       projectId: input.context.projectId || '',
@@ -159,7 +169,7 @@ export abstract class VgBaseEngine {
       billingUnit: 'job',
       quantity: 1,
       attempt: (input.context as any).attempt || 1,
-      metadata: { type: 'vg_base', traceId: input.context.traceId || 'unknown', ...extra },
+      metadata: { type: 'vg_base', traceId, ...extra },
     });
   }
 }

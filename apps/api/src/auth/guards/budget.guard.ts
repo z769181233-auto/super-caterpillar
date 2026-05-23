@@ -23,7 +23,12 @@ export class BudgetGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const organizationId = request.apiKeyOwnerOrgId || user?.organizationId;
+    const organizationId =
+      request.apiKeyOwnerOrgId ||
+      user?.organizationId ||
+      request.headers['x-organization-id'] ||
+      request.headers['x-scu-org-id'] ||
+      request.headers['x-org-id'];
 
     if (!organizationId) {
       throw new ForbiddenException('Organization context required for budget check');
@@ -77,8 +82,6 @@ export class BudgetGuard implements CanActivate {
 
   private async recordAudit(request: any, orgId: string, action: string, details: any) {
     const requestInfo = AuditLogService.extractRequestInfo(request);
-    const tsHeader = request.headers['x-timestamp'];
-    const timestamp = tsHeader ? new Date(parseInt(tsHeader)) : undefined;
 
     await this.auditLogService
       .record({

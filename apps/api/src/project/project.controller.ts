@@ -13,6 +13,14 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
+import { ProjectStudioCharacterBibleService } from './project-studio-character-bible.service';
+import { ProjectStudioDirectorScriptService } from './project-studio-director-script.service';
+import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
+import { ProjectStudioLocationBibleService } from './project-studio-location-bible.service';
+import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
+import { ProjectProductionStateService } from './project-production-state.service';
+import { ProjectStudioStoryBibleService } from './project-studio-story-bible.service';
+import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
 import { StructureGenerateService } from './structure-generate.service';
 import { SceneGraphService } from './scene-graph.service';
 import { JobService } from '../job/job.service';
@@ -60,7 +68,15 @@ export class ProjectController {
     private readonly jobService: JobService,
     private readonly taskService: TaskService,
     private readonly permissionService: PermissionService,
-    private readonly auditLogService: AuditLogService
+    private readonly auditLogService: AuditLogService,
+    private readonly projectProductionStateService?: ProjectProductionStateService,
+    private readonly projectStudioStoryBibleService?: ProjectStudioStoryBibleService,
+    private readonly projectStudioCharacterBibleService?: ProjectStudioCharacterBibleService,
+    private readonly projectStudioLocationBibleService?: ProjectStudioLocationBibleService,
+    private readonly projectStudioEpisodePlanService?: ProjectStudioEpisodePlanService,
+    private readonly projectStudioDirectorScriptService?: ProjectStudioDirectorScriptService,
+    private readonly projectStudioShotScriptService?: ProjectStudioShotScriptService,
+    private readonly projectStudioVideoPromptService?: ProjectStudioVideoPromptService
   ) {}
 
   @Get()
@@ -81,6 +97,34 @@ export class ProjectController {
       pageNum,
       pageSizeNum
     );
+    return {
+      success: true,
+      data: result,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/quality/review-queue')
+  @Permissions(SystemPermissions.AUTH)
+  async getQualityReviewQueue(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    await this.permissionService.assertCanManageProject(user.userId, organizationId);
+
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
+    const result = await this.projectService.listQualityReviewQueue(projectId, organizationId, {
+      status,
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+    });
+
     return {
       success: true,
       data: result,
@@ -235,6 +279,419 @@ export class ProjectController {
     return {
       success: true,
       data: overview,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/production-state')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getProductionState(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectProductionStateService) {
+      throw new BadRequestException('Production state service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectProductionStateService.getProductionState(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/story-source/compatibility')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStorySourceCompatibility(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectProductionStateService) {
+      throw new BadRequestException('Production state service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectProductionStateService.getStorySourceCompatibility(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/story-bible')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioStoryBible(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryBibleService) {
+      throw new BadRequestException('Studio StoryBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryBibleService.getStoryBible(projectId, organizationId);
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/story-bible/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioStoryBible(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryBibleService) {
+      throw new BadRequestException('Studio StoryBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryBibleService.generateStoryBible(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/characters')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioCharacterBibles(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioCharacterBibleService) {
+      throw new BadRequestException('Studio CharacterBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioCharacterBibleService.getCharacterBibles(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/characters/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioCharacterBibles(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioCharacterBibleService) {
+      throw new BadRequestException('Studio CharacterBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioCharacterBibleService.generateCharacterBibles(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/locations')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioLocationBibles(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioLocationBibleService) {
+      throw new BadRequestException('Studio LocationBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioLocationBibleService.getLocationBibles(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/locations/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioLocationBibles(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioLocationBibleService) {
+      throw new BadRequestException('Studio LocationBible service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioLocationBibleService.generateLocationBibles(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/episode-plans')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioEpisodePlans(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioEpisodePlanService) {
+      throw new BadRequestException('Studio EpisodePlan service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioEpisodePlanService.getEpisodePlans(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/episode-plans/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioEpisodePlans(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioEpisodePlanService) {
+      throw new BadRequestException('Studio EpisodePlan service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioEpisodePlanService.generateEpisodePlans(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/director-scripts')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioDirectorScripts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioDirectorScriptService) {
+      throw new BadRequestException('Studio DirectorScript service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioDirectorScriptService.getDirectorScripts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/director-scripts/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioDirectorScripts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioDirectorScriptService) {
+      throw new BadRequestException('Studio DirectorScript service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioDirectorScriptService.generateDirectorScripts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/shot-scripts')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioShotScripts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioShotScriptService) {
+      throw new BadRequestException('Studio ShotScript service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioShotScriptService.getShotScripts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/shot-scripts/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioShotScripts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioShotScriptService) {
+      throw new BadRequestException('Studio ShotScript service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioShotScriptService.generateShotScripts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/video-prompts')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioVideoPrompts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioVideoPromptService) {
+      throw new BadRequestException('Studio VideoPrompt service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioVideoPromptService.getVideoPrompts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/video-prompts/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioVideoPrompts(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioVideoPromptService) {
+      throw new BadRequestException('Studio VideoPrompt service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioVideoPromptService.generateVideoPrompts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
       requestId: randomUUID(),
       timestamp: new Date().toISOString(),
     };

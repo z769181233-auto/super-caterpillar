@@ -1,4 +1,4 @@
-import { AssetOwnerType, AssetType, JobType, PrismaClient, ShotReviewStatus } from 'database';
+import { AssetOwnerType, AssetRole, AssetType, JobType, PrismaClient, ShotReviewStatus } from 'database';
 import { WorkerJobBase } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 import { spawn } from 'child_process';
@@ -9,6 +9,7 @@ import { fileExists, ensureDir } from '../../../packages/shared/fs_async';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ChildProcess } from 'child_process';
 import { config } from '@scu/config';
+import sharp from 'sharp';
 
 const PRODUCTION_MODE = process.env.PRODUCTION_MODE === '1';
 const activeProcesses = new Set<ChildProcess>();
@@ -33,6 +34,34 @@ function getStringArrayField(source: JsonRecord, key: string): string[] {
 function getRecordField(source: JsonRecord, key: string): JsonRecord | undefined {
   const value = source[key];
   return isRecord(value) ? value : undefined;
+}
+
+function parsePositiveNumber(
+  rawValue: unknown,
+  field: string,
+  { integerOnly = false }: { integerOnly?: boolean } = {}
+): number {
+  const value =
+    typeof rawValue === 'number'
+      ? rawValue
+      : typeof rawValue === 'string' && rawValue.trim().length > 0
+        ? Number(rawValue)
+        : NaN;
+
+  if (!Number.isFinite(value) || value <= 0 || (integerOnly && !Number.isInteger(value))) {
+    throw new Error(
+      `[VIDEO_RENDER] Invalid ${field}: explicit positive ${integerOnly ? 'integer ' : ''}value required`
+    );
+  }
+
+  return value;
+}
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
 }
 
 export function cleanupVideoRenderProcesses() {
@@ -62,8 +91,8 @@ export async function processVideoRenderJob(
 ): Promise<any> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId = job.traceId || `trace-${jobId}`;
   const payload = isRecord(job.payload) ? job.payload : {};
+  const traceId = requireNonEmptyString(job.traceId ?? getStringField(payload, 'traceId'), 'VIDEO_RENDER', 'traceId');
   const pipelineRunId = getStringField(payload, 'pipelineRunId');
   const projectId = getStringField(payload, 'projectId') ?? job.projectId;
 
@@ -134,7 +163,6 @@ export async function processVideoRenderJob(
 
   try {
     // 5. Build FFmpeg Logic
-    const fps = typeof payload.fps === 'number' ? payload.fps : 24;
     const cmd = 'ffmpeg';
     let args: string[] = [];
 
@@ -161,9 +189,36 @@ export async function processVideoRenderJob(
       return p1; // Default to storage path even if missing
     };
 
+    const resolveFrameDimensions = async (
+      absPath: string
+    ): Promise<{ width: number; height: number }> => {
+      const metadata = await sharp(absPath).metadata();
+      if (!metadata.width || !metadata.height) {
+        throw new Error(`[VIDEO_RENDER] Unable to detect frame dimensions from ${absPath}`);
+      }
+      return { width: metadata.width, height: metadata.height };
+    };
+
+    const resolvedList = await Promise.all(frameKeys.map((k) => resolveAssetPath(k)));
+    const fps = parsePositiveNumber(
+      payload.fps ?? process.env.VIDEO_RENDER_DEFAULT_FPS,
+      'fps'
+    );
+    const requestedWidth =
+      payload.width == null ? null : parsePositiveNumber(payload.width, 'width', { integerOnly: true });
+    const requestedHeight =
+      payload.height == null ? null : parsePositiveNumber(payload.height, 'height', { integerOnly: true });
+    const inferredDimensions =
+      requestedWidth && requestedHeight ? null : await resolveFrameDimensions(resolvedList[0]);
+    const width = requestedWidth ?? inferredDimensions?.width;
+    const height = requestedHeight ?? inferredDimensions?.height;
+    if (!width || !height) {
+      throw new Error('[VIDEO_RENDER] Missing width/height and unable to infer from first frame');
+    }
+
     if (frameKeys.length === 1 && isImageKey(frameKeys[0])) {
       // Single Image Loop Mode
-      const inputAbs = await resolveAssetPath(frameKeys[0]);
+      const inputAbs = resolvedList[0];
       await assertFrameFileOk(inputAbs);
       args = [
         '-hide_banner',
@@ -181,13 +236,14 @@ export async function processVideoRenderJob(
         'yuv420p',
         '-r',
         String(fps),
+        '-s',
+        `${width}x${height}`,
         '-y',
         tempOutput,
       ];
     } else {
       // Concat Mode
       const listFilePath = path.join(workspaceDir, 'input.txt');
-      const resolvedList = await Promise.all(frameKeys.map((k) => resolveAssetPath(k)));
       let listContent = resolvedList.map((abs: string) => `file '${abs}'\nduration 1.0`).join('\n');
       listContent += `\nfile '${resolvedList[resolvedList.length - 1]}'`;
       await fsp.writeFile(listFilePath, listContent);
@@ -198,7 +254,7 @@ export async function processVideoRenderJob(
           '-f',
           'lavfi',
           '-i',
-          'testsrc=duration=1:size=640x360:rate=24',
+          `testsrc=duration=1:size=${width}x${height}:rate=${fps}`,
           '-c:v',
           'libx264',
           '-pix_fmt',
@@ -220,6 +276,8 @@ export async function processVideoRenderJob(
           'yuv420p',
           '-r',
           String(fps),
+          '-s',
+          `${width}x${height}`,
           '-y',
           tempOutput,
         ];
@@ -275,7 +333,8 @@ export async function processVideoRenderJob(
     // P4-FIX-1.1: Asset Idempotency (Prevent status regression)
     const asset = await prisma.asset.upsert({
       where: {
-        ownerType_ownerId_type: {
+        ownerType_ownerId_type_role: {
+          role: AssetRole.SHOT_SOURCE,
           ownerType: AssetOwnerType.SHOT,
           ownerId,
           type: AssetType.VIDEO,
@@ -285,6 +344,7 @@ export async function processVideoRenderJob(
         projectId,
         ownerType: AssetOwnerType.SHOT,
         ownerId,
+        role: AssetRole.SHOT_SOURCE,
         type: AssetType.VIDEO,
         status: 'GENERATED',
         storageKey: 'temp/pending',
@@ -415,48 +475,13 @@ export async function processVideoRenderJob(
       );
     }
 
-    // 7.2 Publish (Stage-1 Real Baseline)
+    // 7.2 Legacy publish flag is deprecated.
+    // Authoritative publish now happens after CE09 reconciliation on the API side.
     const shouldPublish = payload?.publish === true;
     if (shouldPublish) {
-      const episodeId = getStringField(payload, 'episodeId');
-      if (!projectId || !episodeId) {
-        throw new Error(`[VIDEO_RENDER] publish=true but missing projectId/episodeId`);
-      }
-
-      // P4-FIX-1.3: PublishedVideo Upsert (Idempotency) using SQL
-      const dedupeKey = createHash('sha256')
-        .update(`${projectId}:${episodeId}:${pipelineRunId}`)
-        .digest('hex');
-
-      await prisma.$executeRawUnsafe(
-        `
-        INSERT INTO published_videos (id, "projectId", "episodeId", "assetId", "storageKey", checksum, status, metadata, "dedupe_key", "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, $4, $5, $6, 'PUBLISHED', $7::jsonb, $8, NOW(), NOW())
-        ON CONFLICT (dedupe_key)
-        DO UPDATE SET
-          "assetId" = EXCLUDED."assetId",
-          "storageKey" = EXCLUDED."storageKey",
-          checksum = EXCLUDED.checksum,
-          status = 'PUBLISHED',
-          metadata = EXCLUDED.metadata,
-          "updatedAt" = NOW()
-        `,
-        crypto.randomUUID(),
-        projectId,
-        episodeId,
-        asset.id,
-        videoKey,
-        checksum,
-        JSON.stringify({ pipelineRunId, ffprobeKey }),
-        dedupeKey
+      process.stderr.write(
+        `[VIDEO_RENDER] Legacy publish=true ignored for job ${jobId}; publish is deferred to CE09.\n`
       );
-
-      // Force asset to PUBLISHED status (safe because we rely on PublishedVideo uniqueness now)
-      await prisma.asset.update({
-        where: { id: asset.id },
-        data: { status: 'PUBLISHED' },
-      });
-
     }
 
     // 9. Return Result
@@ -467,6 +492,7 @@ export async function processVideoRenderJob(
       sizeBytes,
       checksum,
       durationMs: latency,
+      publishDeferredToCe09: shouldPublish,
       status: 'SUCCESS',
     };
   } finally {

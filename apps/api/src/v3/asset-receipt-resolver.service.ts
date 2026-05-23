@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { projectDirectorLayerToReceipt } from '@scu/shared-types';
 
 export interface V3AssetReceipt {
   asset_id: string | null;
@@ -21,6 +22,13 @@ export interface V3AssetReceipt {
     publish_eligibility: string | null;
     review_required: boolean | null;
     policy_stage: string | null;
+    review_policy_result: string | null;
+    review_policy_source: string | null;
+    approval_action_source: string | null;
+    approval_actor_user_id: string | null;
+    approval_review_status: string | null;
+    approval_review_note: string | null;
+    approval_reviewed_at: string | null;
     shot_planner_rule_set_version: string | null;
     shot_planner_matched_rule_ids: string[] | null;
     planner_version: string | null;
@@ -55,35 +63,36 @@ export class AssetReceiptResolverService {
 
     // Level 1: Match by createdByJobId (Deterministic)
     const level1 = await this.prisma.asset.findMany({
-      where: { createdByJobId: jobId },
+      where: {
+        createdByJobId: jobId,
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
+      },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
     });
     if (level1.length > 0) {
-      const asset = level1[0];
-      return this.mapAssetToReceipt(
-        asset,
-        level1.length > 1 ? 'MULTI_MATCH_CREATED_BY_JOBID' : null
-      );
+      return this.mapFirstAsset(level1, 'MULTI_MATCH_CREATED_BY_JOBID');
     }
 
     // Level 2: Pipeline Trace (Deterministic)
-    const level2 = await this.prisma.asset.findFirst({
+    const level2 = await this.prisma.asset.findMany({
       where: {
         job: { traceId },
         projectId,
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
         status: 'PUBLISHED',
         type: 'VIDEO',
       },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
-    if (level2) {
-      return this.mapAssetToReceipt(level2, null);
+    if (level2.length > 0) {
+      return this.mapFirstAsset(level2, 'MULTI_MATCH_TRACE_PUBLISHED');
     }
 
     // Level 3: Temporal Window (Deterministic)
-    const level3 = await this.prisma.asset.findFirst({
+    const level3 = await this.prisma.asset.findMany({
       where: {
         projectId,
         job: { traceId },
@@ -91,14 +100,16 @@ export class AssetReceiptResolverService {
           gte: new Date(jobCreatedAt.getTime() - fiveMins),
           lte: new Date(jobCreatedAt.getTime() + fiveMins),
         },
+        role: { in: ['SCENE_MASTER', 'EPISODE_MASTER'] },
         status: 'PUBLISHED',
         type: 'VIDEO',
       },
       include: { publishedVideo: true },
       orderBy: { createdAt: 'desc' },
+      take: 2,
     });
-    if (level3) {
-      return this.mapAssetToReceipt(level3, null);
+    if (level3.length > 0) {
+      return this.mapFirstAsset(level3, 'MULTI_MATCH_TRACE_WINDOW');
     }
 
     // No asset found - Return full null set with error code
@@ -114,6 +125,10 @@ export class AssetReceiptResolverService {
     };
   }
 
+  private mapFirstAsset(assets: any[], multiMatchReason: string): V3AssetReceipt {
+    return this.mapAssetToReceipt(assets[0], assets.length > 1 ? multiMatchReason : null);
+  }
+
   private mapAssetToReceipt(asset: any, fallbackReason: string | null): V3AssetReceipt {
     const metadata = (asset.publishedVideo?.metadata as any) || {};
     const directorLayer =
@@ -122,6 +137,7 @@ export class AssetReceiptResolverService {
       !Array.isArray(metadata.directorLayer)
         ? metadata.directorLayer
         : null;
+    const receiptDirectorLayer = projectDirectorLayerToReceipt(directorLayer);
     return {
       asset_id: asset.id,
       hls_url: asset.hlsPlaylistUrl,
@@ -130,34 +146,7 @@ export class AssetReceiptResolverService {
       storage_key: asset.storageKey,
       duration_sec: metadata.duration_sec || 0,
       fallback_reason: fallbackReason,
-      director_layer: directorLayer
-        ? {
-            scene_id: directorLayer.sceneId ?? null,
-            film_ir_id: directorLayer.filmIrId ?? null,
-            gate_verdict: directorLayer.latestGateVerdict ?? null,
-            gate_reason: directorLayer.gateReason ?? null,
-            threshold_profile: directorLayer.thresholdProfile ?? null,
-            gate_policy_level: directorLayer.gatePolicyLevel ?? null,
-            publish_action: directorLayer.publishAction ?? null,
-            publish_eligibility: directorLayer.publishEligibility ?? null,
-            review_required:
-              typeof directorLayer.reviewRequired === 'boolean'
-                ? directorLayer.reviewRequired
-                : null,
-            policy_stage: directorLayer.policyStage ?? null,
-            shot_planner_rule_set_version: directorLayer.shotPlannerRuleSetVersion ?? null,
-            shot_planner_matched_rule_ids: Array.isArray(directorLayer.shotPlannerMatchedRuleIds)
-              ? directorLayer.shotPlannerMatchedRuleIds
-              : null,
-            planner_version: directorLayer.plannerVersion ?? null,
-            coverage_role: directorLayer.coverageRole ?? null,
-            rhythm_class: directorLayer.rhythmClass ?? null,
-            transition_hint: directorLayer.transitionHint ?? null,
-            rhythm_strategy: directorLayer.editingRhythmStrategy ?? null,
-            audio_master_priority: directorLayer.audioMasterPriority ?? null,
-            silence_strategy: directorLayer.silenceStrategy ?? null,
-          }
-        : null,
+      director_layer: receiptDirectorLayer,
     };
   }
 }

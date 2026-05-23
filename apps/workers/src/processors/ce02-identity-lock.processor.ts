@@ -19,11 +19,7 @@ const EVIDENCE_DIR_FILE = '.current_evidence_dir';
 function resolveSsotRoot(): string {
   const root = process.env.SSOT_ROOT || process.env.SCU_REPO_ROOT;
   if (!root) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('CRITICAL: SSOT_ROOT environment variable is missing in production.');
-    }
-    // Fallback for local development
-    return path.resolve(process.cwd());
+    throw new Error('CRITICAL: SSOT_ROOT/SCU_REPO_ROOT is missing.');
   }
   return path.resolve(root);
 }
@@ -92,10 +88,11 @@ export async function processIdentityLockJob(ctx: {
 }): Promise<any> {
   const { prisma, job, apiClient } = ctx;
   const jobId = job.id;
-  const traceId = job.traceId || `trace-id-lock-${jobId}`;
+  const traceId = job.traceId;
   const projectId = job.projectId!;
 
   if (!projectId) throw new Error(`[IdentityLock] Missing projectId for job ${jobId}`);
+  if (!traceId) throw new Error(`[IdentityLock] Missing traceId for job ${jobId}`);
 
   const payload = job.payload as IdentityLockPayload;
   const characterId = payload.characterId;
@@ -180,7 +177,7 @@ export async function processIdentityLockJob(ctx: {
     }
 
     currentAnchorId = anchor.data.id;
-    const seed = payload.seed || Math.floor(Math.random() * 2147483647);
+    const seed = payload.seed ?? Math.floor(Math.random() * 2147483647);
 
     // 2. Fetch Character Profile for dynamic prompt
     const profile = await prisma.characterProfile.findUnique({
@@ -213,7 +210,6 @@ export async function processIdentityLockJob(ctx: {
 
       const engineResult = await engineHubClient.invoke<any, any>({
         engineKey: 'shot_render',
-        engineVersion: 'default',
         payload: {
           shotId: `char-${characterId}-${view}`,
           prompt: `${characterPrompt}, ${view} view`,
@@ -270,7 +266,7 @@ export async function processIdentityLockJob(ctx: {
       viewAssets[view] = targetRelPath;
 
       // Evidence
-      logEvidence('IDENTITY_TRIVIEW_SHA256.txt', `${sha256}  ${targetRelPath}`);
+      await logEvidence('IDENTITY_TRIVIEW_SHA256.txt', `${sha256}  ${targetRelPath}`);
     }
 
     const combinedHash = crypto.createHash('sha256').update(viewHashes.join('')).digest('hex');

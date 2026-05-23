@@ -35,7 +35,7 @@ export class CEDagOrchestratorService {
 
     // 1. Generate runId/traceId if not provided (using UUID)
     const runId = req.runId || randomUUID();
-    const traceId = req.traceId || `trace_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
+    const traceId = req.traceId || randomUUID();
 
     // 1.5. Production Guard: referenceSheetId is required for rendering
     if (PRODUCTION_MODE && !req.referenceSheetId) {
@@ -94,19 +94,9 @@ export class CEDagOrchestratorService {
       if (!anchorShot) throw new Error(`Shot ${req.shotId} not found`);
       const sceneId = anchorShot.sceneId;
 
-      // Locate corresponding Scene
-      const novelScene = await this.prisma.scene.findFirst({
-        where: {
-          chapter: {
-            novelSource: { projectId: req.projectId },
-          },
-          sceneIndex: anchorShot.scene.sceneIndex,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
       const structuredText =
-        novelScene?.enrichedText || 'A cinematic scene based on ' + (anchorShot.title || 'novel');
+        anchorShot.scene?.enrichedText ||
+        'A cinematic scene based on ' + (anchorShot.title || 'novel');
 
       // 5. Trigger CE03 job
       const ce03Job = await this.jobService.createCECoreJob({
@@ -124,10 +114,19 @@ export class CEDagOrchestratorService {
       await this.waitForJobCompletion(ce03Job.id, 'CE03');
 
       // 6. Get CE03 score
-      const ce03Metrics = await this.prisma.qualityMetrics.findFirst({
+      const ce03MetricsList = await this.prisma.qualityMetrics.findMany({
         where: { projectId: req.projectId, engine: 'CE03', jobId: jobIds.ce03JobId, traceId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 2,
       });
+      if (ce03MetricsList.length > 1) {
+        this.logger.error(
+          `[CE_DAG] Duplicate CE03 metrics detected for jobId=${jobIds.ce03JobId} traceId=${traceId}: ${ce03MetricsList
+            .map((metric) => metric.id)
+            .join(', ')}`
+        );
+      }
+      const ce03Metrics = ce03MetricsList[0] ?? null;
       const ce03Score = ce03Metrics?.visualDensityScore ?? 0;
 
       // 7. Trigger CE04 job
@@ -149,10 +148,19 @@ export class CEDagOrchestratorService {
 
       // 8. Get CE04 score
       this.logger.log(`[CE_DAG] [DEBUG] Fetching CE04 metrics for jobId=${jobIds.ce04JobId}`);
-      const ce04Metrics = await this.prisma.qualityMetrics.findFirst({
+      const ce04MetricsList = await this.prisma.qualityMetrics.findMany({
         where: { projectId: req.projectId, engine: 'CE04', jobId: jobIds.ce04JobId, traceId },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 2,
       });
+      if (ce04MetricsList.length > 1) {
+        this.logger.error(
+          `[CE_DAG] Duplicate CE04 metrics detected for jobId=${jobIds.ce04JobId} traceId=${traceId}: ${ce04MetricsList
+            .map((metric) => metric.id)
+            .join(', ')}`
+        );
+      }
+      const ce04Metrics = ce04MetricsList[0] ?? null;
       const ce04Score = ce04Metrics?.enrichmentQuality ?? 0;
       this.logger.log(`[CE_DAG] [DEBUG] CE04 score: ${ce04Score}`);
 

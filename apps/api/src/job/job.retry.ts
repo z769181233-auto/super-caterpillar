@@ -8,6 +8,13 @@
 import { Prisma, JobStatus } from 'database';
 import { buildBillingLedgerCreateData } from '../billing/billing-ledger-compat.util';
 
+function requireTraceId(value: unknown, jobId: string, contextTag: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing traceId for job ${jobId}`);
+}
+
 /**
  * 重试计算结果
  */
@@ -107,10 +114,11 @@ export async function markRetryOrFail(
 
   // P3-A: Dual State Machine Physical Binding - RELEASED
   try {
+    const traceId = requireTraceId(job.traceId, job.id, 'JobRetry.RELEASE');
     await tx.billingLedger.create({
       data: buildBillingLedgerCreateData({
         tenantId: (job as any).organizationId || job.projectId,
-        traceId: job.traceId || job.id,
+        traceId,
         itemType: 'JOB',
         itemId: job.id,
         chargeCode: 'JOB_RELEASED',

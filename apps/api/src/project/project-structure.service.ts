@@ -16,7 +16,15 @@ import {
   ProjectStructureEpisodeNode,
   ProjectStructureSceneNode,
   ProjectStructureShotNode,
+  ProjectStructureProductionScript,
 } from '@scu/shared-types';
+
+function getProductionScript(data: unknown): ProjectStructureProductionScript | null {
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  const script = record.productionScript;
+  return script && typeof script === 'object' ? (script as ProjectStructureProductionScript) : null;
+}
 
 @Injectable()
 export class ProjectStructureService {
@@ -93,6 +101,7 @@ export class ProjectStructureService {
             shots: {
               include: {
                 assets: true,
+                shotPlanning: true,
               },
               orderBy: { index: 'asc' },
             },
@@ -158,6 +167,21 @@ export class ProjectStructureService {
             index: shot.index,
             title: shot.title,
             description: shot.description,
+            content: shot.content,
+            actionDescription: shot.actionDescription,
+            dialogueContent: shot.dialogueContent,
+            productionScript: getProductionScript(shot.shotPlanning?.data),
+            visualDescription: shot.visualDescription,
+            visualPrompt: shot.visualPrompt,
+            cameraMovement: shot.cameraMovement,
+            cameraAngle: shot.cameraAngle,
+            lightingPreset: shot.lightingPreset,
+            soundFx: shot.soundFx,
+            durationSec: shot.durationSec != null ? Number(shot.durationSec) : null,
+            durationSeconds: shot.durationSeconds,
+            dramaticFunction: shot.dramaticFunction,
+            emotionalTarget: shot.emotionalTarget,
+            novelQuote: shot.novelQuote,
             shotType: shot.type,
             params: shot.params,
             qualityScore: shot.qualityScore,
@@ -172,6 +196,9 @@ export class ProjectStructureService {
           index: scene.sceneIndex,
           title: scene.title,
           summary: scene.summary,
+          characters: scene.characters,
+          characterIds: scene.characterIds,
+          directingNotes: scene.directingNotes,
           visualDensityScore: scene.visualDensityScore,
           enrichedText: scene.enrichedText,
           shots,

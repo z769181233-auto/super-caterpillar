@@ -9,6 +9,7 @@ import {
   Param,
   Get,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { IsBoolean, IsObject, IsOptional, IsString } from 'class-validator';
 import { JobService } from '../job/job.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -54,6 +55,19 @@ export class ContractShotController {
     private readonly assetResolver: AssetReceiptResolverService
   ) {}
 
+  private emptyReceipt(errorCode: string) {
+    return {
+      asset_id: null,
+      hls_url: null,
+      mp4_url: null,
+      checksum: null,
+      storage_key: null,
+      duration_sec: null,
+      fallback_reason: null,
+      error_code: errorCode,
+    };
+  }
+
   @Post('batch-generate')
   async batchGenerate(
     @Body() body: { scene_id: string; organization_id?: string; project_id?: string }
@@ -75,7 +89,7 @@ export class ContractShotController {
     if (!project) throw new NotFoundException('Project not found');
 
     const orgId = body.organization_id || project.organizationId;
-    const traceId = `v3_bg_${scene.id}_${Date.now()}`;
+    const traceId = randomUUID();
 
     // 2. Trigger Real CE11 Batch Job
     // Using JobService.createCECoreJob as it supports payload construction nicely
@@ -98,7 +112,7 @@ export class ContractShotController {
     return {
       job_id: job.id,
       status: 'QUEUED',
-      trace_id: job.traceId || traceId,
+      trace_id: job.traceId ?? traceId,
     };
   }
 
@@ -128,7 +142,7 @@ export class ContractShotController {
     }
 
     const orgId = body.organization_id || project.organizationId;
-    const traceId = body.trace_id || `v3_sr_${shot.id}_${Date.now()}`;
+    const traceId = body.trace_id || randomUUID();
 
     const job = await this.jobService.create(
       shot.id,
@@ -160,7 +174,7 @@ export class ContractShotController {
       job_id: job.id,
       status: 'QUEUED',
       render_status: 'QUEUED',
-      trace_id: job.traceId || traceId,
+      trace_id: job.traceId ?? traceId,
     };
   }
 
@@ -212,12 +226,14 @@ export class ContractShotController {
 
     let resultPreview = null;
     if (v3Status === 'SUCCEEDED') {
-      const assetReceipt = await this.assetResolver.resolveAsset({
-        projectId: job.projectId,
-        traceId: job.traceId || '',
-        jobId: job.id,
-        jobCreatedAt: job.createdAt,
-      });
+      const assetReceipt = job.traceId
+        ? await this.assetResolver.resolveAsset({
+            projectId: job.projectId,
+            traceId: job.traceId,
+            jobId: job.id,
+            jobCreatedAt: job.createdAt,
+          })
+        : this.emptyReceipt('ERR_TRACE_ID_MISSING');
       resultPreview = {
         ...assetReceipt,
         scenes_count: scenesCount,

@@ -16,10 +16,13 @@ async function main() {
 
   // 1) 组织:优先复用最新 organization(避免必填字段不一致)
   const org =
-    (await prisma.organization.findFirst({
-      orderBy: { createdAt: 'desc' },
+    (
+      await prisma.organization.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
       select: { id: true },
-    })) ??
+    })
+    )[0] ??
     (await prisma.organization.create({
       data: {
         name: `p1_2_org_${Date.now()}`,
@@ -30,10 +33,13 @@ async function main() {
 
   // 2) 项目:优先复用最新 project
   const project =
-    (await prisma.project.findFirst({
-      orderBy: { createdAt: 'desc' },
+    (
+      await prisma.project.findMany({
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
       select: { id: true },
-    })) ??
+    })
+    )[0] ??
     (await prisma.project.create({
       data: {
         name: `p1_2_billing_${Date.now()}`,

@@ -7,9 +7,10 @@ import {
   AnalyzedProjectStructure,
   WorkerJobBase,
   CE06NovelParsingOutput,
+  buildChapterSemanticContext,
+  extractSceneSemanticsFromText,
 } from '@scu/shared-types';
-import { CE06EngineSelector } from '@scu/engines-ce06';
-import { CE06Input, CE06Output } from '@scu/engines-ce06';
+import { CE06Output } from '@scu/engines-ce06';
 import { ApiClient } from './api-client';
 import * as fs from 'fs';
 import { Readable } from 'stream';
@@ -24,6 +25,7 @@ import {
 } from './processors/chunk-processor';
 import { LLMBatchProcessor } from './processors/llm-batch-processor';
 import { hydrateShotWithDirectorControls } from './v3/utils/shot_field_extractor';
+import { buildSemanticMemoryContextForChapter, upsertChapterSemanticMemory } from '@scu/api/memory/semantic-memory-context';
 
 /**
  * 结构化日志输出函数
@@ -49,6 +51,324 @@ function createMissingStructureMarkersError(): FailFastError {
   error.blockingReason = 'NOVEL_STRUCTURE_MARKERS_MISSING';
   error.nextAction = 'USE_CE06_OR_ADD_CHAPTER_MARKERS';
   return error;
+}
+
+export function composeNovelChapterContent(chapter: {
+  title?: string | null;
+  rawContent?: string | null;
+}): string {
+  const title = chapter.title?.trim() || '';
+  const rawContent = chapter.rawContent?.trim() || '';
+
+  if (!rawContent) {
+    return title;
+  }
+
+  if (title && !rawContent.startsWith(title)) {
+    return `${title}\n${rawContent}`;
+  }
+
+  return rawContent;
+}
+
+function normalizeSceneText(scene: AnalyzedScene): string {
+  const parts = [
+    scene.summary,
+    ...scene.shots.flatMap((shot) => [shot.novelQuote, shot.text, shot.summary]),
+  ];
+  return parts
+    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .join('\n')
+    .trim();
+}
+
+export function extractSceneSemantics(sceneInput: string | AnalyzedScene): {
+  characters: string[];
+  location?: string;
+  timeOfDay?: string;
+  emotionalTone?: string;
+  conflictSummary?: string;
+  semanticSummary: string;
+  chapterContextSummary?: string;
+  memoryContextSummary?: string;
+  memoryContextSource?: string;
+  crossChapterMemoryHit?: boolean;
+  semanticMethod?: string;
+  fallbackStrategy?: string;
+} {
+  const scene =
+    typeof sceneInput === 'string'
+      ? ({ index: 0, title: '', summary: sceneInput, shots: [] } as AnalyzedScene)
+      : sceneInput;
+  const text = normalizeSceneText(scene);
+  const seededCharacters = scene.shots.flatMap((shot) =>
+    Array.isArray(shot.characters) ? shot.characters : []
+  );
+  const semantics = extractSceneSemanticsFromText(text, { seededCharacters });
+
+  return {
+    characters: semantics.characters,
+    location: semantics.location,
+    timeOfDay: semantics.timeOfDay,
+    emotionalTone: semantics.emotionalTone,
+    conflictSummary: semantics.conflictSummary,
+    semanticSummary: semantics.semanticSummary,
+    chapterContextSummary: semantics.chapterContextSummary,
+    memoryContextSummary: semantics.memoryContextSummary,
+    memoryContextSource: semantics.memoryContextSource,
+    crossChapterMemoryHit: semantics.crossChapterMemoryHit,
+    semanticMethod: semantics.semanticMethod,
+    fallbackStrategy: semantics.fallbackStrategy,
+  };
+}
+
+function buildEpisodeSourceText(episode: AnalyzedEpisode): string {
+  return episode.scenes
+    .map((scene) => normalizeSceneText(scene))
+    .filter((text) => text.length > 0)
+    .join('\n\n');
+}
+
+export function enrichAnalyzedStructureSemantics(
+  structure: AnalyzedProjectStructure,
+  options?: {
+    memoryContext?: {
+      summary: string;
+      source: 'semantic-memory-stack-v1';
+      seededCharacters: string[];
+      dominantLocation?: string;
+      dominantTimeOfDay?: string;
+      dominantEmotionalTone?: string;
+      dominantConflictSummary?: string;
+      shortTermSummary?: string;
+      longTermSummary?: string;
+      entityStateSummary?: string;
+    };
+  }
+): AnalyzedProjectStructure {
+  const enrichEpisode = (episode: AnalyzedEpisode): AnalyzedEpisode => {
+    const chapterContext = buildChapterSemanticContext(
+      episode.summary?.trim() ? `${episode.summary}\n\n${buildEpisodeSourceText(episode)}` : buildEpisodeSourceText(episode)
+    );
+    let previousSceneContext: ReturnType<typeof extractSceneSemanticsFromText> | undefined;
+
+    return {
+      ...episode,
+      summary: episode.summary?.trim() ? episode.summary : chapterContext.summary,
+      scenes: episode.scenes.map((scene) => {
+        const text = normalizeSceneText(scene);
+        const seededCharacters = scene.shots.flatMap((shot) =>
+          Array.isArray(shot.characters) ? shot.characters : []
+        );
+        const semantics = extractSceneSemanticsFromText(text, {
+          seededCharacters,
+          chapterContext,
+          previousSceneContext,
+          memoryContext: options?.memoryContext,
+        });
+        previousSceneContext = semantics;
+        return {
+          ...scene,
+          characters: semantics.characters,
+          location: semantics.location,
+          timeOfDay: semantics.timeOfDay,
+          emotionalTone: semantics.emotionalTone,
+          conflictSummary: semantics.conflictSummary,
+          semanticSummary: semantics.semanticSummary,
+          chapterContextSummary: semantics.chapterContextSummary,
+          memoryContextSummary: semantics.memoryContextSummary,
+          memoryContextSource: semantics.memoryContextSource,
+          crossChapterMemoryHit: semantics.crossChapterMemoryHit,
+          semanticMethod: semantics.semanticMethod,
+          fallbackStrategy: semantics.fallbackStrategy,
+        };
+      }),
+    };
+  };
+
+  if (Array.isArray(structure.episodes) && structure.episodes.length > 0) {
+    return {
+      ...structure,
+      episodes: structure.episodes.map(enrichEpisode),
+    };
+  }
+
+  return {
+    ...structure,
+    seasons: (structure.seasons || []).map((season) => ({
+      ...season,
+      episodes: season.episodes.map(enrichEpisode),
+    })),
+  };
+}
+
+function buildSceneSemanticState(sceneData: AnalyzedScene): Prisma.InputJsonObject {
+  const semanticExtraction: Prisma.InputJsonObject = {
+    characters: (sceneData.characters ?? []) as Prisma.InputJsonValue,
+    location: sceneData.location ?? null,
+    timeOfDay: sceneData.timeOfDay ?? null,
+    emotionalTone: sceneData.emotionalTone ?? null,
+    conflictSummary: sceneData.conflictSummary ?? null,
+    semanticSummary: sceneData.semanticSummary ?? null,
+    chapterContextSummary: sceneData.chapterContextSummary ?? null,
+    memoryContextSummary: sceneData.memoryContextSummary ?? null,
+    memoryContextSource: sceneData.memoryContextSource ?? null,
+    crossChapterMemoryHit: sceneData.crossChapterMemoryHit ?? false,
+    method: sceneData.semanticMethod ?? 'contextual-semantic-engine-v1',
+    fallbackStrategy: sceneData.fallbackStrategy ?? 'rule-based-fallback-v1',
+    extractedAt: new Date().toISOString(),
+  };
+
+  return {
+    semanticExtraction,
+  };
+}
+
+export async function enrichAnalyzedStructureWithCrossChapterMemory(params: {
+  prisma: PrismaClient;
+  projectId: string;
+  structure: AnalyzedProjectStructure;
+  novelSourceId?: string;
+}): Promise<AnalyzedProjectStructure> {
+  const { prisma, projectId, structure, novelSourceId } = params;
+  const episodes =
+    Array.isArray(structure.episodes) && structure.episodes.length > 0
+      ? structure.episodes
+      : (structure.seasons || []).flatMap((season) => season.episodes);
+
+  if (episodes.length === 0) {
+    return structure;
+  }
+
+  const chapters = await prisma.novelChapter.findMany({
+    where: novelSourceId
+      ? { novelSourceId }
+      : {
+          novelSource: {
+            projectId,
+          },
+        },
+    orderBy: [{ index: 'asc' }, { updatedAt: 'desc' }],
+    select: {
+      id: true,
+      index: true,
+      title: true,
+      rawContent: true,
+    },
+  });
+
+  if (chapters.length === 0) {
+    return enrichAnalyzedStructureSemantics(structure);
+  }
+
+  const chapterByIndex = new Map(chapters.map((chapter) => [chapter.index, chapter]));
+
+  const enrichEpisode = async (episode: AnalyzedEpisode): Promise<AnalyzedEpisode> => {
+    const matchedChapter = chapterByIndex.get(episode.index);
+    const chapterSourceText = matchedChapter
+      ? composeNovelChapterContent(matchedChapter)
+      : buildEpisodeSourceText(episode);
+    const chapterContext = buildChapterSemanticContext(
+      episode.summary?.trim() ? `${episode.summary}\n\n${chapterSourceText}` : chapterSourceText
+    );
+    const memoryContext =
+      matchedChapter &&
+      (await buildSemanticMemoryContextForChapter({
+        prisma,
+        projectId,
+        chapterId: matchedChapter.id,
+        chapterIndex: matchedChapter.index,
+        currentTextOrSummary: chapterSourceText,
+      }));
+
+    let previousSceneContext: ReturnType<typeof extractSceneSemanticsFromText> | undefined;
+    const enrichedScenes = episode.scenes.map((scene) => {
+      const text = normalizeSceneText(scene);
+      const seededCharacters = scene.shots.flatMap((shot) =>
+        Array.isArray(shot.characters) ? shot.characters : []
+      );
+      const semantics = extractSceneSemanticsFromText(text, {
+        seededCharacters,
+        chapterContext,
+        previousSceneContext,
+        memoryContext: memoryContext || undefined,
+      });
+      previousSceneContext = semantics;
+      return {
+        ...scene,
+        characters: semantics.characters,
+        location: semantics.location,
+        timeOfDay: semantics.timeOfDay,
+        emotionalTone: semantics.emotionalTone,
+        conflictSummary: semantics.conflictSummary,
+        semanticSummary: semantics.semanticSummary,
+        chapterContextSummary: semantics.chapterContextSummary,
+        memoryContextSummary: semantics.memoryContextSummary,
+        memoryContextSource: semantics.memoryContextSource,
+        crossChapterMemoryHit: semantics.crossChapterMemoryHit,
+        semanticMethod: semantics.semanticMethod,
+        fallbackStrategy: semantics.fallbackStrategy,
+      };
+    });
+
+    if (matchedChapter) {
+      await prisma.novelChapter.update({
+        where: { id: matchedChapter.id },
+        data: { summary: chapterContext.summary },
+      });
+
+      const dominantLocation =
+        enrichedScenes.find((scene) => typeof scene.location === 'string' && scene.location.trim())
+          ?.location ?? chapterContext.dominantLocation;
+      const characters = Array.from(
+        new Set(
+          enrichedScenes.flatMap((scene) =>
+            Array.isArray(scene.characters) ? scene.characters : []
+          )
+        )
+      );
+
+      await upsertChapterSemanticMemory({
+        prisma,
+        projectId,
+        chapterId: matchedChapter.id,
+        chapterSummary: chapterContext.summary,
+        characters,
+        dominantLocation: dominantLocation || undefined,
+      });
+    }
+
+    return {
+      ...episode,
+      summary: episode.summary?.trim() ? episode.summary : chapterContext.summary,
+      scenes: enrichedScenes,
+    };
+  };
+
+  const enrichedEpisodes: AnalyzedEpisode[] = [];
+  for (const episode of episodes) {
+    enrichedEpisodes.push(await enrichEpisode(episode));
+  }
+
+  if (Array.isArray(structure.episodes) && structure.episodes.length > 0) {
+    return {
+      ...structure,
+      episodes: enrichedEpisodes,
+    };
+  }
+
+  let cursor = 0;
+  return {
+    ...structure,
+    seasons: (structure.seasons || []).map((season) => {
+      const episodeSlice = enrichedEpisodes.slice(cursor, cursor + season.episodes.length);
+      cursor += season.episodes.length;
+      return {
+        ...season,
+        episodes: episodeSlice,
+      };
+    }),
+  };
 }
 
 /**
@@ -313,6 +633,15 @@ export function validateAnalyzedStructure(structure: AnalyzedProjectStructure): 
   };
 }
 
+export function getPersistedSceneIndex(
+  sceneLike: { sceneIndex?: number | null; index?: number | null } | null | undefined
+): number | undefined {
+  if (!sceneLike) return undefined;
+  if (typeof sceneLike.sceneIndex === 'number') return sceneLike.sceneIndex;
+  if (typeof sceneLike.index === 'number') return sceneLike.index;
+  return undefined;
+}
+
 /**
  * S3-B Fine-Tune: 增强后的结构树构造器
  * - 增量更新：严格基于 projectId + index 查找现有节点
@@ -379,21 +708,19 @@ export async function applyAnalyzedStructureToDatabase(
       for (const epData of episodes) {
         const existingEp = await tx.episode.findUnique({
           where: { projectId_index: { projectId, index: epData.index } },
+          select: { id: true },
         });
-        let currentEp = existingEp
-          ? await tx.episode.update({
-              where: { id: existingEp.id },
-              data: { name: epData.title, summary: epData.summary || undefined },
-            })
-          : await tx.episode.create({
-              data: {
-                projectId,
-                seasonId: null as any,
-                index: epData.index,
-                name: epData.title,
-                summary: epData.summary || undefined,
-              },
-            });
+        const currentEp = await tx.episode.upsert({
+          where: { projectId_index: { projectId, index: epData.index } },
+          update: { name: epData.title, summary: epData.summary || undefined },
+          create: {
+            projectId,
+            seasonId: null as any,
+            index: epData.index,
+            name: epData.title,
+            summary: epData.summary || undefined,
+          },
+        });
 
         if (existingEp) stats.updated.episodes++;
         else stats.created.episodes++;
@@ -403,21 +730,34 @@ export async function applyAnalyzedStructureToDatabase(
             where: {
               episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
             },
+            select: { id: true },
           });
-          let currentScene = existingScene
-            ? await tx.scene.update({
-                where: { id: existingScene.id },
-                data: { title: sceneData.title, summary: sceneData.summary || undefined },
-              })
-            : await tx.scene.create({
-                data: {
-                  projectId,
-                  episodeId: currentEp.id,
-                  sceneIndex: sceneData.index,
-                  title: sceneData.title,
-                  summary: sceneData.summary || undefined,
-                },
-              });
+          const currentScene = await tx.scene.upsert({
+            where: {
+              episodeId_sceneIndex: { episodeId: currentEp.id, sceneIndex: sceneData.index },
+            },
+            update: {
+              title: sceneData.title,
+              summary: sceneData.summary || undefined,
+              characters: sceneData.characters ?? undefined,
+              locationSlug: sceneData.location ?? undefined,
+              timeOfDay: sceneData.timeOfDay ?? undefined,
+              enrichedText: sceneData.semanticSummary ?? undefined,
+              graphStateSnapshot: buildSceneSemanticState(sceneData),
+            },
+            create: {
+              projectId,
+              episodeId: currentEp.id,
+              sceneIndex: sceneData.index,
+              title: sceneData.title,
+              summary: sceneData.summary || undefined,
+              characters: sceneData.characters ?? undefined,
+              locationSlug: sceneData.location ?? undefined,
+              timeOfDay: sceneData.timeOfDay ?? undefined,
+              enrichedText: sceneData.semanticSummary ?? undefined,
+              graphStateSnapshot: buildSceneSemanticState(sceneData),
+            },
+          });
 
           if (existingScene) stats.updated.scenes++;
           else stats.created.scenes++;
@@ -487,6 +827,19 @@ export async function applyAnalyzedStructureToDatabase(
             index: sc.sceneIndex,
             title: sc.title || '',
             summary: sc.summary || '',
+            characters: Array.isArray(sc.characters) ? (sc.characters as string[]) : undefined,
+            location: sc.locationSlug || undefined,
+            timeOfDay: sc.timeOfDay || undefined,
+            emotionalTone:
+              typeof (sc.graphStateSnapshot as any)?.semanticExtraction?.emotionalTone === 'string'
+                ? (sc.graphStateSnapshot as any).semanticExtraction.emotionalTone
+                : undefined,
+            conflictSummary:
+              typeof (sc.graphStateSnapshot as any)?.semanticExtraction?.conflictSummary ===
+              'string'
+                ? (sc.graphStateSnapshot as any).semanticExtraction.conflictSummary
+                : undefined,
+            semanticSummary: sc.enrichedText || undefined,
             shots: sc.shots.map((sh) => ({
               index: sh.index,
               title: sh.title || '',
@@ -545,6 +898,23 @@ export async function applyAnalyzedStructureToDatabase(
     for (const season of existingSeasons) {
       existingSeasonMap.set(season.index, season);
     }
+    const legacyProjectEpisodes =
+      existingSeasons.length === 0
+        ? await tx.episode.findMany({
+            where: { projectId },
+            include: {
+              scenes: {
+                include: {
+                  shots: {
+                    orderBy: { index: 'asc' },
+                  },
+                },
+                orderBy: { sceneIndex: 'asc' },
+              },
+            },
+            orderBy: { index: 'asc' },
+          })
+        : [];
 
     // S3-B Fine-Tune: 用于构建 finalStructure
     const finalSeasons: any[] = [];
@@ -611,6 +981,10 @@ export async function applyAnalyzedStructureToDatabase(
         for (const episode of existingSeason.episodes) {
           existingEpisodeMap.set(episode.index, episode);
         }
+      } else if (season.index === 1) {
+        for (const episode of legacyProjectEpisodes) {
+          existingEpisodeMap.set(episode.index, episode);
+        }
       }
 
       for (const episode of season.episodes) {
@@ -672,7 +1046,10 @@ export async function applyAnalyzedStructureToDatabase(
         const existingSceneMap = new Map<number, any>();
         if (existingEpisode) {
           for (const scene of existingEpisode.scenes) {
-            existingSceneMap.set(scene.index, scene);
+            const persistedSceneIndex = getPersistedSceneIndex(scene);
+            if (persistedSceneIndex !== undefined) {
+              existingSceneMap.set(persistedSceneIndex, scene);
+            }
           }
         }
 
@@ -688,6 +1065,11 @@ export async function applyAnalyzedStructureToDatabase(
                 sceneIndex: scene.index,
                 title: scene.title,
                 summary: scene.summary || undefined,
+                characters: scene.characters ?? undefined,
+                locationSlug: scene.location ?? undefined,
+                timeOfDay: scene.timeOfDay ?? undefined,
+                enrichedText: scene.semanticSummary ?? undefined,
+                graphStateSnapshot: buildSceneSemanticState(scene),
               },
             });
             stats.updated.scenes++;
@@ -700,6 +1082,11 @@ export async function applyAnalyzedStructureToDatabase(
                 sceneIndex: scene.index,
                 title: scene.title,
                 summary: scene.summary || undefined,
+                characters: scene.characters ?? undefined,
+                locationSlug: scene.location ?? undefined,
+                timeOfDay: scene.timeOfDay ?? undefined,
+                enrichedText: scene.semanticSummary ?? undefined,
+                graphStateSnapshot: buildSceneSemanticState(scene),
               },
             });
             stats.created.scenes++;
@@ -796,7 +1183,14 @@ export async function applyAnalyzedStructureToDatabase(
         if (existingEpisode && existingEpisode.scenes.length > episode.scenes.length) {
           const newSceneIndexes = new Set(episode.scenes.map((s: AnalyzedScene) => s.index));
           const scenesToDelete = existingEpisode.scenes.filter(
-            (s: any) => !newSceneIndexes.has(s.index) && s.index < 9000
+            (s: any) => {
+              const persistedSceneIndex = getPersistedSceneIndex(s);
+              return (
+                persistedSceneIndex !== undefined &&
+                !newSceneIndexes.has(persistedSceneIndex) &&
+                persistedSceneIndex < 9000
+              );
+            }
           );
           for (const sceneToDelete of scenesToDelete) {
             await tx.shotJob.deleteMany({ where: { sceneId: sceneToDelete.id } });
@@ -944,14 +1338,17 @@ export async function applyAnalyzedStructureToDatabase(
   // - NOVEL_ANALYSIS 可能需要创建/更新数万条 Shot 记录，默认 5s 事务超时会导致
   //   "Transaction already closed / Transaction not found" 错误。
   // - 这里显式将 interactive transaction timeout 调高（例如 5 分钟），避免长事务被过早关闭。
-  const result =
-    prisma instanceof PrismaClient
-      ? await (prisma as any).$transaction(executeInTransaction, {
-          timeout: 5 * 60 * 1000, // 5 minutes
-        })
-      : await executeInTransaction(prisma);
+  if (typeof (prisma as PrismaClient).$transaction === 'function') {
+    return await (prisma as PrismaClient).$transaction(
+      async (tx) => executeInTransaction(tx),
+      {
+        maxWait: 10000,
+        timeout: 300000,
+      }
+    );
+  }
 
-  return result;
+  return await executeInTransaction(prisma as Prisma.TransactionClient);
 }
 
 /**
@@ -1028,29 +1425,7 @@ export function mapCE06OutputToProjectStructure(
       vol.chapters.push({
         title: chunk.chapter_title,
         summary: '', // Scan phase doesn't have summary
-        scenes: [
-          {
-            // Create placeholder scene to hold content if needed, but SCAN has no content?
-            // ScanChunk has start/end offset.
-            // We need to create a placeholder scene OR fetch content?
-            // Wait, SCAN phase output doesn't have CONTENT?
-            // ce06RealEngine (SCAN) returns only metadata.
-            // BUT we need scenes for validation: "structure.seasons[0].episodes[0].scenes[0]..."
-            // If we populate episodes but NO SCENES, validation warnings?
-            // Warnings are OK. Errors are not.
-            // Error: "AnalyzedProjectStructure must have at least one season"
-            // Warning: "Episode X has no scenes"
-            // So we just need structure.
-            // BUT we need SHOTS if we want valid pipeline?
-            // basicTextSegmentation makes shots.
-            // Here we are mapping mapCE06Output...
-            // If we just mapped Volumes/Chapters, we get empty episodes.
-            // Validation passes (valid: true).
-            // So we proceed.
-            content: 'Placeholder content for Scan Chunk',
-            title: 'Scene 1',
-          },
-        ],
+        scenes: [],
       });
     }
     // Reassign volumes to grouped list
@@ -1398,6 +1773,12 @@ export async function processNovelAnalysisJob(
 ): Promise<any> {
   const startTime = Date.now();
   const jobId = job.id;
+  const traceId =
+    typeof (job as any).traceId === 'string' && (job as any).traceId.length > 0
+      ? (job as any).traceId
+      : (() => {
+          throw new Error(`[NOVEL_ANALYSIS] Missing traceId for job ${jobId}`);
+        })();
 
   try {
     // 根据你的 Job 模型调整类型
@@ -1415,6 +1796,17 @@ export async function processNovelAnalysisJob(
 
     const parseStartTime = Date.now();
     let structure: AnalyzedProjectStructure;
+    let semanticMemoryContext:
+      | Awaited<ReturnType<typeof buildSemanticMemoryContextForChapter>>
+      | undefined;
+    let memoryChapter:
+      | {
+          id: string;
+          index: number;
+          title: string | null;
+          rawContent: string | null;
+        }
+      | undefined;
 
     // B1: Chunk Processing Mode (启用 LLM 批处理)
     const enableChunkProcessing = process.env.ENABLE_CHUNK_PROCESSING === '1';
@@ -1434,13 +1826,7 @@ export async function processNovelAnalysisJob(
           action: 'CHUNK_MODE_ERROR',
           error: err.message,
         });
-        // Fallback to stream mode
-        logStructured('warn', {
-          action: 'CHUNK_MODE_FALLBACK_TO_STREAM',
-          jobId,
-        });
-        const contentStream = await getNovelContentStream(payload, prisma, projectId);
-        structure = await parseNovelStream(contentStream, projectId);
+        throw err;
       }
     } else {
       // S3-B Refactor: Stream-based Parsing (传统模式)
@@ -1460,17 +1846,48 @@ export async function processNovelAnalysisJob(
 
         structure = await parseNovelStream(contentStream, projectId);
       } catch (err: any) {
-        // Fallback or rethrow?
-        // If stream fails, checking if it was a "Missing source" error
         if (err.blockingReason === 'NO_SOURCE_TEXT') throw err;
 
-        // If it's a real error, rethrow
         logStructured('error', { action: 'STREAM_PARSE_ERROR', error: err.message });
         throw err;
       }
     }
 
+    if (payload.chapterId) {
+      const chapterRecord = await prisma.novelChapter.findUnique({
+        where: { id: payload.chapterId },
+        select: {
+          id: true,
+          index: true,
+          title: true,
+          rawContent: true,
+        },
+      });
+      memoryChapter = chapterRecord ?? undefined;
+
+      if (memoryChapter) {
+        semanticMemoryContext = await buildSemanticMemoryContextForChapter({
+          prisma,
+          projectId,
+          chapterId: memoryChapter.id,
+          chapterIndex: memoryChapter.index,
+          currentTextOrSummary: composeNovelChapterContent(memoryChapter),
+        });
+      }
+    }
+
     // const structure = basicTextSegmentation(rawText, projectId);
+
+    structure = memoryChapter
+      ? enrichAnalyzedStructureSemantics(structure, {
+          memoryContext: semanticMemoryContext,
+        })
+      : await enrichAnalyzedStructureWithCrossChapterMemory({
+          prisma,
+          projectId,
+          structure,
+          novelSourceId: payload.novelSourceId,
+        });
 
     const parseDuration = Date.now() - parseStartTime;
 
@@ -1500,9 +1917,32 @@ export async function processNovelAnalysisJob(
       data: { currentStep: 'SCENE_PERSIST' },
     });
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await applyAnalyzedStructureToDatabase(tx as unknown as PrismaClient, structure);
-    });
+    await applyAnalyzedStructureToDatabase(prisma, structure);
+
+    if (memoryChapter) {
+      const episodes = Array.isArray(structure.episodes)
+        ? structure.episodes
+        : (structure.seasons || []).flatMap((season) => season.episodes);
+      const firstEpisode = episodes[0];
+      const dominantLocation =
+        firstEpisode?.scenes.find((scene) => typeof scene.location === 'string' && scene.location.trim())?.location ??
+        semanticMemoryContext?.dominantLocation;
+      const allCharacters = Array.from(
+        new Set(
+          episodes.flatMap((episode) =>
+            episode.scenes.flatMap((scene) => (Array.isArray(scene.characters) ? scene.characters : []))
+          )
+        )
+      );
+      await upsertChapterSemanticMemory({
+        prisma,
+        projectId,
+        chapterId: memoryChapter.id,
+        chapterSummary: firstEpisode?.summary?.trim() || semanticMemoryContext?.summary || '',
+        characters: allCharacters,
+        dominantLocation: dominantLocation || undefined,
+      });
+    }
 
     const writeDuration = Date.now() - writeStartTime;
     const totalDuration = Date.now() - startTime;
@@ -1534,7 +1974,7 @@ export async function processNovelAnalysisJob(
         await costLedger.recordEngineBilling({
           jobId,
           jobType: 'CE06_NOVEL_PARSING',
-          traceId: (job as any).traceId || `trace-${jobId}`,
+          traceId,
           projectId,
           userId: (job as any).userId || 'system',
           orgId,
@@ -1544,20 +1984,20 @@ export async function processNovelAnalysisJob(
         });
       } else {
       }
-    } catch (billingError: any) {
+    } catch {
       // 计费失败不阻塞主流程
     }
 
     // 返回统计信息，将写入 Job.output
     // V3.0 Receipt Specification Align
-    return {
+    return toNovelAnalysisWorkerSuccessResult({
       scenes_count: structure.stats.scenesCount,
       shots_count: structure.stats.shotsCount,
       episodes_count: structure.stats.episodesCount,
       // 保留 seasons 输出，兼容仍消费旧结构的调用方
       stats: structure.stats,
       cost_ledger_count: 1, // Assume 1 ledger record per analysis job
-    };
+    });
   } catch (error: any) {
     const duration = Date.now() - startTime;
 
@@ -1575,10 +2015,25 @@ export async function processNovelAnalysisJob(
   }
 }
 
+export function toNovelAnalysisWorkerSuccessResult(output: {
+  scenes_count: number;
+  shots_count: number;
+  episodes_count: number;
+  stats: AnalyzedProjectStructure['stats'];
+  cost_ledger_count: number;
+}) {
+  return {
+    success: true,
+    status: 'SUCCEEDED' as const,
+    output,
+    result: output,
+  };
+}
+
 /**
  * Helper to get a Readable stream from various payload sources
  */
-async function getNovelContentStream(
+export async function getNovelContentStream(
   payload: any,
   prisma: PrismaClient,
   projectId: string
@@ -1592,6 +2047,19 @@ async function getNovelContentStream(
   const rawText = payload.text || payload.sourceText;
   if (rawText) {
     return Readable.from([rawText]);
+  }
+
+  if (payload.chapterId) {
+    const chapter = await prisma.novelChapter.findUnique({
+      where: { id: payload.chapterId },
+      select: { title: true, rawContent: true },
+    });
+    if (chapter) {
+      const content = composeNovelChapterContent(chapter);
+      if (content) {
+        return Readable.from([content + '\n']);
+      }
+    }
   }
 
   // 3. Check for DB sources (Novel Source / Chapter)
@@ -1608,11 +2076,12 @@ async function getNovelContentStream(
             orderBy: { index: 'asc' },
             skip,
             take,
-            select: { rawContent: true },
+            select: { title: true, rawContent: true },
           });
           if (chapters.length === 0) break;
           for (const c of chapters) {
-            if (c.rawContent) yield c.rawContent + '\n';
+            const content = composeNovelChapterContent(c);
+            if (content) yield content + '\n';
           }
           skip += take;
         }
@@ -1621,7 +2090,7 @@ async function getNovelContentStream(
     }
   }
 
-  // Fallback: Check project's latest novel
+  // Deterministic stored source: project-scoped novel is unique by schema.
   const latestNovel = await prisma.novel.findUnique({
     where: { projectId },
   });
@@ -1635,11 +2104,12 @@ async function getNovelContentStream(
           orderBy: { index: 'asc' },
           skip,
           take,
-          select: { rawContent: true },
+          select: { title: true, rawContent: true },
         });
         if (chapters.length === 0) break;
         for (const c of chapters) {
-          if (c.rawContent) yield c.rawContent + '\n';
+          const content = composeNovelChapterContent(c);
+          if (content) yield content + '\n';
         }
         skip += take;
       }

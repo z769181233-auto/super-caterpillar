@@ -2,8 +2,6 @@ import { Injectable, Inject, forwardRef, Logger, NotFoundException, BadRequestEx
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { TaskService } from '../task/task.service';
-import { BillingService } from '../billing/billing.service';
-import { CopyrightService } from '../copyright/copyright.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AuditActions } from '../audit/audit.constants';
 import { JobStatus, JobType } from 'database';
@@ -12,7 +10,6 @@ import { ShotJobWithShotHierarchy } from './job.service.types';
 import { SHOT_JOB_WITH_HIERARCHY } from './job.service.queries';
 import {
     getRuntimeDbTimeoutMs,
-    isCiOrGateContextEnv,
     isPrismaFallbackEligibleError,
     withRuntimePgClient,
 } from '../prisma/pg-runtime.util';
@@ -26,8 +23,6 @@ export class JobUpdateOpsService {
         @Inject(PrismaService) private readonly prisma: PrismaService,
         @Inject(AuditLogService) private readonly auditLogService: AuditLogService,
         @Inject(forwardRef(() => TaskService)) private readonly taskService: TaskService,
-        @Inject(BillingService) private readonly billingService: BillingService,
-        @Inject(CopyrightService) private readonly copyrightService: CopyrightService,
         @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2
     ) { }
 
@@ -35,12 +30,8 @@ export class JobUpdateOpsService {
         return isPrismaFallbackEligibleError(error);
     }
 
-    private isCiOrGateContext(): boolean {
-        return isCiOrGateContextEnv();
-    }
-
     private shouldAllowJobUpdatePgFallback(): boolean {
-        return this.isCiOrGateContext() || process.env.FORCE_JOB_UPDATE_PG_FALLBACK === '1';
+        return process.env.FORCE_JOB_UPDATE_PG_FALLBACK === '1';
     }
 
     private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
@@ -90,7 +81,7 @@ export class JobUpdateOpsService {
             }
             if (!this.shouldAllowJobUpdatePgFallback()) {
                 this.logger.error(
-                    `[JobUpdateOpsService] Prisma ackJob degraded for ${jobId}/${workerId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
+                    `[JobUpdateOpsService] Prisma ackJob degraded for ${jobId}/${workerId}, but pg fallback is disabled unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
                 );
                 throw error;
             }
@@ -196,7 +187,7 @@ export class JobUpdateOpsService {
             }
             if (!this.shouldAllowJobUpdatePgFallback()) {
                 this.logger.error(
-                    `[JobUpdateOpsService] Prisma reportJobResult degraded for ${jobId}, but pg fallback is disabled outside CI/test/gate unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
+                    `[JobUpdateOpsService] Prisma reportJobResult degraded for ${jobId}, but pg fallback is disabled unless FORCE_JOB_UPDATE_PG_FALLBACK=1`
                 );
                 throw error;
             }
@@ -219,31 +210,17 @@ export class JobUpdateOpsService {
                 resourceId: jobId,
                 details: { type: job.type, result: result.status },
             });
-        } catch (e) { }
-
-        // 2. Billing (only for real jobs, not verification)
-        if (userId && !job.isVerification) {
-            try {
-                const cost = 1.0;
-                await this.billingService.consumeCredits(
-                    job.projectId,
-                    userId,
-                    job.organizationId,
-                    cost,
-                    'JOB_COMPLETE' as any,
-                    `JOB_FINISH_${jobId}`
-                );
-            } catch (e) {
-                this.logger.error(`Credits deduction failed: ${e.message}`);
-            }
+        } catch (e: any) {
+            this.logger.warn(
+                `[JobUpdateOpsService] Audit log write skipped for job ${jobId}: ${e?.message || 'unknown error'}`
+            );
         }
 
-        // 3. Copyright registration for renders
-        if (userId && job.type === 'SHOT_RENDER') {
-            try {
-                await this.copyrightService.registerAsset(userId, 'shot_render', `job-${job.id}-hash`);
-            } catch (e) { }
-        }
+        // 2. Legacy completion-time billing is retired.
+        // Billing must come from authoritative create-time checks or explicit engine/cost events.
+
+        // 3. Legacy copyright registration is retired.
+        // Placeholder hashes are banned until authoritative asset digests are available.
 
         // 4. DAG Aggregation
         if (job.taskId) {
@@ -377,13 +354,16 @@ export class JobUpdateOpsService {
         const allSucceeded = task.jobs.every((job: any) => job.status === 'SUCCEEDED');
         const hasFailed = task.jobs.some((job: any) => job.status === 'FAILED');
         const hasRetrying = task.jobs.some((job: any) => job.status === 'RETRYING');
-        const hasPendingOrRunning = task.jobs.some(
-            (job: any) => job.status === 'PENDING' || job.status === 'RUNNING'
+        const hasInFlightJobs = task.jobs.some(
+            (job: any) =>
+                job.status === 'PENDING' ||
+                job.status === 'DISPATCHED' ||
+                job.status === 'RUNNING'
         );
 
         if (allSucceeded) {
             await this.taskService.updateStatus(taskId, 'SUCCEEDED' as any);
-        } else if (hasFailed && !hasRetrying && !hasPendingOrRunning) {
+        } else if (hasFailed && !hasRetrying && !hasInFlightJobs) {
             await this.taskService.updateStatus(taskId, 'FAILED' as any);
         }
     }
@@ -419,7 +399,11 @@ export class JobUpdateOpsService {
                 resourceId: job.id,
                 details: { error: errorMessage, retryCount: job.retryCount },
             });
-        } catch (e) { }
+        } catch (e: any) {
+            this.logger.warn(
+                `[JobUpdateOpsService] Retry/fail audit log skipped for job ${job.id}: ${e?.message || 'unknown error'}`
+            );
+        }
 
         if (job.taskId) {
             await this.updateTaskStatusIfAllJobsCompleted(job.taskId);

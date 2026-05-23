@@ -114,6 +114,7 @@ import { processShotRenderJob } from './processors/shot-render.processor';
 import { processVideoRenderJob } from './processors/video-render.processor';
 import { processFilmIRPlanJob } from './processors/film-ir-plan.processor';
 import { processContentJudgeJob } from './processors/content-judge.processor';
+import { processNovelAnalysisJob } from './novel-analysis-processor';
 import { LocalStorageAdapter } from '@scu/storage';
 import { ProcessorContext } from './types/processor-context';
 
@@ -157,11 +158,11 @@ const isProd = process.env.NODE_ENV === 'production' || process.env.GATE_MODE ==
 
 const rawApiBaseUrl = process.env.API_BASE_URL;
 const rawApiUrl = process.env.API_URL;
-const baseUrl = rawApiBaseUrl || rawApiUrl;
+const baseUrl = rawApiBaseUrl || rawApiUrl || env.apiUrl;
 
 if (rawApiBaseUrl?.includes('API_BASE_URL=')) throw new Error('Railway var misconfigured: value contains key prefix');
 if (!baseUrl) {
-  throw new Error('API_BASE_URL or API_URL is required in production');
+  throw new Error('API_BASE_URL or API_URL is required');
 }
 let apiBaseUrl = baseUrl.replace(/\/api\/?$/, '');
 
@@ -198,6 +199,17 @@ async function processJobWithExecutor(job: any): Promise<void> {
       job.createdAt,
       async () => {
         const ctx: ProcessorContext = { prisma, job, apiClient, localStorage: localStorageAdapter };
+        if (job.type === 'NOVEL_ANALYSIS') {
+          return processNovelAnalysisJob(
+            prisma,
+            {
+              ...job,
+              projectId: job.payload?.projectId || job.projectId,
+              traceId: job.traceId || job.payload?.traceId,
+            },
+            apiClient
+          );
+        }
         if (job.type === 'CE06_NOVEL_PARSING') return processCE06NovelParsingJob(ctx);
         if (job.type === 'CE06_SCRIPT_OUTLINE') return processScriptOutlineJob(ctx);
         if (job.type === 'CE11_SCENE_SPLIT') return processSceneSplitJob(ctx);
@@ -230,6 +242,24 @@ async function processJobWithExecutor(job: any): Promise<void> {
       error: normalizedError,
     });
   } catch (error: any) {
+    console.error('[Worker] processJobWithExecutor failed', {
+      jobId: job?.id,
+      jobType: job?.type,
+      error: error?.message || String(error),
+      stack: error?.stack,
+    });
+    try {
+      await apiClient.reportJobResult({
+        jobId: job.id,
+        status: 'FAILED',
+        errorMessage: error?.message || 'WORKER_EXECUTOR_FAILED',
+      });
+    } catch (reportErr: any) {
+      console.error('[Worker] failed to report executor failure', {
+        jobId: job?.id,
+        error: reportErr?.message || String(reportErr),
+      });
+    }
   } finally {
     tasksRunning--;
   }
@@ -252,10 +282,16 @@ export async function startWorkerApp() {
       ),
     ]);
   } catch (error: any) {
+    console.error('[Worker] prisma startup connect failed', {
+      error: error?.message || String(error),
+      stack: error?.stack,
+    });
+    throw error;
   }
   jobExecutor = new JobExecutor(apiClient);
 
   const supportedJobTypes = [
+    'NOVEL_ANALYSIS',
     'CE06_NOVEL_PARSING',
     'CE06_SCRIPT_OUTLINE',
     'CE11_SCENE_SPLIT',
@@ -299,6 +335,10 @@ export async function startWorkerApp() {
       },
     });
   } catch (e: any) {
+    console.error('[Worker] register/probe failed', {
+      error: e?.message || String(e),
+      stack: e?.stack,
+    });
   }
 
   isRunning = true;
@@ -315,6 +355,12 @@ export async function startWorkerApp() {
     if (job) {
       await apiClient.ackJob(job.id, workerId);
       processJobWithExecutor(job).catch((error: any) => {
+        console.error('[Worker] detached processJobWithExecutor failed', {
+          jobId: job?.id,
+          jobType: job?.type,
+          error: error?.message || String(error),
+          stack: error?.stack,
+        });
       });
     }
     await new Promise((r) => setTimeout(r, 2000));

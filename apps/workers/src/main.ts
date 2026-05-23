@@ -148,5 +148,6 @@ async function boot() {
 }
 
 boot().catch((err) => {
+  console.error('[Worker Main] boot failed', err);
   process.exit(1);
 });

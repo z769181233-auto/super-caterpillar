@@ -6,13 +6,52 @@ set -euo pipefail
 
 CONTAINER_NAME="scu-postgres"
 IMAGE="pgvector/pgvector:pg16"
-POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="postgres"
-POSTGRES_DB="scu"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+read -r POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB <<<"$(
+  PROJECT_ROOT="$PROJECT_ROOT" node <<'NODE'
+const path = require('path');
+const dotenv = require('dotenv');
+
+const projectRoot = process.env.PROJECT_ROOT;
+dotenv.config({ path: path.resolve(projectRoot, '.env.local'), quiet: true });
+dotenv.config({ path: path.resolve(projectRoot, '.env'), quiet: true });
+
+const fallback = {
+  user: 'postgres',
+  password: 'password',
+  database: 'scu',
+};
+
+try {
+  const rawUrl = process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/scu?schema=public';
+  const parsed = new URL(rawUrl);
+  const database = (parsed.pathname || '/scu').replace(/^\//, '').split('?')[0] || fallback.database;
+  const user = decodeURIComponent(parsed.username || fallback.user);
+  const password = decodeURIComponent(parsed.password || fallback.password);
+  process.stdout.write(`${user} ${password} ${database}`);
+} catch {
+  process.stdout.write(`${fallback.user} ${fallback.password} ${fallback.database}`);
+}
+NODE
+)"
 
 # 端口候选列表（按优先级排序）
 PORT_CANDIDATES=(5432 5433 5434 15432 25432)
 SELECTED_PORT=""
+
+get_container_host_port() {
+  local container_name=$1
+  local mapping
+
+  mapping=$(docker port "${container_name}" 5432/tcp 2>/dev/null | head -n 1 || true)
+  if [ -z "$mapping" ]; then
+    echo "5432"
+    return
+  fi
+
+  echo "$mapping" | sed -E 's/.*:([0-9]+)$/\1/'
+}
 
 echo "=========================================="
 echo "PostgreSQL Docker 容器启动"
@@ -101,14 +140,14 @@ if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$
     CONTAINER_RUNNING=true
     echo "✅ 容器正在运行"
     # 获取当前容器的端口映射
-    SELECTED_PORT=$(docker port "${CONTAINER_NAME}" 5432/tcp 2>/dev/null | cut -d: -f1 || echo "5432")
+    SELECTED_PORT=$(get_container_host_port "${CONTAINER_NAME}")
   else
     echo "📦 容器已存在但未运行，正在启动..."
     if docker start "${CONTAINER_NAME}" >/dev/null 2>&1; then
       echo "✅ 容器已启动"
       CONTAINER_RUNNING=true
       # 获取当前容器的端口映射
-      SELECTED_PORT=$(docker port "${CONTAINER_NAME}" 5432/tcp 2>/dev/null | cut -d: -f1 || echo "5432")
+      SELECTED_PORT=$(get_container_host_port "${CONTAINER_NAME}")
     else
       echo "❌ 错误：启动容器失败"
       echo ""
@@ -319,4 +358,3 @@ else
   echo "❌ 错误：容器未运行"
   exit 1
 fi
-

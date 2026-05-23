@@ -1,11 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  getRuntimeDbTimeoutMs,
-  isCiOrGateContextEnv,
-  isPrismaFallbackEligibleError,
-  withRuntimePgClient,
-} from '../prisma/pg-runtime.util';
+import { getRuntimeDbTimeoutMs } from '../prisma/pg-runtime.util';
 
 export enum BudgetLevel {
   OK = 'OK',
@@ -21,28 +16,6 @@ export class BudgetService {
 
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  private isPrismaTimeout(error: unknown): boolean {
-    return isPrismaFallbackEligibleError(error);
-  }
-
-  private isCiOrGateContext(): boolean {
-    return isCiOrGateContextEnv();
-  }
-
-  private shouldAllowBudgetPgFallback(): boolean {
-    return this.isCiOrGateContext() || process.env.FORCE_BUDGET_PG_FALLBACK === '1';
-  }
-
-  private async withPgClient<T>(fn: (client: any) => Promise<T>): Promise<T> {
-    return withRuntimePgClient(
-      {
-        applicationName: 'super-caterpillar-api-budget',
-        queryTimeoutMs: this.prismaQueryTimeoutMs,
-      },
-      fn
-    );
-  }
-
   async getBudgetStatus(
     organizationId: string,
     projectId?: string
@@ -53,60 +26,12 @@ export class BudgetService {
     try {
       // 商业级逻辑：如果传入了 projectId，优先查该项目的成本中心，否则查 Org 的默认成本中心
       // 目前 schema 中 CostCenter 只有 organizationId 关联。
-      let costCenter = null as
-        | { budget: number; currentCost: number }
-        | null;
-      try {
-        costCenter = await this.prisma.costCenter.findFirst({
-          where: { organizationId },
-          orderBy: { createdAt: 'desc' },
-        });
-      } catch (error) {
-        if (!this.isPrismaTimeout(error)) {
-          throw error;
-        }
-        if (!this.shouldAllowBudgetPgFallback()) {
-          this.logger.error(
-            `BUDGET_PRISMA_DEGRADED orgId=${organizationId} but pg fallback is disabled outside CI/test/gate unless FORCE_BUDGET_PG_FALLBACK=1`
-          );
-          throw error;
-        }
-
-        this.logger.warn(
-          `BUDGET_PRISMA_DEGRADED orgId=${organizationId} using pg fallback: ${error instanceof Error ? error.message : String(error)}`
-        );
-
-        costCenter = await this.withPgClient(async (client) => {
-          const result = await client.query(
-            `
-              SELECT budget, "currentCost"
-              FROM cost_centers
-              WHERE "organizationId" = $1
-              ORDER BY "createdAt" DESC
-              LIMIT 1
-            `,
-            [organizationId]
-          );
-          const row = result.rows[0] as
-            | { budget: string | number | null; currentCost: string | number | null }
-            | undefined;
-          if (!row) return null;
-          return {
-            budget:
-              row.budget == null
-                ? 0
-                : typeof row.budget === 'string'
-                  ? Number(row.budget)
-                  : row.budget,
-            currentCost:
-              row.currentCost == null
-                ? 0
-                : typeof row.currentCost === 'string'
-                  ? Number(row.currentCost)
-                  : row.currentCost,
-          };
-        });
-      }
+      const costCenters = await this.prisma.costCenter.findMany({
+        where: { organizationId },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 1,
+      });
+      const costCenter = costCenters[0] ?? null;
 
       if (!costCenter) {
         const costMs = Date.now() - startTime;

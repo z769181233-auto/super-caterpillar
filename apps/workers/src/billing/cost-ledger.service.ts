@@ -84,6 +84,10 @@ export class CostLedgerService {
     const idempotencyKey =
       params.idempotencyKey ||
       (params.runId ? `${params.runId}:${engineKey}` : `${jobId}:${engineKey}`);
+    const billingModel =
+      typeof billingUsage?.model === 'string' && billingUsage.model.length > 0
+        ? billingUsage.model
+        : null;
 
     try {
       await this.apiClient.postCostEvent({
@@ -104,7 +108,7 @@ export class CostLedgerService {
           gpuSeconds,
           cpuSeconds,
           totalTokens,
-          model: billingUsage?.model || 'unknown',
+          model: billingModel,
           idempotencyKey, // Pass to API for deduplication
         },
       });
@@ -149,7 +153,7 @@ export class CostLedgerService {
                   gpuSeconds,
                   cpuSeconds,
                   totalTokens,
-                  model: billingUsage?.model || 'unknown',
+                  model: billingModel,
                   idempotencyKey,
                 },
               } as any,

@@ -15,6 +15,8 @@ interface ErrorResponse {
   [key: string]: unknown;
 }
 
+const AUTH_ROUTE_PREFIX = '/api/auth/';
+
 function makeUnauthorizedError(message = 'Unauthorized'): UnauthorizedError {
   const err = new Error(message) as UnauthorizedError;
   err.status = 401;
@@ -30,11 +32,38 @@ async function safeJson(res: Response): Promise<unknown> {
   }
 }
 
+function shouldAttemptSessionRefresh(url: string): boolean {
+  return !url.startsWith(AUTH_ROUTE_PREFIX);
+}
+
+async function refreshAuthSession(): Promise<boolean> {
+  const response = await fetch('/api/auth/refresh/', {
+    method: 'POST',
+    credentials: 'include',
+  });
+
+  return response.ok;
+}
+
 // Global 401 Handler Wrapper
-async function fetchWithAuth(url: string, options: RequestInit = {}) {
+async function fetchWithAuth(url: string, options: RequestInit = {}, allowRefresh = true) {
   const res = await fetch(url, options);
 
   if (res.status === 401) {
+    if (allowRefresh && shouldAttemptSessionRefresh(url)) {
+      try {
+        const refreshed = await refreshAuthSession();
+        if (refreshed) {
+          const retryRes = await fetch(url, options);
+          if (retryRes.status !== 401) {
+            return retryRes;
+          }
+        }
+      } catch {
+        // Fall through to the structured unauthorized error below.
+      }
+    }
+
     // ✅ 只抛结构化错误；跳转由 UnauthorizedRedirectProvider 统一处理（单一权威）
     throw makeUnauthorizedError('Unauthorized');
   }
@@ -44,7 +73,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
 export const projectApi = {
   async createProject(payload: { name: string; description?: string }) {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects`, {
+    const res = await fetchWithAuth('/api/projects/', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -64,8 +93,29 @@ export const projectApi = {
     return json.data.project ?? json.data;
   },
 
+  async deleteProject(projectId: string) {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+
+    const json: unknown = await safeJson(res);
+    const obj = json && typeof json === 'object' ? (json as ErrorResponse) : null;
+
+    if (!res.ok) {
+      const msg = obj?.error?.message || obj?.message || `删除项目失败 (${res.status})`;
+      throw new Error(msg);
+    }
+
+    if (obj && typeof obj === 'object' && 'success' in obj && (obj as { success?: boolean }).success === false) {
+      throw new Error(obj?.error?.message || '删除项目失败');
+    }
+
+    return obj?.data ?? json;
+  },
+
   async getProjects(): Promise<ProjectDTO[]> {
-    const res = await fetchWithAuth(`${API_BASE_URL}/api/projects`, {
+    const res = await fetchWithAuth('/api/projects/', {
       credentials: 'include',
     });
 
@@ -302,6 +352,30 @@ export const projectApi = {
       return json.data as ProjectStructureTree;
     }
     throw new Error('Invalid response format');
+  },
+
+  async generateVideoScript(
+    projectId: string,
+    payload: { sceneId?: string; shotCount?: number }
+  ) {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/structure/video-script/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const error = json as ErrorResponse | null;
+      throw new Error(error?.error?.message || error?.message || `视频剧本生成失败: ${res.status}`);
+    }
+
+    if (json && json.success) {
+      return json.data;
+    }
+    throw new Error('视频剧本生成失败');
   },
 
   // Stage4: Scene Semantic Enhancement (MVP)
@@ -597,7 +671,7 @@ export const novelImportApi = {
     if (meta?.title) formData.append('title', meta.title);
     if (meta?.author) formData.append('author', meta.author);
 
-    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import-file`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import-file/`, {
       method: 'POST',
       body: formData,
       credentials: 'include',
@@ -619,7 +693,7 @@ export const novelImportApi = {
     projectId: string,
     payload: { title?: string; novelName?: string; author?: string; fileUrl?: string; rawText?: string; content?: string }
   ): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/import/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -639,7 +713,7 @@ export const novelImportApi = {
   },
 
   async analyzeNovel(projectId: string): Promise<ImportNovelResultDTO> {
-    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/analyze`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/analyze/`, {
       method: 'POST',
       credentials: 'include',
     });
@@ -657,7 +731,7 @@ export const novelImportApi = {
   },
 
   async getNovelJobs(projectId: string): Promise<JobDTO[]> {
-    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/jobs`, {
+    const res = await fetchWithAuth(`/api/projects/${projectId}/novel/jobs/`, {
       method: 'GET',
       credentials: 'include',
     });

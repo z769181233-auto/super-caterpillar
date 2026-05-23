@@ -9,6 +9,13 @@
 import { EngineInvocationRequest, EngineInvocationResult } from '@scu/shared-types';
 import { ApiClient } from './api-client';
 
+function requireTraceId(value: unknown, engineKey: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[ENGINE_HUB_REMOTE] Missing metadata.traceId for engine ${engineKey}`);
+}
+
 /**
  * Engine Hub Client (Worker 端)
  * 提供统一的引擎调用接口，使用 EngineInvocationRequest/Result
@@ -62,7 +69,7 @@ export class EngineHubClient {
         payload: req.payload,
         metadata: {
           ...req.metadata,
-          traceId: req.metadata?.traceId || `worker-remote-${Date.now()}`,
+          traceId: requireTraceId(req.metadata?.traceId, targetEngineKey),
         },
       };
 

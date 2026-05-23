@@ -21,6 +21,15 @@ interface CircuitState {
   lastErrorTime: number;
 }
 
+function requireTraceId(value: unknown, engineKey: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new ForbiddenException(
+    `[BillingGuard] Engine ${engineKey} requires a valid traceId for ledger auditing.`
+  );
+}
+
 /**
  * EngineInvokerService
  * - 负责统一的调用封装
@@ -45,21 +54,25 @@ export class EngineInvokerService {
     // 强制校验 ledger_required 引擎是否已先行创建账本
     const engineSpec = this.engineConfigStore.getJsonConfig(engineKey);
     if (engineSpec?.ledger_required === true || engineSpec?.ledger_required === 'YES') {
-      const traceId = input.context?.traceId || input.payload?.traceId || (input as any).jobId;
-      if (!traceId) {
+      const traceId = requireTraceId(input.context?.traceId || input.payload?.traceId, engineKey);
+      const jobId = input.context?.jobId || input.payload?.jobId || (input as any).jobId;
+      if (!jobId) {
         throw new ForbiddenException(
-          `[BillingGuard] Engine ${engineKey} requires a valid traceId/jobId for ledger auditing.`
+          `[BillingGuard] Engine ${engineKey} requires a valid jobId for ledger auditing.`
         );
       }
 
-      const ledger = await this.prisma.billingLedger.findFirst({
-        where: { jobId: String(traceId) },
+      const ledgers = await this.prisma.billingLedger.findMany({
+        where: { jobId: String(jobId) },
         select: { id: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 2,
       });
+      const ledger = ledgers[0] ?? null;
 
       if (!ledger) {
         this.logger.error(
-          `[BillingGuard] ABORTING: Engine ${engineKey} is ledger_required but NO ledger entry found for traceId ${traceId}.`
+          `[BillingGuard] ABORTING: Engine ${engineKey} is ledger_required but NO ledger entry found for jobId=${jobId ?? 'null'} traceId=${traceId ?? 'null'}.`
         );
         throw new ForbiddenException(
           `[BillingGuard] Unauthorized usage of premium engine ${engineKey}. Ledger record must be created BEFORE invocation.`

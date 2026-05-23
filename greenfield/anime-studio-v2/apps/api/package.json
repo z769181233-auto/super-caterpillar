@@ -1,0 +1,14 @@
+{
+  "name": "@anime-studio-v2/api",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@anime-studio-v2/database": "workspace:*",
+    "express": "^5.2.1"
+  }
+}

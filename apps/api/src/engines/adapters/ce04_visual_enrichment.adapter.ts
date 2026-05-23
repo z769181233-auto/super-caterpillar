@@ -15,10 +15,18 @@ export class CE04LocalAdapter implements EngineAdapter {
     return engineKey === 'ce04_visual_enrichment';
   }
 
+  private requireProjectId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[CE04LocalAdapter] Missing context.projectId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     this.logger.log(`Invoking CE04 Local Adapter for jobType=${input.jobType}`);
 
     try {
+      const projectId = this.requireProjectId(input.context?.projectId);
       // Transform common EngineInvokeInput to specific CE04Input
       const engineInput = {
         structured_text: input.payload?.structured_text || '',
@@ -26,7 +34,7 @@ export class CE04LocalAdapter implements EngineAdapter {
         style_guide: input.payload?.style_guide,
         context: {
           ...input.context,
-          projectId: input.context?.projectId || 'unknown',
+          projectId,
         },
       };
 

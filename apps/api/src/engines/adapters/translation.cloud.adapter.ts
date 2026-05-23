@@ -20,8 +20,16 @@ export class TranslationCloudAdapter implements EngineAdapter {
     return engineKey === 'translation_engine';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[TranslationCloudAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     try {
+      const traceId = this.requireTraceId(input.context?.traceId);
       const payload = input.payload || {};
       const sourceText = payload.sourceText || '';
       const targetLang = payload.targetLang || 'en';
@@ -49,8 +57,8 @@ export class TranslationCloudAdapter implements EngineAdapter {
       });
 
       if (cached) {
-        await this.auditHelper(input, 'HIT', `hash:${inputHash}`);
-        await this.recordCost(input, 0); // 0 cost for cache hit
+        await this.auditHelper(input, traceId, 'HIT', `hash:${inputHash}`);
+        await this.recordCost(input, traceId, 0); // 0 cost for cache hit
         return {
           status: 'SUCCESS' as any,
           output: {
@@ -68,50 +76,25 @@ export class TranslationCloudAdapter implements EngineAdapter {
         throw new Error(`TRANSLATION_NO_KEY: Missing environment variable ${apiKeyEnv}`);
       }
 
-      // 4. Invoke Provider (Mock/Stub for now, or Real if implemented)
-      // User requirement: "Provider Pluggable". We implement simple logic here.
-
-      // Simulation of Real Call
-      const translatedText = await this.simulateTranslation(
-        provider,
-        sourceText,
-        targetLang,
-        apiKey
+      // 4. Invoke Provider
+      // 当前仓库尚未接入真实 Translation Provider，禁止使用伪翻译结果继续落库和计费。
+      throw new Error(
+        `TRANSLATION_PROVIDER_NOT_IMPLEMENTED: provider=${provider} sourceLang=${sourceLang} targetLang=${targetLang}`
       );
-
-      // 5. Save Cache
-      await this.prisma.translationCache.create({
-        data: {
-          organizationId: input.context.organizationId,
-          projectId: input.context.projectId || '',
-          provider,
-          sourceLang,
-          targetLang,
-          inputHash,
-          outputText: translatedText,
-        },
-      });
-
-      // 6. Audit & Cost
-      await this.auditHelper(input, 'MISS', `hash:${inputHash}`);
-      await this.recordCost(input, 1); // 1 credit per job
-
-      return {
-        status: 'SUCCESS' as any,
-        output: {
-          text: translatedText,
-          source: 'provider',
-          meta: { provider, lang: targetLang },
-        },
-      };
     } catch (error: any) {
       this.logger.error(`[Translation] Failed: ${error.message}`);
       // Integrity: Record Failure
-      await this.auditHelper(input, 'MISS', 'failed_request', {
+      const traceId =
+        typeof input.context?.traceId === 'string' && input.context.traceId.trim().length > 0
+          ? input.context.traceId
+          : null;
+      if (traceId) {
+        await this.auditHelper(input, traceId, 'MISS', 'failed_request', {
         status: 'FAILED',
         error: error.message,
-      });
-      await this.recordCost(input, 0, { status: 'FAILED' });
+        });
+        await this.recordCost(input, traceId, 0, { status: 'FAILED' });
+      }
 
       return {
         status: 'FAILED' as any,
@@ -123,23 +106,9 @@ export class TranslationCloudAdapter implements EngineAdapter {
     }
   }
 
-  private async simulateTranslation(
-    provider: string,
-    text: string,
-    target: string,
-    key: string
-  ): Promise<string> {
-    // In real impl, use fetch/axios to call provider API API
-    // Here we implement truth for "Integration" level.
-    // Even for "Real", if we don't have a paid DeepL key, we rely on Stub behavior?
-    // User status says "REAL (Redis+Render)".
-    // For Translation, if user provides key, it should work.
-    // I will add a simple pseudo-translation logic to prove inputs are processed.
-    return `[${provider}:${target}] ${text}`;
-  }
-
   private async auditHelper(
     input: EngineInvokeInput,
+    traceId: string,
     type: 'HIT' | 'MISS',
     resourceId: string,
     extraDetails: any = {}
@@ -154,7 +123,7 @@ export class TranslationCloudAdapter implements EngineAdapter {
           userId: input.context.userId || 'system',
           cache: type,
           engine: this.name,
-          traceId: input.context.traceId,
+          traceId,
           ...extraDetails,
         },
       });
@@ -163,7 +132,12 @@ export class TranslationCloudAdapter implements EngineAdapter {
     }
   }
 
-  private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
+  private async recordCost(
+    input: EngineInvokeInput,
+    traceId: string,
+    amount: number,
+    extraDetails: any = {}
+  ) {
     try {
       await this.costLedgerService.recordFromEvent({
         userId: input.context.userId || 'system',
@@ -177,7 +151,7 @@ export class TranslationCloudAdapter implements EngineAdapter {
         attempt: (input.context as any).attempt || 1,
         metadata: {
           type: 'translation',
-          traceId: input.context.traceId || 'unknown',
+          traceId,
           ...extraDetails,
         },
       });

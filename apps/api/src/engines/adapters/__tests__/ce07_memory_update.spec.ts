@@ -42,6 +42,9 @@ describe('ce07_memory_update integration (Mocked)', () => {
       task: {
         create: jest.fn().mockResolvedValue({ id: 'task_' + randomUUID() }),
       },
+      scene: {
+        findUnique: jest.fn().mockResolvedValue({ projectId }),
+      },
       shotJob: {
         create: jest.fn().mockResolvedValue({}),
         findUnique: jest.fn().mockResolvedValue({

@@ -1,0 +1,393 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStage {
+  project_created
+  novel_imported
+  episode_outlined
+  scene_scripted
+  shot_scripted
+  reviewed
+  preview_prepared
+  render_submitted
+  render_completed
+}
+
+enum AdaptationMode {
+  faithful
+  commercial
+  fast_paced
+}
+
+enum EvidenceLevel {
+  source_explicit
+  context_inferred
+  style_enhanced
+  manual_review_required
+}
+
+enum ConsistencySeverity {
+  low
+  medium
+  high
+}
+
+enum CharacterRole {
+  protagonist
+  supporting
+}
+
+enum VersionAction {
+  project_initialized
+  novel_imported
+  upload_session_created
+  upload_session_completed
+  source_file_uploaded
+  import_job_created
+  import_job_completed
+  episode_outline_generated
+  scene_scripts_generated
+  shot_scripts_generated
+  consistency_reviewed
+  episode_package_generated
+  preview_job_prepared
+  render_job_dispatched
+  render_job_completed
+  asset_registered
+}
+
+enum PreviewVideoProvider {
+  mock_storyboard
+  sora
+  jimeng
+}
+
+enum PreviewVideoStatus {
+  queued
+  prompt_ready
+  handoff_ready
+  failed
+}
+
+enum RenderProvider {
+  mock_video
+  sora
+  jimeng
+}
+
+enum RenderJobStatus {
+  queued
+  submitted
+  completed
+  failed
+}
+
+enum RenderQualityPreset {
+  draft
+  preview
+  final
+}
+
+enum UploadSessionStatus {
+  receiving
+  assembled
+  imported
+  failed
+}
+
+enum AssetType {
+  character_sheet
+  location_board
+  prop_sheet
+  reference_frame
+  music_brief
+  style_bible
+}
+
+enum AssetStatus {
+  draft
+  ready
+  archived
+}
+
+enum StoredFileKind {
+  novel_source
+  asset_attachment
+}
+
+enum ImportJobStatus {
+  queued
+  running
+  completed
+  failed
+}
+
+enum ShotType {
+  establishing
+  wide
+  medium
+  closeup
+  insert
+}
+
+model Project {
+  id             String             @id @default(cuid())
+  name           String
+  description    String?
+  stage          ProjectStage       @default(project_created)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  novel          Novel?
+  characters     CharacterProfile[]
+  episodeOutlines EpisodeOutline[]
+  scenes         SceneScript[]
+  shots          ShotScript[]
+  issues         ConsistencyIssue[]
+  versions       ProjectVersion[]
+  previewJobs    PreviewVideoJob[]
+  renderJobs     RenderJob[]
+  uploadSessions NovelUploadSession[]
+  assets         AssetLibraryItem[]
+  storedFiles    StoredFile[]
+  importJobs     ImportJob[]
+}
+
+model Novel {
+  id           String         @id @default(cuid())
+  projectId    String         @unique
+  title        String
+  author       String?
+  wordCount    Int
+  chapterCount Int
+  createdAt    DateTime       @default(now())
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  chapters     NovelChapter[]
+}
+
+model NovelChapter {
+  id        String  @id @default(cuid())
+  novelId   String
+  chapterNo Int
+  title     String
+  summary   String
+  excerpt   String
+  wordCount Int
+  novel     Novel   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  @@unique([novelId, chapterNo])
+}
+
+model CharacterProfile {
+  id              String        @id @default(cuid())
+  projectId       String
+  name            String
+  role            CharacterRole
+  identitySummary String
+  speechStyle     String
+  project         Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model EpisodeOutline {
+  id               String         @id @default(cuid())
+  projectId        String
+  episodeNo        Int
+  adaptationMode   AdaptationMode
+  estimatedMinutes Int
+  title            String
+  theme            String
+  logline          String
+  storyGoal        String
+  progressPoint    String
+  climax           String
+  endingHook       String
+  createdAt        DateTime       @default(now())
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scenes           SceneScript[]
+  previewJobs      PreviewVideoJob[]
+
+  @@unique([projectId, episodeNo])
+}
+
+model SceneScript {
+  id               String         @id @default(cuid())
+  projectId        String
+  episodeOutlineId String
+  sceneNo          Int
+  title            String
+  location         String
+  timeOfDay        String
+  characters       Json
+  sceneGoal        String
+  conflictSource   String
+  actionText       String
+  dialogueText     String
+  emotionGoal      String
+  exitResult       String
+  evidenceLevel    EvidenceLevel
+  project          Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  episodeOutline   EpisodeOutline @relation(fields: [episodeOutlineId], references: [id], onDelete: Cascade)
+  shots            ShotScript[]
+
+  @@unique([episodeOutlineId, sceneNo])
+}
+
+model ShotScript {
+  id               String      @id @default(cuid())
+  projectId        String
+  sceneId          String
+  shotNo           Int
+  shotType         ShotType
+  cameraAngle      String
+  cameraMove       String
+  durationSec      Int
+  visualFocus      String
+  performanceFocus String
+  project          Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene            SceneScript @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, shotNo])
+}
+
+model ConsistencyIssue {
+  id          String              @id @default(cuid())
+  projectId   String
+  type        String
+  severity    ConsistencySeverity
+  description String
+  suggestion  String
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectVersion {
+  id        String        @id @default(cuid())
+  projectId String
+  versionNo Int
+  stage     ProjectStage
+  action    VersionAction
+  summary   String
+  detail    String
+  metadata  Json?
+  createdAt DateTime      @default(now())
+  project   Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, versionNo])
+}
+
+model PreviewVideoJob {
+  id             String               @id @default(cuid())
+  projectId      String
+  episodeOutlineId String
+  episodeNo      Int
+  provider       PreviewVideoProvider
+  status         PreviewVideoStatus
+  objective      String
+  requestSummary String
+  promptPacket   String
+  sceneCount     Int
+  shotCount      Int
+  warnings       String[]
+  assets         Json
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  project        Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  episodeOutline EpisodeOutline       @relation(fields: [episodeOutlineId], references: [id], onDelete: Cascade)
+  renderJobs     RenderJob[]
+
+  @@index([projectId, episodeNo])
+}
+
+model RenderJob {
+  id            String              @id @default(cuid())
+  projectId     String
+  previewJobId  String
+  episodeNo     Int
+  provider      RenderProvider
+  status        RenderJobStatus
+  qualityPreset RenderQualityPreset
+  requestSummary String
+  outputSummary String
+  externalJobId String?
+  warnings      String[]
+  artifacts     Json
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  project       Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  previewJob    PreviewVideoJob     @relation(fields: [previewJobId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, episodeNo])
+}
+
+model NovelUploadSession {
+  id              String              @id @default(cuid())
+  projectId       String
+  title           String
+  author          String?
+  totalChunks     Int
+  receivedChunks  Int
+  totalCharacters Int
+  status          UploadSessionStatus
+  chunks          Json
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model AssetLibraryItem {
+  id          String      @id @default(cuid())
+  projectId   String
+  name        String
+  type        AssetType
+  status      AssetStatus
+  description String
+  sourceUrl   String?
+  sourceFileId String?
+  tags        String[]
+  promptHint  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sourceFile  StoredFile? @relation(fields: [sourceFileId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, type])
+}
+
+model StoredFile {
+  id           String          @id @default(cuid())
+  projectId    String
+  name         String
+  kind         StoredFileKind
+  mimeType     String
+  byteSize     Int
+  absolutePath String
+  createdAt    DateTime        @default(now())
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assets       AssetLibraryItem[]
+  importJobs   ImportJob[]
+
+  @@index([projectId, kind])
+}
+
+model ImportJob {
+  id               String          @id @default(cuid())
+  projectId        String
+  fileId           String
+  title            String
+  author           String?
+  status           ImportJobStatus
+  errorMessage     String?
+  importedWordCount Int?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  project          Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file             StoredFile      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}

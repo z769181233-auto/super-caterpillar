@@ -6,9 +6,12 @@ export interface VideoMergeInput {
   framePaths?: string[];
   /** Video fragments to concat */
   videoPaths?: string[];
-  fps?: number; // default 24
-  width?: number; // default 512
-  height?: number; // default 512
+  /** Required when framePaths/framePattern are used */
+  fps?: number;
+  /** Required when framePaths/framePattern are used */
+  width?: number;
+  /** Required when framePaths/framePattern are used */
+  height?: number;
   context?: any;
 }
 

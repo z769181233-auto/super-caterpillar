@@ -102,7 +102,7 @@ model NovelSource {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  project      Project      @relation(fields: [projectId], references: [id])
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   organization Organization @relation("OrganizationNovelSources", fields: [organizationId], references: [id])
 
   @@map("novel_sources")
@@ -749,7 +749,7 @@ model BillingEvent {
   metadata     Json?
   createdAt    DateTime     @default(now()) @map("created_at")
   organization Organization @relation("BillingEventOrganization", fields: [orgId], references: [id])
-  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id])
+  project      Project      @relation("BillingEventProject", fields: [projectId], references: [id], onDelete: Cascade)
   user         User?        @relation("BillingEventUser", fields: [userId], references: [id])
 
   @@index([projectId, createdAt])
@@ -936,7 +936,6 @@ model NovelAnalysisJob {
 model ApiKey {
   id            String        @id @default(uuid())
   key           String        @unique
-  secretHash    String?
   name          String?
   ownerUserId   String?
   ownerOrgId    String?
@@ -1213,6 +1212,7 @@ model Asset {
   createdByJobId String?
   ownerId        String
   ownerType      AssetOwnerType
+  role           AssetRole            @default(PRIMARY)
   status         AssetStatus          @default(GENERATED)
   storageKey     String
   type           AssetType
@@ -1227,9 +1227,10 @@ model Asset {
   shot           Shot?                @relation("ShotAssets", fields: [shotId], references: [id], onDelete: Cascade)
   publishedVideo PublishedVideo?      @relation("AssetPublishedVideo")
 
-  @@unique([ownerType, ownerId, type])
+  @@unique([ownerType, ownerId, type, role])
   @@index([projectId])
   @@index([ownerType, ownerId])
+  @@index([projectId, type, role])
   @@index([shotId])
   @@map("assets")
 }
@@ -1763,6 +1764,14 @@ enum AssetOwnerType {
   CHARACTER
 }
 
+enum AssetRole {
+  PRIMARY
+  SHOT_SOURCE
+  SCENE_MASTER
+  EPISODE_MASTER
+  PREVIEW
+}
+
 model SubscriptionPlan {
   id                    String @id @default(uuid())
   name                  String // "FREE", "PRO", "ENTERPRISE", "CREATOR"
@@ -1900,7 +1909,7 @@ model ScriptBuild {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  project     Project     @relation(fields: [projectId], references: [id])
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   storySource StorySource @relation(fields: [sourceId], references: [id])
 
   @@map("script_builds")
@@ -1925,7 +1934,7 @@ model Location {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
@@ -1939,7 +1948,7 @@ model Prop {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])
@@ -1953,7 +1962,7 @@ model Outfit {
   description          String?
   firstSeenSourceRefId String? @map("first_seen_source_ref_id")
 
-  project      Project         @relation(fields: [projectId], references: [id])
+  project      Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   firstSeenRef StorySourceRef? @relation(fields: [firstSeenSourceRefId], references: [id])
 
   @@unique([projectId, name])

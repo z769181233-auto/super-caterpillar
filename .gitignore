@@ -15,6 +15,7 @@ coverage/
 **/coverage/
 .turbo/
 **/.turbo/
+*.tsbuildinfo
 
 # OS & Environment
 .DS_Store
@@ -88,6 +89,7 @@ evidence/
 docs/
 **/docs/
 /storage/
+**/storage/exports/
 .data/
 **/.data/
 artifacts/

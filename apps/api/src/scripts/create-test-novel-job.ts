@@ -40,10 +40,12 @@ async function main() {
   }
 
   // 2) ensure organization
-  let organization = await prisma.organization.findFirst({
+  const organizations = await prisma.organization.findMany({
     where: { name: orgName },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let organization = organizations[0] ?? null;
   if (!organization) {
     organization = await prisma.organization.create({
       data: {
@@ -57,10 +59,12 @@ async function main() {
   }
 
   // 3) ensure project
-  let project = await prisma.project.findFirst({
+  const projects = await prisma.project.findMany({
     where: { name: projectName, organizationId: organization.id },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let project = projects[0] ?? null;
   if (!project) {
     project = await prisma.project.create({
       data: {
@@ -88,10 +92,12 @@ async function main() {
     });
   }
 
-  let episode = await prisma.episode.findFirst({
+  const episodes = await prisma.episode.findMany({
     where: { seasonId: season.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ id: 'desc' }],
+    take: 1,
   });
+  let episode = episodes[0] ?? null;
   if (!episode) {
     episode = await prisma.episode.create({
       data: {
@@ -103,25 +109,30 @@ async function main() {
     });
   }
 
-  let scene = await prisma.scene.findFirst({
-    where: { episodeId: episode.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+  const scenes = await prisma.scene.findMany({
+    where: { episodeId: episode.id, sceneIndex: 1 },
+    orderBy: [{ id: 'desc' }],
+    take: 1,
   });
+  let scene = scenes[0] ?? null;
   if (!scene) {
     scene = await prisma.scene.create({
       data: {
         episodeId: episode.id,
-        index: 1,
+        projectId: project.id,
+        sceneIndex: 1,
         title: 'Scene 1',
         summary: 'Auto scene for test job',
       },
     });
   }
 
-  let shot = await prisma.shot.findFirst({
+  const shots = await prisma.shot.findMany({
     where: { sceneId: scene.id, index: 1 },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ id: 'desc' }],
+    take: 1,
   });
+  let shot = shots[0] ?? null;
   if (!shot) {
     shot = await prisma.shot.create({
       data: {
@@ -135,28 +146,52 @@ async function main() {
   }
 
   // 5) ensure Novel and NovelChapter
-  let novelSource = await prisma.novelSource.findUnique({ where: { projectId: project.id } });
+  let novelSource = await prisma.novel.findUnique({ where: { projectId: project.id } as any });
   if (!novelSource) {
-    novelSource = await prisma.novelSource.create({
+    novelSource = await prisma.novel.create({
       data: {
         projectId: project.id,
         title: 'Test Novel',
-        rawText: 'Test novel content for job testing',
+        author: 'Worker Test',
+        organizationId: organization.id,
+        status: 'UPLOADING',
+        fileType: 'txt',
+        characterCount: 'Test novel content for job testing'.length,
+        metadata: {
+          source: 'create-test-novel-job',
+        },
       },
     });
   }
 
-  let novelChapter = await prisma.novelChapter.findFirst({
-    where: { novelSourceId: novelSource.id, orderIndex: 1 },
-    orderBy: { createdAt: 'desc' },
+  const novelChapters = await prisma.novelChapter.findMany({
+    where: { novelSourceId: novelSource.id, index: 1 },
+    orderBy: [{ id: 'desc' }],
+    take: 1,
   });
+  let novelChapter = novelChapters[0] ?? null;
   if (!novelChapter) {
+    let volume = await prisma.novelVolume.findFirst({
+      where: { projectId: project.id, novelSourceId: novelSource.id, index: 1 },
+      orderBy: { id: 'desc' },
+    });
+    if (!volume) {
+      volume = await prisma.novelVolume.create({
+        data: {
+          projectId: project.id,
+          novelSourceId: novelSource.id,
+          index: 1,
+          title: 'Volume 1',
+        },
+      });
+    }
     novelChapter = await prisma.novelChapter.create({
       data: {
         novelSourceId: novelSource.id,
-        orderIndex: 1,
+        volumeId: volume.id,
+        index: 1,
         title: 'Chapter 1',
-        rawText: 'Test chapter content',
+        rawContent: '第1章：测试章节\n这是用于验证 worker NOVEL_ANALYSIS 链路的测试正文。',
       },
     });
   }

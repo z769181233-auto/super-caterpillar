@@ -138,7 +138,9 @@
   "Common": {
     "loading": "Đang tải tài nguyên hệ thống...",
     "retry": "Thử lại kết nối",
-    "empty": "Không tìm thấy hồ sơ nào"
+    "empty": "Không tìm thấy hồ sơ nào",
+    "login": "Đăng nhập",
+    "enterWorkbench": "Vào bàn làm việc"
   },
   "Projects": {
     "title": "Dự án",
@@ -157,7 +159,8 @@
     "stats": {
       "seasons": "Mùa",
       "scenes": "Cảnh",
-      "shots": "Cảnh Shot"
+      "shots": "Cảnh Shot",
+      "episodes": "Tập"
     },
     "status": {
       "READY": "Sẵn sàng",
@@ -203,6 +206,18 @@
       "unknown": "Loại Nút Không Xác Định",
       "noDesc": "(Không có mô tả)",
       "noSummary": "(Không có tóm tắt)"
+    },
+    "createModalCancel": "Hủy",
+    "createModalErrorEmptyName": "Hãy nhập tên dự án trước khi tạo.",
+    "createModalErrorGeneric": "Không thể tạo dự án. Vui lòng thử lại.",
+    "deleteModalTitle": "Xóa dự án",
+    "deleteModalDesc": "Hành động này không thể hoàn tác. Bản nhập truyện, tác vụ phân tích và kết quả cấu trúc của dự án này sẽ bị xóa cùng nhau.",
+    "deleteModalCancel": "Giữ lại dự án",
+    "deleteModalConfirm": "Xóa dự án",
+    "deleteModalErrorGeneric": "Không thể xóa dự án. Vui lòng thử lại.",
+    "deletingButton": "Đang xóa...",
+    "card": {
+      "delete": "Xóa"
     }
   },
   "Landing": {
@@ -241,26 +256,65 @@
     "passwordLabel": "Khóa Truy Cập",
     "submitLogin": "Vào Bàn Làm Việc",
     "submitRegister": "Gửi Đăng Ký",
+    "submitHint": "Điền xong rồi bấm nút chính bên dưới để tiếp tục.",
     "loading": "Đang xác minh...",
     "errorInvalid": "Thông tin xác thực không hợp lệ hoặc bị hỏng",
+    "registerSuccess": "Đăng ký hoàn tất. Hãy dùng tài khoản vừa tạo để đăng nhập vào bàn làm việc.",
+    "registerSuccessAction": "Đi tới trang đăng nhập ngay",
+    "errorEmailExists": "Email này đã được đăng ký. Hãy chuyển sang đăng nhập.",
+    "errorInvalidEmail": "Vui lòng nhập đúng định dạng email.",
+    "errorInvalidPassword": "Vui lòng nhập mật khẩu ít nhất 6 ký tự trước khi vào bàn làm việc.",
+    "errorInvalidForm": "Vui lòng kiểm tra lại định dạng email và độ dài mật khẩu.",
     "errorNetwork": "Cổng Hệ Thống Không Phản Hồi",
+    "switchToRegisterPrompt": "Chưa có tài khoản?",
+    "switchToRegisterAction": "Đăng ký ngay",
+    "switchToLoginPrompt": "Đã có tài khoản?",
+    "switchToLoginAction": "Đến trang đăng nhập",
     "backToLanding": "Quay Lại Cổng Công Nghiệp",
     "footerPrivacy": "Hiệp Ước Bảo Mật",
     "footerTerms": "Điều Khoản Dịch Vụ"
   },
   "ProjectDetail": {
     "navOverview": "Tổng quan",
+    "navScript": "Kịch bản video",
     "navBuilds": "Các bản dựng",
     "navEvidence": "Bằng chứng",
+    "ctaBackToProjects": "Quay lại danh sách dự án",
     "ctaOpenStudio": "Vào Bàn Làm Việc",
+    "ctaOpenScriptResults": "Xem kịch bản video",
     "ctaImportNovel": "Nhập tiểu thuyết",
+    "ctaViewAll": "Xem tất cả",
     "ctaExportEvidence": "Xuất bộ Bằng chứng",
     "ctaExportCsv": "Xuất dữ liệu CSV",
-    "statsBuilds": "Tổng Số Bản Dựng",
+    "statsBuilds": "Số chương cốt truyện",
     "statsAudited": "Trạng thái Kiểm toán",
     "statsUpdated": "Cập nhật Lần cuối",
-    "sectionRecentBuilds": "Cài đặt Gần đây",
-    "sectionAuditMetering": "Kiểm toán & Thanh toán"
+    "statsUsage": "Sử dụng",
+    "statsNovelAnalysis": "Trạng thái phân tích tiểu thuyết",
+    "statsNovelJobId": "ID tác vụ gần nhất",
+    "statsNovelJobType": "Loại tác vụ gần nhất",
+    "statsNovelUpdatedAt": "Cập nhật trạng thái gần nhất",
+    "sectionNovelAnalysis": "Tiến độ phân tích tiểu thuyết",
+    "sectionNovelAnalysisDesc": "Trang này hiển thị trực tiếp trạng thái phân tích tiểu thuyết mới nhất. Khi hoàn tất, bạn có thể xem kịch bản video, nhân vật, cảnh và tín hiệu shot.",
+    "sectionRecentBuilds": "Kết quả phân tích",
+    "sectionAuditMetering": "Kiểm toán & Thanh toán",
+    "truthBuildName": "Kết quả kịch bản video",
+    "buildDesc": "Nhân vật, cảnh, cốt truyện và tín hiệu shot script sẽ tiếp tục được tổng hợp trong trang kết quả.",
+    "fingerprintStatus": "Trạng thái dấu vân tay",
+    "rulesVersion": "Phiên bản quy tắc",
+    "metaId": "ID dự án",
+    "metaOrg": "Tổ chức",
+    "metaCreated": "Ngày tạo",
+    "novelAnalysisNone": "Chưa có tác vụ",
+    "novelAnalysisPending": "Đang chờ",
+    "novelAnalysisRunning": "Đang chạy",
+    "novelAnalysisDone": "Đã hoàn tất",
+    "novelAnalysisFailed": "Thất bại",
+    "novelAnalysisNoneNext": "Hiện chưa có tác vụ phân tích. Nếu bạn vừa nhập truyện, hãy làm mới trang dự án; khi nhập thành công hệ thống sẽ tự tạo tác vụ phân tích.",
+    "novelAnalysisPendingNext": "PENDING nghĩa là tác vụ đã được tạo và đưa vào hàng đợi. Worker sẽ tự động quét mục lục, tách chương và tạo cấu trúc.",
+    "novelAnalysisRunningNext": "RUNNING nghĩa là hệ thống đang phân tích nội dung tiểu thuyết và sinh dữ liệu cấu trúc cho pipeline kịch bản.",
+    "novelAnalysisDoneNext": "Phân tích đã hoàn tất. Bước tiếp theo là xem kết quả kịch bản video: cốt truyện, nhân vật, cảnh và tín hiệu shot nằm trong trang kết quả.",
+    "novelAnalysisFailedNext": "Tác vụ phân tích đã thất bại. Hãy quay lại trang nhập truyện để xem lịch sử tác vụ và chi tiết lỗi rồi thử lại."
   },
   "studioBrand": "Super Caterpillar Studio",
   "evidence": "Bằng chứng",

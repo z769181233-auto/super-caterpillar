@@ -98,9 +98,16 @@ async function processJob(job: {
     if (job.type === 'NOVEL_ANALYSIS' || job.type === 'NOVEL_ANALYZE_CHAPTER') {
       // API Client now types projectId (optional)
       const projectId = job.payload?.projectId || job.projectId;
+      const traceId =
+        typeof (job as any).traceId === 'string' && (job as any).traceId.length > 0
+          ? (job as any).traceId
+          : undefined;
 
       if (!projectId) {
         throw new Error(`Missing projectId for ${job.type} job`);
+      }
+      if (!traceId) {
+        throw new Error(`Missing traceId for ${job.type} job`);
       }
 
       result = await processNovelAnalysisJob(
@@ -108,17 +115,28 @@ async function processJob(job: {
         {
           ...job,
           projectId,
-          traceId: job.taskId,
+          traceId,
         },
         apiClient
       );
     } else if (job.type === 'VIDEO_RENDER') {
+      const traceId =
+        typeof (job as any).traceId === 'string' && (job as any).traceId.length > 0
+          ? (job as any).traceId
+          : undefined;
+      const projectId = job.payload?.projectId || job.projectId;
+      if (!traceId) {
+        throw new Error(`Missing traceId for VIDEO_RENDER job ${job.id}`);
+      }
+      if (!projectId) {
+        throw new Error(`Missing projectId for VIDEO_RENDER job ${job.id}`);
+      }
       result = await processVideoRenderJob(
         prisma,
         {
           id: job.id,
-          traceId: job.taskId, // Assuming taskId is traceId for now, or fetch job
-          projectId: job.payload?.projectId || job.projectId || 'unknown',
+          traceId,
+          projectId,
           payload: job.payload,
           type: 'VIDEO_RENDER',
         } as any,

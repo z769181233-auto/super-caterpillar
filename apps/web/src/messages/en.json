@@ -138,7 +138,9 @@
   "Common": {
     "loading": "Loading system resources...",
     "retry": "Retry connection",
-    "empty": "No records found in this sector"
+    "empty": "No records found in this sector",
+    "login": "Login",
+    "enterWorkbench": "Enter Workbench"
   },
   "Projects": {
     "title": "Projects",
@@ -167,13 +169,15 @@
     },
     "card": {
       "latestBuild": "Latest Build",
-      "updated": "Updated"
+      "updated": "Updated",
+      "delete": "Delete"
     },
     "openStudio": "Workbench",
     "stats": {
       "seasons": "Seasons",
       "scenes": "Scenes",
-      "shots": "Shots"
+      "shots": "Shots",
+      "episodes": "Episodes"
     },
     "status": {
       "READY": "Ready",
@@ -221,21 +225,58 @@
       "unknown": "Unknown Node Type",
       "noDesc": "(No description)",
       "noSummary": "(No summary)"
-    }
+    },
+    "createModalCancel": "Cancel",
+    "createModalErrorEmptyName": "Enter a project name before creating it.",
+    "createModalErrorGeneric": "Failed to create project. Please try again.",
+    "deleteModalTitle": "Delete Project",
+    "deleteModalDesc": "This action cannot be undone. Imported novels, analysis tasks, and structure results under this project will be removed together.",
+    "deleteModalCancel": "Keep Project",
+    "deleteModalConfirm": "Delete Project",
+    "deleteModalErrorGeneric": "Failed to delete project. Please try again.",
+    "deletingButton": "Deleting..."
   },
   "ProjectDetail": {
     "navOverview": "Overview",
+    "navScript": "Screenplay",
     "navBuilds": "Builds",
     "navEvidence": "Evidence",
+    "ctaBackToProjects": "Back to Projects",
     "ctaOpenStudio": "Open Studio",
+    "ctaOpenScriptResults": "View Screenplay",
     "ctaImportNovel": "Import Novel",
+    "ctaViewAll": "View All",
     "ctaExportEvidence": "Export Evidence Suite",
     "ctaExportCsv": "Export CSV",
-    "statsBuilds": "Total Builds",
+    "statsBuilds": "Story Chapters",
     "statsAudited": "Audit Status",
     "statsUpdated": "Last Updated",
-    "sectionRecentBuilds": "Recent Builds",
-    "sectionAuditMetering": "Audit & Metering"
+    "statsUsage": "Usage",
+    "statsNovelAnalysis": "Novel Analysis",
+    "statsNovelJobId": "Latest Job ID",
+    "statsNovelJobType": "Latest Job Type",
+    "statsNovelUpdatedAt": "Latest Status Update",
+    "sectionNovelAnalysis": "Novel Analysis Progress",
+    "sectionNovelAnalysisDesc": "This page shows the latest novel analysis task. Once analysis completes, inspect the screenplay, characters, scenes, and shot signals.",
+    "sectionRecentBuilds": "Analysis Output",
+    "sectionAuditMetering": "Audit & Metering",
+    "truthBuildName": "Screenplay Result",
+    "buildDesc": "Characters, scenes, plot, and shot-script signals continue to settle in the result page.",
+    "fingerprintStatus": "Fingerprint Status",
+    "rulesVersion": "Rules Version",
+    "metaId": "Project ID",
+    "metaOrg": "Organization",
+    "metaCreated": "Created",
+    "novelAnalysisNone": "No Task Yet",
+    "novelAnalysisPending": "Pending",
+    "novelAnalysisRunning": "Running",
+    "novelAnalysisDone": "Done",
+    "novelAnalysisFailed": "Failed",
+    "novelAnalysisNoneNext": "There is no analysis task yet. If you just imported a novel, refresh the project page; a successful import creates the analysis task automatically.",
+    "novelAnalysisPendingNext": "PENDING means the task has been created and queued. The analysis worker will automatically scan the table of contents, split chapters, and generate structure.",
+    "novelAnalysisRunningNext": "RUNNING means the system is parsing the novel and producing the structured data used by the screenplay pipeline.",
+    "novelAnalysisDoneNext": "Analysis is complete. Next, inspect the screenplay result: plot, characters, scenes, and shot signals are on the result page.",
+    "novelAnalysisFailedNext": "The analysis task failed. Return to the import page, inspect task history and error details, then retry."
   },
   "Landing": {
     "title": "Industrial-Grade AI Animation Pipeline",
@@ -273,9 +314,20 @@
     "passwordLabel": "Access Key",
     "submitLogin": "Access Studio",
     "submitRegister": "Submit Registration",
+    "submitHint": "Complete the fields, then use the primary action below.",
     "loading": "Verifying...",
     "errorInvalid": "Credentials invalid or corrupted",
+    "registerSuccess": "Registration completed. Please sign in with the account you just created.",
+    "registerSuccessAction": "Go to the login page now",
+    "errorEmailExists": "This email is already registered. Please sign in instead.",
+    "errorInvalidEmail": "Please enter a valid email address.",
+    "errorInvalidPassword": "Please enter a password with at least 6 characters before accessing the studio.",
+    "errorInvalidForm": "Please check the email format and password length, then try again.",
     "errorNetwork": "System Gateway not responding",
+    "switchToRegisterPrompt": "Need an account?",
+    "switchToRegisterAction": "Create one",
+    "switchToLoginPrompt": "Already have an account?",
+    "switchToLoginAction": "Go to login",
     "backToLanding": "Return to Gateway",
     "footerPrivacy": "Privacy Protocol",
     "footerTerms": "Service Agreement"

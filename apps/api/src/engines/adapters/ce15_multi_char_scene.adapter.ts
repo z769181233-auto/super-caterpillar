@@ -22,15 +22,36 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
     return engineKey === this.name;
   }
 
+  private requireContextId(value: unknown, field: 'projectId' | 'jobId'): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error(`[CE15MultiCharSceneAdapter] Missing context.${field}`);
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const { payload, context } = input;
+    let projectId: string;
+    let jobId: string;
+    try {
+      projectId = this.requireContextId(context.projectId, 'projectId');
+      jobId = this.requireContextId(context.jobId, 'jobId');
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'CE15_CONTEXT_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
 
     // 1. 记录审计
     await this.audit.log({
       userId: context.userId,
       traceId: context.traceId,
       resourceType: 'project',
-      resourceId: context.projectId,
+      resourceId: projectId,
       action: 'CE15_INVOKE',
       details: payload,
     });
@@ -41,8 +62,8 @@ export class CE15MultiCharSceneAdapter implements EngineAdapter {
     // 3. 记录成本
     await this.cost.recordFromEvent({
       userId: context.userId || 'system',
-      projectId: context.projectId || 'unknown',
-      jobId: context.jobId || 'unknown',
+      projectId,
+      jobId,
       jobType: 'NOVEL_ANALYSIS',
       engineKey: this.name,
       costAmount: 0.05, // 真值成本

@@ -1,27 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildApiUrl, extractForwardHeaders } from '@/lib/server/novel-import-proxy';
+import { buildApiUrl, extractForwardHeaders, forwardSetCookies } from '@/lib/server/novel-import-proxy';
+import {
+  buildAuthFailureLocation,
+  buildAuthSuccessLocation,
+  isHtmlFormSubmission,
+  parseAuthFailureReason,
+} from '@/lib/server/auth-form-flow';
 
 export async function POST(request: NextRequest) {
-  const body = await request.text();
+  const contentType = request.headers.get('content-type');
+  const isFormRequest = isHtmlFormSubmission(contentType);
+  const formData = isFormRequest ? await request.formData() : null;
+  const fallbackEmail = formData ? String(formData.get('email') || '') : null;
+  const body = formData
+    ? JSON.stringify({
+        email: String(formData.get('email') || ''),
+        password: String(formData.get('password') || ''),
+      })
+    : await request.text();
   const forwardHeaders = extractForwardHeaders(request);
+  let response: Response;
+  let text = '';
 
-  const response = await fetch(buildApiUrl('/api/auth/register'), {
-    method: 'POST',
-    headers: {
-      ...Object.fromEntries(Object.entries(forwardHeaders)),
-      'content-type': 'application/json',
-    },
-    body,
-  });
+  try {
+    response = await fetch(buildApiUrl('/api/auth/register'), {
+      method: 'POST',
+      headers: {
+        ...Object.fromEntries(Object.entries(forwardHeaders)),
+        'content-type': 'application/json',
+      },
+      body,
+    });
 
-  const text = await response.text();
+    text = await response.text();
+  } catch {
+    if (isFormRequest) {
+      const locale = request.nextUrl.searchParams.get('locale') || 'en';
+      const fromParam = request.nextUrl.searchParams.get('from');
+      return new NextResponse(null, {
+        status: 303,
+        headers: {
+          location: buildAuthFailureLocation({
+            mode: 'register',
+            locale,
+            fromParam,
+            email: fallbackEmail,
+            reason: 'network',
+          }),
+        },
+      });
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Authentication service unavailable',
+      },
+      { status: 503 }
+    );
+  }
+
+  if (isFormRequest) {
+    const locale = request.nextUrl.searchParams.get('locale') || 'en';
+    const fromParam = request.nextUrl.searchParams.get('from');
+    const location = response.ok
+      ? buildAuthSuccessLocation({ mode: 'register', locale, fromParam, email: fallbackEmail })
+      : buildAuthFailureLocation({
+          mode: 'register',
+          locale,
+          fromParam,
+          email: fallbackEmail,
+          reason: parseAuthFailureReason(response.status, text, 'register'),
+        });
+    const next = new NextResponse(null, {
+      status: 303,
+      headers: { location },
+    });
+    forwardSetCookies(response.headers, next.headers);
+    return next;
+  }
+
   const next = new NextResponse(text, {
     status: response.status,
     headers: { 'content-type': response.headers.get('content-type') || 'application/json' },
   });
-  const setCookie = response.headers.get('set-cookie');
-  if (setCookie) {
-    next.headers.set('set-cookie', setCookie);
-  }
+  forwardSetCookies(response.headers, next.headers);
   return next;
 }

@@ -1,5 +1,6 @@
 import {
   AssetOwnerType,
+  AssetRole,
   AssetType,
   JobType,
   Prisma,
@@ -54,6 +55,60 @@ function getStringField(source: JsonRecord, key: string): string | undefined {
 function getNumberField(source: JsonRecord, key: string): number | undefined {
   const value = source[key];
   return typeof value === 'number' ? value : undefined;
+}
+
+function getRequiredTraceId(job: WorkerJobBase, context: string): string {
+  if (typeof job.traceId === 'string' && job.traceId.length > 0) {
+    return job.traceId;
+  }
+  throw new Error(`[${context}] Missing traceId for job ${job.id}`);
+}
+
+function getRequiredPipelineRunId(payload: JsonRecord, jobId: string, context: string): string {
+  const pipelineRunId = getStringField(payload, 'pipelineRunId');
+  if (pipelineRunId) {
+    return pipelineRunId;
+  }
+  throw new Error(`[${context}] Missing pipelineRunId for job ${jobId}`);
+}
+
+function getExplicitEngineKey(job: WorkerJobBase, payload: JsonRecord, context: string): string {
+  const engineKey =
+    getStringField(payload, 'engineKey') ??
+    getStringField(getJobRecord(job), 'engineKey');
+  if (engineKey) {
+    return engineKey;
+  }
+  throw new Error(`[${context}] Missing explicit engineKey for job ${job.id}`);
+}
+
+function toEngineBillingUsage(value: unknown): import('@scu/engines-ce06').EngineBillingUsage | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const promptTokens = getNumberField(value, 'promptTokens');
+  const completionTokens = getNumberField(value, 'completionTokens');
+  const totalTokens =
+    getNumberField(value, 'totalTokens') ??
+    (typeof promptTokens === 'number' && typeof completionTokens === 'number'
+      ? promptTokens + completionTokens
+      : undefined);
+  const model = getStringField(value, 'model');
+
+  if (
+    typeof promptTokens !== 'number' ||
+    typeof completionTokens !== 'number' ||
+    typeof totalTokens !== 'number' ||
+    !model
+  ) {
+    return undefined;
+  }
+
+  return {
+    promptTokens,
+    completionTokens,
+    totalTokens,
+    model,
+  };
 }
 
 function toJsonRecord(value: unknown): JsonRecord {
@@ -179,19 +234,42 @@ export async function processCE06Job(
     const payload = getPayloadRecord(job);
     let novelSourceId = getStringField(payload, 'novelSourceId');
     const novel = await prisma.novel.findUnique({ where: { projectId } });
+    let episodeId = getStringField(payload, 'episodeId');
+
+    if (!episodeId) {
+      let episode = await prisma.episode.findUnique({
+        where: { projectId_index: { projectId, index: 1 } },
+      });
+      if (!episode) {
+        episode = await prisma.episode.create({
+          data: {
+            seasonId: null as any,
+            projectId,
+            index: 1,
+            name: 'Episode 1',
+          },
+        });
+      }
+      episodeId = episode.id;
+    }
 
     // 2. Spawn NOVEL_SCAN_TOC Job
     const scanJob = await prisma.shotJob.create({
       data: {
         organizationId, // From early fetch at line 92
         projectId,
+        episodeId,
         type: JobType.NOVEL_SCAN_TOC,
         status: 'PENDING',
+        dedupeKey: `novel_scan_${job.id}`,
         payload: {
           projectId,
+          episodeId,
           novelSourceId,
           fileKey: getStringField(payload, 'fileKey') || novel?.rawFileUrl,
-          engineVersion: getStringField(payload, 'engineVersion') || 'ce06-v3',
+          ...(getStringField(payload, 'engineVersion')
+            ? { engineVersion: getStringField(payload, 'engineVersion') }
+            : {}),
         },
         taskId: job.taskId,
         traceId: job.traceId,
@@ -219,7 +297,7 @@ export async function processCE03Job(
 ): Promise<CE03VisualDensityOutput> {
   const jobStartTime = Date.now();
   const jobId = job.id;
-  const traceId: string = job.traceId || `fallback_${jobId}_${Date.now()}`;
+  const traceId = getRequiredTraceId(job, 'CE03');
   const projectId: string = job.projectId!;
   if (!projectId) {
     throw new Error(`CE03 Job ${jobId} missing projectId`);
@@ -247,18 +325,13 @@ export async function processCE03Job(
       // Direct payload input (gate/test scenarios)
       structuredText = getStringField(payload, 'structured_text') || '';
     } else {
-      if (PRODUCTION_MODE) {
-        throw new Error(
-          `PRODUCTION_MODE_FORBIDS_FALLBACK: No input data found for CE03 job ${jobId}`
-        );
-      }
-      // Production fallback: process all scenes when running in bulk mode
       const parseResult = await prisma.novelParseResult.findUnique({
         where: { projectId },
       });
-      structuredText = parseResult?.rawOutput
-        ? JSON.stringify(parseResult.rawOutput)
-        : '["Test scene fallback"]';
+      if (!parseResult?.rawOutput) {
+        throw new Error(`CE03_INPUT_MISSING: No input data found for CE03 job ${jobId}`);
+      }
+      structuredText = JSON.stringify(parseResult.rawOutput);
     }
 
     // 2. 调用 CE03 Engine
@@ -279,7 +352,6 @@ export async function processCE03Job(
     // 调用 CE03 Engine
     const engineReq: EngineInvocationRequest<CE03VisualDensityInput> = {
       engineKey: 'ce03_visual_density',
-      engineVersion: 'default',
       payload: input,
       metadata: {
         jobId,
@@ -377,25 +449,22 @@ export async function processCE03Job(
         throw new Error(`[CE03] Project owner is required for job ${jobId}`);
       }
       const userId = project.ownerId;
-      const pipelineRunId = getStringField(payload, 'pipelineRunId') || traceId;
+      const pipelineRunId = getRequiredPipelineRunId(payload, jobId, 'CE03_BILLING');
+      const billingUsage = toEngineBillingUsage((result as unknown as { billing_usage?: unknown }).billing_usage);
 
-      await costLedgerService.recordEngineBilling({
-        jobId,
-        jobType: JobType.CE03_VISUAL_DENSITY,
-        traceId,
-        projectId,
-        userId,
-        orgId: organizationIdForCE03,
-        engineKey: 'ce03_visual_density',
-        runId: pipelineRunId,
-        cost: 0,
-        billingUsage: {
-          totalTokens: 0,
-          promptTokens: 0,
-          completionTokens: 0,
-          model: 'heuristic-v1',
-        },
-      });
+      if (billingUsage) {
+        await costLedgerService.recordEngineBilling({
+          jobId,
+          jobType: JobType.CE03_VISUAL_DENSITY,
+          traceId,
+          projectId,
+          userId,
+          orgId: organizationIdForCE03,
+          engineKey: 'ce03_visual_density',
+          runId: pipelineRunId,
+          billingUsage,
+        });
+      }
     } catch (billingError: unknown) {
       logStructured('error', {
         action: 'CE03_BILLING_FAILED',
@@ -423,7 +492,6 @@ export async function processCE03Job(
         inputHash,
         outputHash,
         latencyMs: duration,
-        cost: 0,
         auditTrail: result.audit_trail || { message: 'missing' },
       });
     } catch (auditError: unknown) {
@@ -491,7 +559,7 @@ export async function processCE04Job(
   const jobId = job.id;
   if (!job.projectId) throw new Error(`[CE04] Missing projectId for job ${jobId}`);
   const projectId: string = job.projectId;
-  const traceId: string = job.traceId || `trace-${jobId}`;
+  const traceId = getRequiredTraceId(job, 'CE04');
 
   logStructured('info', {
     action: 'CE04_JOB_START',
@@ -502,7 +570,7 @@ export async function processCE04Job(
 
   try {
     // 1. 获取输入 (Payload, CE06, CE03, Failback)
-    let structuredText: string = '["Fallback scene"]';
+    let structuredText = '';
     let novelSceneId: string | undefined;
     const payload = getPayloadRecord(job);
 
@@ -519,17 +587,14 @@ export async function processCE04Job(
       });
       if (parseResult?.rawOutput) {
         structuredText = JSON.stringify(parseResult.rawOutput);
-      } else if (PRODUCTION_MODE) {
-        throw new Error(
-          `PRODUCTION_MODE_FORBIDS_FALLBACK: No scene data found for CE04 job ${jobId}`
-        );
+      } else {
+        throw new Error(`CE04_INPUT_MISSING: No scene data found for CE04 job ${jobId}`);
       }
     }
 
     // 2. [CORE FIX] 统一调用远程母引擎 Hub，不再直连 Selector
     const engineReq: EngineInvocationRequest<CE04HubPayload> = {
       engineKey: 'ce04_visual_enrichment',
-      engineVersion: 'default',
       payload: {
         prompt: `Cinematic movie scene, high quality, 8k: ${structuredText.substring(0, 1000)}`, // Truncate to safe limit
         width: 1280,
@@ -631,9 +696,10 @@ export async function processCE04Job(
         select: { organizationId: true, payload: true },
       });
       const shotPayload = isRecord(shotJob?.payload) ? shotJob?.payload : {};
-      const pipelineRunId = getStringField(shotPayload, 'pipelineRunId') || traceId;
+      const pipelineRunId = getRequiredPipelineRunId(shotPayload, jobId, 'CE04_BILLING');
+      const billingUsage = toEngineBillingUsage(result.billing_usage);
 
-      if (shotJob?.organizationId) {
+      if (shotJob?.organizationId && billingUsage) {
         await costLedgerService.recordEngineBilling({
           jobId,
           jobType: JobType.CE04_VISUAL_ENRICHMENT,
@@ -643,13 +709,7 @@ export async function processCE04Job(
           orgId: shotJob.organizationId,
           engineKey: 'ce04_visual_enrichment',
           runId: pipelineRunId,
-          cost: 0,
-          billingUsage: {
-            totalTokens: 0,
-            promptTokens: 0,
-            completionTokens: 0,
-            model: 'real-enrichment-v1', // P1-HARD: Absolute truth required.
-          },
+          billingUsage,
         });
       }
     } catch (billingError: unknown) {
@@ -704,7 +764,7 @@ export async function processShotRenderJob(
   const jobStartTime = Date.now();
   const jobId = job.id;
   const projectId: string = job.projectId!;
-  const traceId: string = job.traceId || `trace-render-${jobId}`;
+  const traceId = getRequiredTraceId(job, 'SHOT_RENDER');
 
   if (!projectId) throw new Error(`[ShotRender] Missing projectId for job ${jobId}`);
 
@@ -758,15 +818,26 @@ export async function processShotRenderJob(
 
   try {
     // 1. Resolve Input (Priority: CE04 Enriched -> Shot Text -> Fallback)
-    let prompt = PRODUCTION_MODE ? '' : 'Fallback generic scene';
+    let prompt = '';
     let style = 'cinematic';
     let seed = 12345;
     const payload = getPayloadRecord(job);
 
-    const ce04Metric = await prisma.qualityMetrics.findFirst({
-      where: { projectId, engine: 'CE04' },
-      orderBy: { createdAt: 'desc' },
+    const ce04Metrics = await prisma.qualityMetrics.findMany({
+      where: { projectId, engine: 'CE04', traceId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 2,
     });
+    if (ce04Metrics.length > 1) {
+      logStructured('error', {
+        action: 'SHOT_RENDER_CE04_METRIC_DUPLICATE',
+        jobId,
+        projectId,
+        traceId,
+        metricIds: ce04Metrics.map((metric) => metric.id),
+      });
+    }
+    const ce04Metric = ce04Metrics[0] ?? null;
 
     const payloadPrompt = getStringField(payload, 'prompt');
     if (payloadPrompt) prompt = payloadPrompt;
@@ -779,19 +850,16 @@ export async function processShotRenderJob(
         include: { scene: true },
       });
       if (richShot?.scene?.summary) prompt = richShot.scene.summary;
+      else if (typeof richShot?.description === 'string' && richShot.description.trim().length > 0) {
+        prompt = richShot.description;
+      } else if (typeof richShot?.title === 'string' && richShot.title.trim().length > 0) {
+        prompt = richShot.title;
+      }
 
-      // Ultimate Fallback to pass Gate
       if (!prompt) {
-        if (PRODUCTION_MODE) {
-          logStructured('warn', {
-            action: 'SHOT_RENDER_PROMPT_FALLBACK',
-            reason: 'CE04 Metric missing or empty prompt',
-            jobId,
-          });
-          prompt = 'Cinematic scene (Fallback for Production Gate)';
-        } else {
-          prompt = 'Fallback generic scene';
-        }
+        throw new Error(
+          `SHOT_RENDER_INPUT_MISSING: No prompt found for SHOT_RENDER job ${jobId} after CE04/payload/shot resolution`
+        );
       }
     }
 
@@ -831,7 +899,7 @@ export async function processShotRenderJob(
       }
       logStructured('warn', {
         action: 'SHOT_RENDER_NO_IMAGE',
-        msg: 'Using placeholder (Non-Production)',
+        msg: 'No source image found in non-production run',
         shotId,
       });
     } else {
@@ -859,8 +927,7 @@ export async function processShotRenderJob(
     };
 
     const engineResult = await engineClient.invoke<ShotRenderHubPayload, ShotRenderHubOutput>({
-      engineKey: getStringField(getJobRecord(job), 'engineKey') || 'shot_render',
-      engineVersion: 'default',
+      engineKey: getExplicitEngineKey(job, payload, 'SHOT_RENDER'),
       payload: enginePayload,
       metadata: { jobId, projectId, traceId, shotId, sceneId },
     });
@@ -877,11 +944,19 @@ export async function processShotRenderJob(
 
     // 3. Persist Asset
     const asset = await prisma.asset.upsert({
-      where: { ownerType_ownerId_type: { ownerType: AssetOwnerType.SHOT, ownerId: shotId, type: AssetType.VIDEO } },
+      where: {
+        ownerType_ownerId_type_role: {
+          ownerType: AssetOwnerType.SHOT,
+          ownerId: shotId,
+          role: AssetRole.SHOT_SOURCE,
+          type: AssetType.VIDEO,
+        },
+      },
       create: {
         projectId,
         ownerType: AssetOwnerType.SHOT,
         ownerId: shotId,
+        role: AssetRole.SHOT_SOURCE,
         type: AssetType.VIDEO, // Force VIDEO for Pilot
         status: 'GENERATED',
         storageKey: renderedStorageKey,
@@ -903,7 +978,7 @@ export async function processShotRenderJob(
         engine: 'SHOT_RENDER',
         jobId,
         traceId,
-        visualDensityScore: 0.95,
+        visualDensityScore: null,
         metadata: {
           ...(result.render_meta || {}),
           assetUri: renderedStorageKey,
@@ -973,9 +1048,10 @@ export async function processShotRenderJob(
         select: { organizationId: true, payload: true },
       });
       const shotPayload = isRecord(shotJob?.payload) ? shotJob.payload : {};
-      const pipelineRunId = getStringField(shotPayload, 'pipelineRunId') || traceId;
+      const pipelineRunId = getRequiredPipelineRunId(shotPayload, jobId, 'SHOT_RENDER_BILLING');
+      const billingUsage = toEngineBillingUsage(result.billing_usage);
 
-      if (shotJob?.organizationId) {
+      if (shotJob?.organizationId && billingUsage) {
         await costLedgerService.recordEngineBilling({
           jobId,
           jobType: JobType.SHOT_RENDER,
@@ -985,8 +1061,7 @@ export async function processShotRenderJob(
           orgId: shotJob.organizationId,
           engineKey: 'shot_render',
           runId: pipelineRunId,
-          gpuSeconds: 2.5,
-          cost: 0.05,
+          billingUsage,
         });
       }
     } catch (billingError: unknown) {
@@ -1048,7 +1123,7 @@ export async function processCE01Job(
   const jobStartTime = Date.now();
   const jobId = job.id;
   const projectId: string = job.projectId!;
-  const traceId: string = job.traceId || `trace-${jobId}`;
+  const traceId = getRequiredTraceId(job, 'CE01');
 
   if (!projectId) throw new Error(`[CE01] Missing projectId for job ${jobId}`);
 
@@ -1124,7 +1199,7 @@ export async function processCE07Job(
   const jobStartTime = Date.now();
   const jobId = job.id;
   const projectId = job.projectId;
-  const traceId = job.traceId || `trace-ce07-${jobId}`;
+  const traceId = getRequiredTraceId(job, 'CE07');
 
   if (!projectId) throw new Error(`[CE07] Missing projectId for job ${jobId}`);
 
@@ -1170,6 +1245,7 @@ export async function processCE07Job(
 
   // 1. 获取当前文本 (Payload 中应包含文本或引用的 ID)
   const payload = getPayloadRecord(job);
+  const explicitEngineKey = getExplicitEngineKey(job, payload, 'CE07');
   let currentText = getStringField(payload, 'text') || getStringField(payload, 'current_text') || '';
   const sceneId = getStringField(payload, 'sceneId');
   const chapterId = getStringField(payload, 'chapterId');
@@ -1180,14 +1256,26 @@ export async function processCE07Job(
     });
     // 优先场景概要，再使用已增强文本
     currentText = scene?.summary || scene?.enrichedText || '';
-    if (!currentText) currentText = 'Fallback scene text';
+    if (!currentText) {
+      throw new Error(`CE07_INPUT_MISSING: No current text found for CE07 job ${jobId}`);
+    }
   }
 
   // 2. 检索前序记忆
-  const previousMemory = await prisma.memoryShortTerm.findFirst({
-    where: { projectId },
-    orderBy: { createdAt: 'desc' },
+  // 优先避免把当前 chapter 自己已有记录重新喂回 previous_memory（重试/重跑时会形成自引用）
+  const previousMemories = await prisma.memoryShortTerm.findMany({
+    where: {
+      projectId,
+      ...(chapterId
+        ? {
+            OR: [{ chapterId: null }, { chapterId: { not: chapterId } }],
+          }
+        : {}),
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 2,
   });
+  const previousMemory = previousMemories[0] ?? null;
 
   // 3. 构造引擎输入
   const input: CE07MemoryUpdateInput = {
@@ -1209,7 +1297,7 @@ export async function processCE07Job(
   let engineResult: { success: boolean; output?: CE07MemoryUpdateOutput; error?: unknown };
 
   engineResult = await engineHub.invoke<CE07MemoryUpdateInput, CE07MemoryUpdateOutput>({
-    engineKey: getStringField(payload, 'engineKey') || 'ce07_memory_update',
+    engineKey: explicitEngineKey,
     payload: input,
     metadata: { traceId, projectId },
   });
@@ -1244,7 +1332,7 @@ export async function processCE07Job(
       projectId,
       jobId,
       jobType: JobType.CE07_MEMORY_UPDATE,
-      engineKey: getStringField(payload, 'engineKey') || 'ce07_memory_update',
+      engineKey: explicitEngineKey,
       status: 'SUCCESS',
       latencyMs: duration,
       auditTrail: {
@@ -1283,7 +1371,7 @@ export async function processGenericCEJob(
   const jobStartTime = Date.now();
   const jobId = job.id;
   const projectId = job.projectId!;
-  const traceId = job.traceId || `trace-${jobId}`;
+  const traceId = getRequiredTraceId(job, 'GenericCE');
 
   if (!job.projectId) throw new Error(`[GenericCE] Missing projectId for job ${jobId}`);
 
@@ -1353,8 +1441,8 @@ export async function processGenericCEJob(
       traceId,
       projectId,
       jobId,
-      jobType: getStringField(getJobRecord(job), 'type') || 'generic_ce_real_engine',
-      engineKey: getStringField(getJobRecord(job), 'engineKey') || 'generic_ce_real_engine',
+      jobType: String(job.type),
+      engineKey: getExplicitEngineKey(job, getPayloadRecord(job), 'GenericCE'),
       status: 'SUCCESS',
       latencyMs: duration,
       auditTrail: { message: `${job.type} processed (real)` },

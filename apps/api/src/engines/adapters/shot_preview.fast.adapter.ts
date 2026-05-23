@@ -37,8 +37,16 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
     return engineKey === 'shot_preview';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[ShotPreviewFastAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     try {
+      const traceId = this.requireTraceId(input.context?.traceId);
       const payload = input.payload || {};
       const prompt = payload.enrichedPrompt || payload.prompt || '';
       const seed = payload.seed || 0;
@@ -57,8 +65,8 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
         // HIT
-        await this.auditPreview(input, 'HIT', cacheKey);
-        await this.recordCost(input, 0); // 0 cost for cache hit
+        await this.auditPreview(input, traceId, 'HIT', cacheKey);
+        await this.recordCost(input, traceId, 0); // 0 cost for cache hit
 
         return {
           status: 'SUCCESS' as any,
@@ -106,8 +114,8 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
         await this.redisService.setJson(cacheKey, result.output, 7 * 24 * 3600);
 
         // Audit & Cost
-        await this.auditPreview(input, 'MISS', cacheKey);
-        await this.recordCost(input, 1); // 1 credit for generation
+        await this.auditPreview(input, traceId, 'MISS', cacheKey);
+        await this.recordCost(input, traceId, 1); // 1 credit for generation
       }
 
       return {
@@ -122,11 +130,17 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
       this.logger.error(`[ShotPreview] Failed: ${error.message}`);
 
       // AUDIT_LOG_INTEGRITY: Record failure
-      await this.auditPreview(input, 'MISS', 'failed_request', {
+      const traceId =
+        typeof input.context?.traceId === 'string' && input.context.traceId.trim().length > 0
+          ? input.context.traceId
+          : null;
+      if (traceId) {
+        await this.auditPreview(input, traceId, 'MISS', 'failed_request', {
         status: 'FAILED',
         error: error.message,
-      });
-      await this.recordCost(input, 0, { status: 'FAILED' }); // 0 cost for failed
+        });
+        await this.recordCost(input, traceId, 0, { status: 'FAILED' }); // 0 cost for failed
+      }
 
       return {
         status: 'FAILED' as any,
@@ -140,6 +154,7 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
 
   private async auditPreview(
     input: EngineInvokeInput,
+    traceId: string,
     type: 'HIT' | 'MISS',
     cacheKey: string,
     extraDetails: any = {}
@@ -154,7 +169,7 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
           userId: input.context.userId || 'system',
           cache: type,
           engine: this.name,
-          traceId: input.context.traceId,
+          traceId,
           ...extraDetails,
         },
       });
@@ -163,7 +178,12 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
     }
   }
 
-  private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
+  private async recordCost(
+    input: EngineInvokeInput,
+    traceId: string,
+    amount: number,
+    extraDetails: any = {}
+  ) {
     try {
       await this.costLedgerService.recordFromEvent({
         userId: input.context.userId || 'system',
@@ -178,7 +198,7 @@ export class ShotPreviewFastAdapter implements EngineAdapter {
         metadata: {
           // details -> metadata
           type: 'preview',
-          traceId: input.context.traceId || 'unknown',
+          traceId,
           ...extraDetails,
         },
       });

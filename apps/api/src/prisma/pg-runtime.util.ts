@@ -1,10 +1,28 @@
-const { Client } = require('pg');
+type RuntimePgClient = {
+  connect(): Promise<void>;
+  end(): Promise<void>;
+  query<TResult = Record<string, unknown>>(
+    queryText: string,
+    values?: readonly unknown[]
+  ): Promise<{ rows: TResult[] }>;
+};
+
+const { Client } = require('pg') as {
+  Client: new (options: {
+    connectionString?: string;
+    connectionTimeoutMillis: number;
+    statement_timeout: number;
+    query_timeout: number;
+  }) => RuntimePgClient;
+};
 
 export function isCiOrGateContextEnv(): boolean {
   return (
     process.env.NODE_ENV === 'test' ||
     process.env.CI === '1' ||
     !!process.env.JEST_WORKER_ID ||
+    process.env.GATE_MODE === '1' ||
+    process.env.GATE_ENV_MODE === '1' ||
     process.env.GATE_ENV_MODE === 'ci'
   );
 }
@@ -96,7 +114,7 @@ export function createRuntimePgClient(options: {
   connectionTimeoutMs?: number;
   queryTimeoutMs?: number;
   statementTimeoutMs?: number;
-}) {
+}): RuntimePgClient {
   const connectionTimeoutMs = options.connectionTimeoutMs ?? getRuntimeDbTimeoutMs('connect');
   const queryTimeoutMs = options.queryTimeoutMs ?? getRuntimeDbTimeoutMs('query');
   const statementTimeoutMs = options.statementTimeoutMs ?? queryTimeoutMs;

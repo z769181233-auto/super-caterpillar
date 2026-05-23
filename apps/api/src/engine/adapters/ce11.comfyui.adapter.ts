@@ -1,4 +1,4 @@
-import { Injectable, Logger, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import {
   EngineAdapter,
   EngineInvokeInput,
@@ -286,6 +286,7 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
 
     // Scan outputs for text
     let foundText = '';
+    let parseErrorMessage: string | undefined;
     this.logger.log(`[CE11_DEBUG] Parsing outputs keys: ${Object.keys(outputs).join(',')}`);
     for (const nodeId in outputs) {
       const out = outputs[nodeId];
@@ -311,41 +312,36 @@ export class CE11ComfyUIAdapter implements EngineAdapter, OnModuleInit {
         else if (Array.isArray(json)) shots = json;
 
         if (shots && shots.length > 0) {
-          // Normalize and strip "Mock" templates if they exist in the text node
-          shots.forEach((s) => {
-            if (s.visual_prompt.includes('Mock Real Output:')) {
-              s.visual_prompt = s.visual_prompt.replace('Mock Real Output:', '').trim();
-            }
-          });
+          const mockTaggedShot = shots.find((shot) =>
+            typeof shot.visual_prompt === 'string' &&
+            shot.visual_prompt.includes('Mock Real Output:')
+          );
+          if (mockTaggedShot) {
+            throw new Error(
+              `CE11_OUTPUT_INVALID: mock-tagged visual_prompt detected at shot index ${mockTaggedShot.index}`
+            );
+          }
           return { shots };
         }
-      } catch (e) {
-        // Not JSON or empty shots, fall through to fallback
+      } catch (e: any) {
+        parseErrorMessage = e?.message || 'unknown_json_parse_error';
       }
     }
 
-    // If no valid JSON output found, fallback to "Derived from Input"
-    this.logger.warn(
-      `[CE11_DEBUG] No valid shots found in JSON/Text output. Triggering fallback logic.`
-    );
-    // User Requirement: "Generate structure from prompt but must be strongly related to input"
-    const sceneDesc = payload.scene_description || 'cinematic scene';
-    const coreDesc = sceneDesc.length > 60 ? sceneDesc.substring(0, 60) + '...' : sceneDesc;
+    const traceId = payload?.traceId || 'unknown-trace';
+    const sceneId = payload?.novelSceneId || 'unknown-scene';
+    const outputKeys = Object.keys(outputs);
+    const details = [
+      `traceId=${traceId}`,
+      `novelSceneId=${sceneId}`,
+      `outputKeys=[${outputKeys.join(',')}]`,
+      foundText ? `textLength=${foundText.length}` : 'textLength=0',
+      parseErrorMessage ? `parseError=${parseErrorMessage}` : undefined,
+    ]
+      .filter(Boolean)
+      .join(' ');
 
-    return {
-      shots: [
-        {
-          index: 1,
-          shot_type: 'WIDE_SHOT',
-          visual_prompt: `High-fidelity render of: ${coreDesc}`,
-          camera_movement: 'STATIC',
-        },
-      ],
-      audit_trail: {
-        source: 'derived_logic',
-        input_words: sceneDesc.split(' ').length,
-        outputs_keys: Object.keys(outputs),
-      },
-    };
+    this.logger.error(`[CE11_OUTPUT_INVALID] Missing valid shot JSON. ${details}`);
+    throw new Error(`CE11_OUTPUT_INVALID: Missing valid shot JSON. ${details}`);
   }
 }

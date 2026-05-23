@@ -132,10 +132,12 @@ export class FilmIRService {
     if (!scene) {
       throw new NotFoundException(`Scene ${sceneId} not found`);
     }
-    return this.filmIr.findFirst({
+    const filmIrs = await this.filmIr.findMany({
       where: { sceneId },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
     });
+    return filmIrs[0] ?? null;
   }
 
   /**

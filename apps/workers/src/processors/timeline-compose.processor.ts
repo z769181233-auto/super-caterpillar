@@ -6,6 +6,7 @@ import { ApiClient } from '../api-client';
 import { EngineHubClient } from '../engine-hub-client';
 import { config } from '@scu/config';
 import { ProcessorContext } from '../types/processor-context';
+import sharp from 'sharp';
 
 /**
  * P1 Standard: Resolve Runtime Dir (Deduplicated across Workers)
@@ -187,6 +188,61 @@ function deriveTransitionProfile(params: any): {
   return { transition: 'none', transitionSec: 0 };
 }
 
+function parsePositiveNumber(
+  rawValue: unknown,
+  field: string,
+  { integerOnly = false }: { integerOnly?: boolean } = {}
+): number | null {
+  if (rawValue == null || rawValue === '') return null;
+
+  const value =
+    typeof rawValue === 'number'
+      ? rawValue
+      : typeof rawValue === 'string'
+        ? Number(rawValue)
+        : NaN;
+
+  if (!Number.isFinite(value) || value <= 0 || (integerOnly && !Number.isInteger(value))) {
+    throw new Error(
+      `[TimelineCompose] Invalid ${field}: explicit positive ${integerOnly ? 'integer ' : ''}value required`
+    );
+  }
+
+  return value;
+}
+
+function parseNonNegativeNumber(rawValue: unknown, field: string): number | null {
+  if (rawValue == null || rawValue === '') return null;
+
+  const value =
+    typeof rawValue === 'number'
+      ? rawValue
+      : typeof rawValue === 'string'
+        ? Number(rawValue)
+        : NaN;
+
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`[TimelineCompose] Invalid ${field}: explicit non-negative value required`);
+  }
+
+  return value;
+}
+
+function parseAudioMode(rawValue: unknown): 'none' | 'loop' | 'truncate' | null {
+  if (typeof rawValue !== 'string' || rawValue.trim().length === 0) return null;
+  if (rawValue === 'none' || rawValue === 'loop' || rawValue === 'truncate') {
+    return rawValue;
+  }
+  throw new Error('[TimelineCompose] Invalid bgmMode: expected none|loop|truncate');
+}
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * CE10: Timeline Composition Processor
  * 职责：DB 溯源查询 Scene -> Shots，编排确定的 timeline.json，确立全链路渲染参数。
@@ -194,8 +250,9 @@ function deriveTransitionProfile(params: any): {
 export async function processTimelineComposeJob(context: ProcessorContext) {
   const { prisma, job, apiClient } = context;
   const engineHubClient = context.apiClient ? new EngineHubClient(apiClient) : undefined;
-  const { sceneId, pipelineRunId } = job.payload;
-  const traceId = job.traceId || `trace-${Date.now()}`;
+  const sceneId = requireNonEmptyString((job.payload as any)?.sceneId, 'TimelineCompose', 'sceneId');
+  const pipelineRunId = requireNonEmptyString((job.payload as any)?.pipelineRunId, 'TimelineCompose', 'pipelineRunId');
+  const traceId = requireNonEmptyString(job.traceId ?? (job.payload as any)?.traceId, 'TimelineCompose', 'traceId');
 
   // 1. DB 溯源获取 Context & Shots (Context SSOT)
   const scene = await prisma.scene.findUnique({
@@ -298,10 +355,54 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   }
 
   // 2. 编排确定性 Timeline 数据 (Hard Constraints)
-  // 锁死参数：S4-7 统一 24fps, 1280x720
-  const fps = 24;
-  const width = 1280;
-  const height = 720;
+  const projectSettings = (scene.episode.project.settingsJson as Record<string, unknown> | null) || {};
+  const firstShotParams = ((scene.shots[0]?.params as Record<string, unknown> | null) || {}) as Record<
+    string,
+    unknown
+  >;
+  const timelinePolicy = ((firstShotParams.timelinePolicy as Record<string, unknown> | null) || {}) as Record<
+    string,
+    unknown
+  >;
+  const executionPolicy = ((firstShotParams.executionPolicy as Record<string, unknown> | null) || {}) as Record<
+    string,
+    unknown
+  >;
+  const configuredFps =
+    parsePositiveNumber(job.payload?.fps, 'fps') ??
+    parsePositiveNumber(timelinePolicy.fps, 'fps') ??
+    parsePositiveNumber(executionPolicy.fps, 'fps') ??
+    parsePositiveNumber(projectSettings.timelineFps, 'fps') ??
+    parsePositiveNumber(process.env.TIMELINE_DEFAULT_FPS, 'fps');
+  if (!configuredFps) {
+    throw new Error('[TimelineCompose] Missing explicit fps. Set payload/project/env timeline fps.');
+  }
+  const fps = configuredFps;
+
+  const storageRoot = (config as any).storageRoot;
+  const firstImageKey = scene.shots.find((shot) => typeof shot.resultImageUrl === 'string' && shot.resultImageUrl.length > 0)
+    ?.resultImageUrl;
+  if (!firstImageKey) {
+    throw new Error('[TimelineCompose] Missing rendered frame/image to infer timeline dimensions');
+  }
+  const firstImageAbs = path.resolve(storageRoot, firstImageKey);
+  if (!(await fileExists(firstImageAbs))) {
+    throw new Error(`[TimelineCompose] First rendered frame not found: ${firstImageAbs}`);
+  }
+  const firstImageMeta = await sharp(firstImageAbs).metadata();
+  const inferredWidth = firstImageMeta.width ?? null;
+  const inferredHeight = firstImageMeta.height ?? null;
+  const width =
+    parsePositiveNumber(job.payload?.width, 'width', { integerOnly: true }) ??
+    parsePositiveNumber(projectSettings.timelineWidth, 'width', { integerOnly: true }) ??
+    inferredWidth;
+  const height =
+    parsePositiveNumber(job.payload?.height, 'height', { integerOnly: true }) ??
+    parsePositiveNumber(projectSettings.timelineHeight, 'height', { integerOnly: true }) ??
+    inferredHeight;
+  if (!width || !height) {
+    throw new Error('[TimelineCompose] Missing timeline width/height and unable to infer from first frame');
+  }
 
   let currentFrame = 0;
   const timelineShots: TimelineShot[] = [];
@@ -331,9 +432,6 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
 
     const runtimeRoot = resolveRuntimeDir();
     const framesTxtPath = path.join(runtimeRoot, 'frames', shot.id, 'frames.txt');
-
-    // Resolve Storage Root
-    const storageRoot = (config as any).storageRoot;
 
     if (shot.resultImageUrl) {
       const imageAbsPath = path.resolve(storageRoot, shot.resultImageUrl);
@@ -414,6 +512,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
   }
 
   const audioPreferences = deriveAudioPreferences(shotParamsList);
+  const explicitBgmGain = parseNonNegativeNumber((job.payload as any).bgmGain, 'bgmGain');
+  const explicitBgmMode = parseAudioMode((job.payload as any).bgmMode);
 
   const timelineData: TimelineData = {
     sceneId,
@@ -432,8 +532,8 @@ export async function processTimelineComposeJob(context: ProcessorContext) {
                 id: 'bgm',
                 type: 'music' as const,
                 storageKey: (job.payload as any).bgmStorageKey,
-                gain: (job.payload as any).bgmGain || audioPreferences.bgmGain,
-                loop: ((job.payload as any).bgmMode || audioPreferences.mode) === 'loop',
+                gain: explicitBgmGain ?? audioPreferences.bgmGain,
+                loop: (explicitBgmMode ?? audioPreferences.mode) === 'loop',
                 ducking: { target: 'dialogue', gain: 0.2 },
                 truncate: 'shortest' as const,
               },

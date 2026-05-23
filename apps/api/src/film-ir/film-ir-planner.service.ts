@@ -24,17 +24,18 @@ import type { FilmIRRecord } from 'database';
 /**
  * Film IR Planner Service（P2.1 + P2.2 升级）
  *
- * P2.1: Mock Provider + dry-run + save draft + evidence
- * P2.2: 通过 ConfigService 动态切换 mock/openai Provider
+ * P2.1: Provider + dry-run + save draft + evidence
+ * P2.2: 通过 ConfigService 显式选择 planner Provider
  *
  * 配置（packages/config/src/env.ts）：
  * - FILM_IR_PLANNER_ENABLED=true     启用 Planner（默认 false）
- * - FILM_IR_PLANNER_PROVIDER=openai  切换到 OpenAI（默认 mock）
+ * - FILM_IR_PLANNER_PROVIDER=...     启用时必须显式配置 provider
  * - FILM_IR_PLANNER_MODEL=...        模型名（默认 gpt-4o-mini）
  * - FILM_IR_PLANNER_TIMEOUT_MS=...   超时（默认 30000）
  * - FILM_IR_PLANNER_MAX_RETRIES=...  重试次数（默认 2）
  * - FILM_IR_PLANNER_STRICT_MODE=true warnings 也阻断写 DB
  * - OPENAI_API_KEY=sk-xxx            provider=openai 时必须
+ * - FILM_IR_PLANNER_ALLOW_MOCK=1     仅在需要时显式允许 mock provider
  *
  * 关键约束（不可违反）：
  * - dry_run=true 时不写 DB
@@ -69,13 +70,27 @@ export class FilmIRPlannerService implements OnModuleInit {
    * 根据配置解析 Provider
    */
   private resolveProvider(): IPlannerProvider {
-    const providerName = this.configService.get<string>('filmIrPlannerProvider') ?? 'mock';
+    const plannerEnabled = this.configService.get<boolean>('filmIrPlannerEnabled') ?? false;
+    const providerName = (this.configService.get<string>('filmIrPlannerProvider') ?? '').trim().toLowerCase();
+    const allowMockProvider =
+      process.env.FILM_IR_PLANNER_ALLOW_MOCK === '1' || process.env.NODE_ENV !== 'production';
+
+    if (!plannerEnabled) {
+      return new MockPlannerProvider();
+    }
+
+    if (!providerName) {
+      throw new Error(
+        'FILM_IR_PLANNER_PROVIDER must be explicitly configured when Film IR planner is enabled'
+      );
+    }
 
     if (providerName === 'openai') {
       const apiKey = this.configService.get<string>('openaiApiKey');
       if (!apiKey) {
-        this.logger.error('[FilmIRPlanner] FILM_IR_PLANNER_PROVIDER=openai 但 OPENAI_API_KEY 未设置，回退到 Mock');
-        return new MockPlannerProvider();
+        throw new Error(
+          'FILM_IR_PLANNER_PROVIDER=openai requires OPENAI_API_KEY; mock fallback is disabled'
+        );
       }
       return new OpenAIPlannerProvider(
         apiKey,
@@ -85,7 +100,17 @@ export class FilmIRPlannerService implements OnModuleInit {
       );
     }
 
-    return new MockPlannerProvider();
+    if (providerName === 'mock') {
+      if (!allowMockProvider) {
+        throw new Error(
+          'FILM_IR_PLANNER_PROVIDER=mock is blocked in production unless FILM_IR_PLANNER_ALLOW_MOCK=1'
+        );
+      }
+      this.logger.warn('[FilmIRPlanner] Mock planner provider enabled explicitly');
+      return new MockPlannerProvider();
+    }
+
+    throw new Error(`Unsupported Film IR planner provider: ${providerName}`);
   }
 
   /**

@@ -27,6 +27,7 @@ import {
   ProjectFlowDTO,
   ProjectFlowStepDTO,
   BlockReasonCode,
+  normalizeReviewPolicy,
 } from '@scu/shared-types';
 
 import { ProjectResolver } from '../common/project-resolver';
@@ -42,11 +43,191 @@ export class ProjectService {
     private readonly projectResolver: ProjectResolver
   ) {}
 
+  async listQualityReviewQueue(
+    projectId: string,
+    organizationId: string,
+    params: { status?: string; limit?: number }
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      select: { id: true, organizationId: true },
+    });
 
+    if (!project || project.organizationId !== organizationId) {
+      throw new NotFoundException('Project not found');
+    }
 
+    const limit = Math.max(1, Math.min(params.limit ?? 50, 200));
 
+    const publishedVideos = await this.prisma.publishedVideo.findMany({
+      where: { projectId },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+      take: limit * 4,
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        status: true,
+        metadata: true,
+        asset: {
+          select: {
+            id: true,
+            ownerType: true,
+            ownerId: true,
+            shot: {
+              select: {
+                id: true,
+                sceneId: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
+    const shotIds = publishedVideos
+      .map((record) => record.asset?.shot?.id ?? null)
+      .filter((value): value is string => typeof value === 'string' && value.length > 0);
+    const latestPublishingReviews =
+      shotIds.length > 0
+        ? await this.prisma.publishingReview.findMany({
+            where: { shotId: { in: shotIds } },
+            orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
+            select: {
+              shotId: true,
+              result: true,
+            },
+          })
+        : [];
+    const reviewByShotId = new Map<string, { result: string }>();
+    for (const review of latestPublishingReviews) {
+      if (!review.shotId || reviewByShotId.has(review.shotId)) continue;
+      reviewByShotId.set(review.shotId, { result: review.result });
+    }
 
+    const normalized = publishedVideos
+      .map((record) => {
+        const metadata =
+          record.metadata && typeof record.metadata === 'object' && !Array.isArray(record.metadata)
+            ? (record.metadata as Record<string, unknown>)
+            : {};
+        const directorLayer =
+          metadata.directorLayer &&
+          typeof metadata.directorLayer === 'object' &&
+          !Array.isArray(metadata.directorLayer)
+            ? (metadata.directorLayer as Record<string, unknown>)
+            : {};
+        const timelineLayer =
+          metadata.timelineLayer &&
+          typeof metadata.timelineLayer === 'object' &&
+          !Array.isArray(metadata.timelineLayer)
+            ? (metadata.timelineLayer as Record<string, unknown>)
+            : {};
+        const sceneSemanticContext =
+          timelineLayer.sceneSemanticContext &&
+          typeof timelineLayer.sceneSemanticContext === 'object' &&
+          !Array.isArray(timelineLayer.sceneSemanticContext)
+            ? (timelineLayer.sceneSemanticContext as Record<string, unknown>)
+            : {};
+
+        const sceneId =
+          record.asset?.ownerType === 'SCENE'
+            ? record.asset.ownerId
+            : record.asset?.shot?.sceneId ?? null;
+        const shotId = record.asset?.shot?.id ?? null;
+        const reviewPolicy = normalizeReviewPolicy({
+          directorLayer,
+          publishingReviewResult: shotId ? reviewByShotId.get(shotId)?.result : undefined,
+        });
+
+        return {
+          auditId: record.id,
+          publishedVideoId: record.id,
+          assetId: record.asset?.id ?? null,
+          shotId,
+          sceneId,
+          createdAt: record.createdAt.toISOString(),
+          updatedAt: record.updatedAt.toISOString(),
+          publishStatus: record.status,
+          decision: reviewPolicy.publishAction ?? 'UNKNOWN',
+          effectiveDecision: reviewPolicy.effectiveDecision,
+          publishEligibility: reviewPolicy.publishEligibility ?? 'UNKNOWN',
+          reviewRequired: reviewPolicy.reviewRequired ?? false,
+          gatePolicyLevel: reviewPolicy.gatePolicyLevel,
+          policyStage: reviewPolicy.policyStage ?? '',
+          reviewPolicyResult: reviewPolicy.reviewPolicyResult ?? '',
+          reviewPolicySource: reviewPolicy.reviewPolicySource,
+          approvalActionSource:
+            typeof directorLayer.approvalActionSource === 'string'
+              ? directorLayer.approvalActionSource
+              : null,
+          approvalActorUserId:
+            typeof directorLayer.approvalActorUserId === 'string'
+              ? directorLayer.approvalActorUserId
+              : null,
+          approvalReviewStatus:
+            typeof directorLayer.approvalReviewStatus === 'string'
+              ? directorLayer.approvalReviewStatus
+              : null,
+          approvalReviewNote:
+            typeof directorLayer.approvalReviewNote === 'string'
+              ? directorLayer.approvalReviewNote
+              : null,
+          approvalReviewedAt:
+            typeof directorLayer.approvalReviewedAt === 'string'
+              ? directorLayer.approvalReviewedAt
+              : null,
+          semanticCharacters: Array.isArray(directorLayer.semanticCharacters)
+            ? directorLayer.semanticCharacters
+            : Array.isArray(sceneSemanticContext.semanticCharacters)
+              ? sceneSemanticContext.semanticCharacters
+              : [],
+          semanticLocationSlug:
+            typeof directorLayer.semanticLocationSlug === 'string'
+              ? directorLayer.semanticLocationSlug
+              : typeof sceneSemanticContext.semanticLocationSlug === 'string'
+                ? sceneSemanticContext.semanticLocationSlug
+                : null,
+          semanticTimeOfDay:
+            typeof directorLayer.semanticTimeOfDay === 'string'
+              ? directorLayer.semanticTimeOfDay
+              : typeof sceneSemanticContext.semanticTimeOfDay === 'string'
+                ? sceneSemanticContext.semanticTimeOfDay
+                : null,
+          semanticConflictSummary:
+            typeof directorLayer.semanticConflictSummary === 'string'
+              ? directorLayer.semanticConflictSummary
+              : typeof sceneSemanticContext.semanticConflictSummary === 'string'
+                ? sceneSemanticContext.semanticConflictSummary
+                : null,
+          memoryContextSource:
+            typeof directorLayer.memoryContextSource === 'string'
+              ? directorLayer.memoryContextSource
+              : typeof sceneSemanticContext.memoryContextSource === 'string'
+                ? sceneSemanticContext.memoryContextSource
+                : null,
+          crossChapterMemoryHit:
+            directorLayer.crossChapterMemoryHit === true ||
+            sceneSemanticContext.crossChapterMemoryHit === true,
+        };
+      })
+      .filter((item) => item.sceneId || item.shotId);
+
+    const bySceneOrShot = new Map<string, (typeof normalized)[number]>();
+    for (const item of normalized) {
+      const key = item.sceneId ?? item.shotId;
+      if (!key || bySceneOrShot.has(key)) continue;
+      bySceneOrShot.set(key, item);
+    }
+
+    const filtered = Array.from(bySceneOrShot.values()).filter((item) => {
+      if (params.status === 'PENDING') return item.reviewRequired;
+      if (params.status === 'DONE') return !item.reviewRequired;
+      return true;
+    });
+
+    return filtered.slice(0, limit);
+  }
 
   async create(createProjectDto: CreateProjectDto, ownerId: string, organizationId: string) {
     this.logger.log('PROJECT SERVICE CREATE CALLED');
@@ -112,25 +293,6 @@ export class ProjectService {
         this.logger.error(
           `OWNER role STILL NOT FOUND! Skipping member creation for project ${p.id}`
         );
-      }
-
-      // CE01: 项目创建后生成角色三视图（占位实现）
-      // P2-4 修复：在事务中创建 Character，确保原子性
-      try {
-        await tx.character.create({
-          data: {
-            projectId: p.id,
-            name: 'Default Character',
-            description: 'Auto-generated default character',
-            referenceSheetUrls: { front: '', side: '', back: '' }, // 占位三视图 URL
-            defaultSeed: `seed_${p.id}_${Date.now()}`,
-            embeddingId: `emb_${p.id}_${Date.now()}`,
-          },
-        });
-      } catch (error: any) {
-        // 软失败：记录 audit_logs 并继续（符合 SafetySpec，Character 非阻断性）
-        // 注意：事务中无法直接调用 auditLogService (外部服务)，记录日志即可
-        this.logger.warn(`CE01 placeholder failed in transaction: ${error?.message}`);
       }
 
       return p;
@@ -577,6 +739,8 @@ export class ProjectService {
     // 注意：由于 schema 中已设置 onDelete: Cascade，Prisma 会自动级联删除子级
     // 但为了确保数据一致性和可追溯性，使用事务包装
     const project = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await this.deleteProjectBlockers(tx, id);
+
       // 先删除所有关联的 ShotJob、Task 等（如果需要）
       // 由于外键约束和 onDelete 策略，Season/Episode/Scene/Shot 会自动级联删除
       return tx.project.delete({
@@ -588,6 +752,38 @@ export class ProjectService {
     await this.sceneGraphService.invalidateProjectSceneGraph(id);
 
     return project as any;
+  }
+
+  private async deleteProjectBlockers(tx: Prisma.TransactionClient, projectId: string) {
+    // 历史表里仍有一批 project 级 RESTRICT 外键；删除项目前先清掉这些直接依赖。
+    await tx.characterAlias.deleteMany({
+      where: {
+        character: {
+          projectId,
+        },
+      },
+    });
+    await tx.scriptBuild.deleteMany({
+      where: { projectId },
+    });
+    await tx.billingEvent.deleteMany({
+      where: { projectId },
+    });
+    await tx.location.deleteMany({
+      where: { projectId },
+    });
+    await tx.prop.deleteMany({
+      where: { projectId },
+    });
+    await tx.outfit.deleteMany({
+      where: { projectId },
+    });
+    await tx.character.deleteMany({
+      where: { projectId },
+    });
+    await tx.novelSource.deleteMany({
+      where: { projectId },
+    });
   }
 
   async checkOwnership(projectId: string, userId: string) {
@@ -766,10 +962,19 @@ export class ProjectService {
       // CE07: 分镜生成前读取短期记忆，并在缺省字段上作为轻量 seed 使用
       if (episode.chapter?.id) {
         try {
-          const shortTermMemory = await tx.memoryShortTerm.findFirst({
+          const shortTermMemories = await tx.memoryShortTerm.findMany({
             where: { chapterId: episode.chapter.id },
             orderBy: { createdAt: 'desc' },
+            take: 2,
           });
+          if (shortTermMemories.length > 1) {
+            throw new Error(
+              `Duplicate short-term memories detected for chapter ${episode.chapter.id}: ${shortTermMemories
+                .map((memory) => memory.id)
+                .join(', ')}`
+            );
+          }
+          const shortTermMemory = shortTermMemories[0] ?? null;
           if (shortTermMemory) {
             memorySeedSummary = shortTermMemory.summary || null;
             if (
@@ -1624,7 +1829,9 @@ export class ProjectService {
       at: log.createdAt.toISOString(),
       actor: {
         id: log.userId || log.apiKeyId || 'system',
-        name: log.user?.email?.split('@')[0] || log.apiKeyId || 'System', // Fallback name
+        name:
+          log.user?.email?.split('@')[0] ||
+          (log.apiKeyId ? `apiKey:${String(log.apiKeyId).slice(0, 8)}` : 'system'),
       },
       action: log.action,
       result: 'OK' as const, // AuditLog doesn't explicitly store result status (assumed OK if logged, or details has it)
@@ -1734,13 +1941,13 @@ export class ProjectService {
       },
       quality: {
         structure: structureQuality as any,
-        semantic: 'OK', // Placeholder for now
-        visual: 'OK',
+        semantic: structureQuality as any,
+        visual: shots > 0 ? 'OK' : 'UNKNOWN',
       },
       cost: {
         total: { money: Math.abs(Number(costAgg._sum?.amount || 0n) / 100) },
-        last24h: { money: 0.0 }, // Pending implementation: filter by createdAt > now-24h
-        currentRunEstimate: { money: 0.0 },
+        last24h: { money: null },
+        currentRunEstimate: { money: null },
         alert: { level: 'OK' },
       },
       audit: {
@@ -1758,14 +1965,16 @@ export class ProjectService {
     const DEMO_PROJECT_NAME = 'Demo Structure Project';
 
     // 1. 查找或创建 Demo 项目
-    let project = await this.prisma.project.findFirst({
+    const existingProjects = await this.prisma.project.findMany({
       where: {
         ownerId: userId,
         organizationId,
         name: DEMO_PROJECT_NAME,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 1,
     });
+    let project = existingProjects[0] ?? null;
 
     if (!project) {
       project = await this.prisma.project.create({

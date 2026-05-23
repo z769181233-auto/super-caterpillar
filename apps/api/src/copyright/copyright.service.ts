@@ -1,37 +1,24 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import * as crypto from 'crypto';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 
 @Injectable()
 export class CopyrightService {
   private readonly logger = new Logger(CopyrightService.name);
 
-  constructor(private prisma: PrismaService) {}
-
   async registerAsset(userId: string, assetType: string, content: string) {
-    // Generate simple hash for proof of existence
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-
-    // Store in existing Asset or dedicated Copyright table if needed
-    // For scaffolding, we'll log it and pretend we stored it in a blockchain-like structure
-    this.logger.log(`Registering copyright for user ${userId}, type: ${assetType}, hash: ${hash}`);
-
-    // In a real implementation we would create a CopyrightRecord entity
-    return {
-      registrationId: crypto.randomUUID(),
-      hash,
-      timestamp: new Date(),
-      status: 'REGISTERED',
-    };
+    this.logger.error(
+      `[CopyrightService] COPYRIGHT_REGISTRATION_NOT_IMPLEMENTED userId=${userId} assetType=${assetType} contentLength=${content?.length ?? 0}`
+    );
+    throw new ServiceUnavailableException(
+      'COPYRIGHT_REGISTRATION_NOT_IMPLEMENTED: persistence-backed copyright registration is required'
+    );
   }
 
   async verifyAsset(hash: string) {
-    // Mock verification
-    return {
-      hash,
-      verified: true,
-      ownerId: 'unknown-owner-id',
-      timestamp: new Date(),
-    };
+    this.logger.error(
+      `[CopyrightService] COPYRIGHT_VERIFICATION_NOT_IMPLEMENTED hash=${hash}`
+    );
+    throw new ServiceUnavailableException(
+      'COPYRIGHT_VERIFICATION_NOT_IMPLEMENTED: authoritative verification source is required'
+    );
   }
 }

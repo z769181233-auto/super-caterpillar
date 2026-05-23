@@ -86,6 +86,27 @@ function buildExecutionPolicy(activeFilmIr: any, shotData: any, plannerVersion: 
   };
 }
 
+function isValidBillingUsage(
+  usage: unknown
+): usage is { promptTokens: number; completionTokens: number; totalTokens: number; model: string } {
+  return !!(
+    usage &&
+    typeof usage === 'object' &&
+    typeof (usage as any).promptTokens === 'number' &&
+    typeof (usage as any).completionTokens === 'number' &&
+    typeof (usage as any).totalTokens === 'number' &&
+    typeof (usage as any).model === 'string' &&
+    (usage as any).model.length > 0
+  );
+}
+
+function requireNonEmptyString(value: unknown, contextTag: string, field: string): string {
+  if (typeof value === 'string' && value.length > 0) {
+    return value;
+  }
+  throw new Error(`[${contextTag}] Missing ${field}`);
+}
+
 /**
  * CE11 Shot Generator Processor (V3.0 Bible Alignment)
  * Input: { "novelSceneId": string }
@@ -101,7 +122,11 @@ export async function processCE11ShotGeneratorJob(
   try {
     const payload = job.payload || {};
     const novelSceneId = payload.novelSceneId || payload.sceneId;
-    const traceId = payload.traceId || job.id;
+    const traceId =
+      typeof payload.traceId === 'string' && payload.traceId.length > 0
+        ? payload.traceId
+        : requireNonEmptyString((job as any).traceId, 'CE11', 'traceId');
+    const pipelineRunId = requireNonEmptyString(payload.pipelineRunId, 'CE11', 'pipelineRunId');
     const projectId = payload.projectId || job.projectId;
 
     if (!novelSceneId) {
@@ -192,7 +217,9 @@ export async function processCE11ShotGeneratorJob(
     try {
       engineResult = await engineHub.invoke({
         engineKey: finalEngineKey,
-        engineVersion: payload.engineVersion || 'v1.0',
+        ...(typeof payload.engineVersion === 'string' && payload.engineVersion.length > 0
+          ? { engineVersion: payload.engineVersion }
+          : {}),
         payload: {
           novelSceneId,
           scene_description: sceneDescription,
@@ -334,7 +361,10 @@ export async function processCE11ShotGeneratorJob(
         where: { shotId: shot.id },
         update: {
           engineKey: finalEngineKey,
-          engineVersion: payload.engineVersion || 'v1.0',
+          engineVersion:
+            typeof payload.engineVersion === 'string' && payload.engineVersion.length > 0
+              ? payload.engineVersion
+              : null,
           data: {
             shotType: shotData.shot_type || 'MEDIUM_SHOT',
             movement: shotData.camera_movement || 'STATIC',
@@ -352,7 +382,10 @@ export async function processCE11ShotGeneratorJob(
         create: {
           shotId: shot.id,
           engineKey: finalEngineKey,
-          engineVersion: payload.engineVersion || 'v1.0',
+          engineVersion:
+            typeof payload.engineVersion === 'string' && payload.engineVersion.length > 0
+              ? payload.engineVersion
+              : null,
           data: {
             shotType: shotData.shot_type || 'MEDIUM_SHOT',
             movement: shotData.camera_movement || 'STATIC',
@@ -382,18 +415,19 @@ export async function processCE11ShotGeneratorJob(
       throw new Error(`[CE11] Project owner is required for job ${job.id}`);
     }
     const costService = new CostLedgerService(apiClient, prisma);
-    await costService.recordEngineBilling({
-      jobId: job.id,
-      jobType: 'CE11_SHOT_GENERATOR',
-      traceId,
-      projectId: resolveProjectId,
-      userId: project.ownerId,
-      orgId: job.organizationId,
-      engineKey: finalEngineKey,
-      runId: payload.pipelineRunId || traceId,
-      billingUsage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },
-      cost: 0,
-    });
+    if (isValidBillingUsage(engineOutput.billing_usage)) {
+      await costService.recordEngineBilling({
+        jobId: job.id,
+        jobType: 'CE11_SHOT_GENERATOR',
+        traceId,
+        projectId: resolveProjectId,
+        userId: project.ownerId,
+        orgId: job.organizationId,
+        engineKey: finalEngineKey,
+        runId: pipelineRunId,
+        billingUsage: engineOutput.billing_usage,
+      });
+    }
 
     // 5. Cascade Trigger: START_RENDER (Video/Image Generation)
     // Automatically trigger SHOT_RENDER for each newly created shot
@@ -412,7 +446,8 @@ export async function processCE11ShotGeneratorJob(
         dedupeKey: `ce11_shot_render_${novelSceneId}_${shotMeta.id}_${traceId}`,
         payload: {
           shotId: shotMeta.id,
-          projectId,
+          pipelineRunId,
+          projectId: resolveProjectId,
           sceneId: novelSceneId,
           traceId,
           isVerification, // Propagate flag
@@ -425,32 +460,26 @@ export async function processCE11ShotGeneratorJob(
       for (let i = 0; i < renderJobs.length; i += BATCH) {
         const batchJobs = renderJobs.slice(i, i + BATCH);
         await Promise.all(
-          batchJobs.map(async (jobData) => {
-            const existingRenderJob = await prisma.shotJob.findUnique({
+          batchJobs.map((jobData) =>
+            prisma.shotJob.upsert({
               where: { dedupeKey: jobData.dedupeKey },
-              select: { id: true },
-            });
-            if (existingRenderJob) {
-              return existingRenderJob;
-            }
-
-            return prisma.shotJob.create({
-              data: {
+              update: {},
+              create: {
                 ...jobData,
                 engineBinding: {
                   create: {
-                    engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                    engineKey: 'shot_render',
                     engine: {
                       connect: {
-                        engineKey: process.env.DEFAULT_FUSION_ENGINE || 'ce07_fusion_sdxl',
+                        engineKey: 'shot_render',
                       },
                     },
                     status: 'BOUND',
                   },
                 },
               } as any,
-            });
-          })
+            })
+          )
         );
       }
 
@@ -464,7 +493,9 @@ export async function processCE11ShotGeneratorJob(
       output: {
         shots_count: createdShots.length,
         shots: createdShots,
-        billing_usage: engineOutput.billing_usage || { model: finalEngineKey, cost: 0 },
+        ...(isValidBillingUsage(engineOutput.billing_usage)
+          ? { billing_usage: engineOutput.billing_usage }
+          : {}),
       },
     };
   } catch (error: any) {

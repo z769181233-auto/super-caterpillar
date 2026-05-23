@@ -23,11 +23,30 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
     return engineKey === 'style_transfer';
   }
 
+  private requireTraceId(value: unknown): string {
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+    throw new Error('[StyleTransferReplicateAdapter] Missing context.traceId');
+  }
+
   async invoke(input: EngineInvokeInput): Promise<EngineInvokeResult> {
     const t0 = Date.now();
     const payload = input.payload || {};
     const style = payload.style || 'unspecified';
     const sourceUrl = payload.image_url || payload.source_url || '';
+    let traceId: string;
+    try {
+      traceId = this.requireTraceId(input.context?.traceId);
+    } catch (error: any) {
+      return {
+        status: 'FAILED' as any,
+        error: {
+          code: 'STYLE_TRACE_ID_REQUIRED',
+          message: error.message,
+        },
+      };
+    }
 
     // P1.2 Config: Provider Strategy (Force Truth Seal)
     const provider = process.env.STYLE_TRANSFER_PROVIDER || 'replicate';
@@ -41,8 +60,8 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
     try {
       const cached = await this.redisService.getJson(cacheKey);
       if (cached) {
-        await this.auditHelper(input, 'HIT', cacheKey, { provider });
-        await this.recordCost(input, 0, { cached: true });
+        await this.auditHelper(input, traceId, 'HIT', cacheKey, { provider });
+        await this.recordCost(input, traceId, 0, { cached: true });
         return {
           status: 'SUCCESS' as any,
           output: {
@@ -79,8 +98,8 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
       await this.redisService.setJson(cacheKey, output, 7 * 24 * 3600);
 
       // 5. Audit & Cost
-      await this.auditHelper(input, 'MISS', cacheKey, { provider });
-      await this.recordCost(input, 1, { provider });
+      await this.auditHelper(input, traceId, 'MISS', cacheKey, { provider });
+      await this.recordCost(input, traceId, 1, { provider });
 
       return {
         status: 'SUCCESS' as any,
@@ -92,11 +111,11 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
     } catch (error: any) {
       this.logger.error(`[StyleTransfer] Failed: ${error.message}`);
       // Failure Audit
-      await this.auditHelper(input, 'MISS', 'failed_request', {
+      await this.auditHelper(input, traceId, 'MISS', 'failed_request', {
         status: 'FAILED',
         error: error.message,
       });
-      await this.recordCost(input, 0, { status: 'FAILED' }); // Failed cost 0
+      await this.recordCost(input, traceId, 0, { status: 'FAILED' }); // Failed cost 0
 
       return {
         status: 'FAILED' as any,
@@ -123,6 +142,7 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
 
   private async auditHelper(
     input: EngineInvokeInput,
+    traceId: string,
     type: 'HIT' | 'MISS',
     resourceId: string,
     extraDetails: any = {}
@@ -135,13 +155,18 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
         projectId: input.context.projectId || '',
         userId: input.context.userId || 'system',
         cache: type,
-        traceId: input.context.traceId,
+        traceId,
         ...extraDetails,
       },
     });
   }
 
-  private async recordCost(input: EngineInvokeInput, amount: number, extraDetails: any = {}) {
+  private async recordCost(
+    input: EngineInvokeInput,
+    traceId: string,
+    amount: number,
+    extraDetails: any = {}
+  ) {
     await this.costLedgerService.recordFromEvent({
       userId: input.context.userId || 'system',
       projectId: input.context.projectId || '',
@@ -154,7 +179,7 @@ export class StyleTransferReplicateAdapter implements EngineAdapter {
       attempt: (input.context as any).attempt || 1,
       metadata: {
         type: 'style_transfer',
-        traceId: input.context.traceId || 'unknown',
+        traceId,
         ...extraDetails,
       },
     });

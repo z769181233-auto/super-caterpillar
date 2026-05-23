@@ -77,10 +77,12 @@ async function createOrGetTestUser(
   }
 
   // 查找或创建组织
-  let organization = await prisma.organization.findFirst({
+  const organizations = await prisma.organization.findMany({
     where: { ownerId: user.id },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let organization = organizations[0] ?? null;
 
   if (!organization) {
     process.stdout.write(util.format('[E2E] 创建新测试组织...') + '\n');
@@ -127,14 +129,16 @@ async function createOrGetTestProject(
   process.stdout.write(util.format('[E2E] 步骤 2: 创建或获取测试项目...') + '\n');
 
   // 查找现有项目
-  let project = await prisma.project.findFirst({
+  const projects = await prisma.project.findMany({
     where: {
       ownerId: userId,
       organizationId,
       name: TEST_PROJECT_NAME,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: 1,
   });
+  let project = projects[0] ?? null;
 
   if (!project) {
     process.stdout.write(util.format('[E2E] 创建新测试项目...') + '\n');

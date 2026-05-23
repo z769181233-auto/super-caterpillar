@@ -64,51 +64,12 @@ export class ShotRenderLocalAdapter implements EngineAdapter {
       const absOutputPath = path.resolve(outputPath);
 
       let sourceImagePath = input.payload.sourceImagePath;
-      const isGateOrCi = process.env.GATE_MODE === '1' || process.env.CI === 'true';
-
       if (!sourceImagePath) {
-        if (!isGateOrCi) {
-          throw new Error(
-            `[ShotRenderLocal] Missing/Invalid sourceImagePath=${sourceImagePath}. Production forbids silent fallback.`
-          );
-        }
-
-        // P0-R0-FALLBACK: Generate a deterministic placeholder image for Gate/CI
-        const placeholderDir = path.join(storageRoot, 'placeholders');
-        if (!fs.existsSync(placeholderDir)) {
-          fs.mkdirSync(placeholderDir, { recursive: true });
-        }
-        
-        const placeholderPath = path.join(placeholderDir, `gate_fallback_${projectId}.png`);
-        
-        if (!fs.existsSync(placeholderPath)) {
-          this.logger.log(`[ShotRenderLocal] Generating placeholder image: ${placeholderPath}`);
-          // Use ffmpeg to generate a simple solid color PNG
-          try {
-            const placeholderRes = await execAsync('ffmpeg', [
-              '-f',
-              'lavfi',
-              '-i',
-              'color=c=blue:s=1280x720:d=1',
-              '-vframes',
-              '1',
-              '-y',
-              placeholderPath,
-            ]);
-            if (placeholderRes.code !== 0) {
-              throw new Error(placeholderRes.stderr || 'placeholder ffmpeg failed');
-            }
-          } catch (e: any) {
-            this.logger.error(`[ShotRenderLocal] Failed to generate placeholder: ${e.message}`);
-            throw new Error(`[ShotRenderLocal] Placeholder generation failed: ${e.message}`);
-          }
-        }
-        
-        sourceImagePath = placeholderPath;
-        this.logger.log(`[ShotRenderLocal] Using placeholder input for Gate/CI mode: ${sourceImagePath}`);
-      } else {
-        this.logger.log(`[ShotRenderLocal] Using real sourceImagePath: ${sourceImagePath}`);
+        throw new Error(
+          `[ShotRenderLocal] Missing/Invalid sourceImagePath=${sourceImagePath}. Placeholder fallback is disabled.`
+        );
       }
+      this.logger.log(`[ShotRenderLocal] Using real sourceImagePath: ${sourceImagePath}`);
       this.logger.log(`[ShotRenderLocal] Rendering 2.5D Motion from: ${sourceImagePath}`);
 
       // Multi-Motion Engine (V1.0)
