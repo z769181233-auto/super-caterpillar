@@ -45,6 +45,63 @@ function createPrismaMock(overrides: Record<string, any> = {}) {
   };
 }
 
+function readyStoryBible(overrides: Record<string, any> = {}) {
+  return {
+    id: 'story-bible-1',
+    projectId: 'project-1',
+    project_id: 'project-1',
+    source_type: 'legacy_novel_source',
+    status: 'ready',
+    title: '表姑娘又又又又跑了',
+    logline: '薛知盈在静水院藏起秘密，家族压力逼近。',
+    genre: '古风剧情',
+    theme: '身份秩序下的自我选择',
+    tone: '克制、悬念、关系张力',
+    story_world: {
+      setting: '古代宅院、家族秩序与权力关系构成的连续叙事世界。',
+      time_period: '架空古风',
+      core_locations: [{ location_id: 'location-1', name: '静水院', description: '核心院落' }],
+    },
+    main_characters: [
+      {
+        character_id: 'character-1',
+        name: '薛知盈',
+        role: '主角',
+        motivation: '守住秘密',
+        conflict: '家族压力',
+      },
+      {
+        character_id: 'character-2',
+        name: '萧昀祈',
+        role: '关键关系角色',
+        motivation: '推动关系',
+        conflict: '立场不明',
+      },
+    ],
+    worldview: '古代宅院关系世界',
+    mainConflict: '秘密与家族压力',
+    emotionalArc: '从躲避到选择',
+    characterRelationship: '薛知盈与萧昀祈被家族关系牵引',
+    longTermForeshadowing: ['律法书秘密'],
+    season_arc: '第一阶段围绕秘密推进',
+    continuity_rules: ['不生成图片或视频'],
+    visualStyle: '古风动画',
+    targetPlatform: '短剧动漫',
+    adaptationStrategy: '先故事圣经后镜头台本',
+    audienceHook: '秘密被发现',
+    sourceSummary: '薛知盈在静水院藏书。',
+    sourceEvidence: ['Novel:novel-1', 'NovelSource:novel-source-1', 'chapterCount:59'],
+    source_evidence: ['Novel:novel-1', 'NovelSource:novel-source-1', 'chapterCount:59'],
+    quality_score: 85,
+    blockers: [],
+    missingReasons: [],
+    generatedAt: '2026-05-23T00:00:00.000Z',
+    version: 'studio-story-bible-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
+
 describe('ProjectProductionStateService', () => {
   it('returns missing stages for an empty project without throwing', async () => {
     const prisma = createPrismaMock();
@@ -204,11 +261,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: {
-                id: 'project-metadata:project-1:story-bible',
-                status: 'done',
-                version: 'studio-story-bible-v1',
-              },
+              storyBible: readyStoryBible({ id: 'project-metadata:project-1:story-bible' }),
             },
           },
         }),
@@ -222,6 +275,56 @@ describe('ProjectProductionStateService', () => {
     expect(state.riskFlags.join('\n')).toContain('StoryBible 已生成');
   });
 
+  it('does not mark empty Studio StoryBible metadata as ready', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: { animationStudio: { storyBible: {} } },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.stages.find((stage) => stage.key === 'story_bible_ready')?.status).toBe(
+      'missing'
+    );
+  });
+
+  it('blocks story bible stage when stored StoryBible fields are incomplete', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: {
+                id: 'story-bible-1',
+                status: 'ready',
+                title: '残缺故事圣经',
+                version: 'studio-story-bible-v1',
+              },
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+    const stage = state.stages.find((item) => item.key === 'story_bible_ready');
+
+    expect(stage?.status).toBe('blocked');
+    expect(stage?.missingReason).toContain('故事圣经质量门槛未通过');
+    expect(state.currentStage).not.toBe('story_bible_ready');
+  });
+
   it('marks characters ready when Studio CharacterBible records exist in project metadata', async () => {
     const prisma = createPrismaMock({
       project: {
@@ -231,7 +334,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [
                 { id: 'character-1', name: '薛知盈', status: 'done' },
                 { id: 'character-2', name: '萧昀祈', status: 'done' },
@@ -261,7 +364,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [
                 { id: 'location-1', name: '静水院', status: 'done' },
@@ -294,7 +397,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
               episodePlans: [
@@ -330,7 +433,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
               episodePlans: [
@@ -384,7 +487,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
@@ -451,7 +554,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
@@ -525,7 +628,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
@@ -570,7 +673,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
@@ -617,7 +720,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
@@ -659,7 +762,7 @@ describe('ProjectProductionStateService', () => {
           status: 'in_progress',
           metadata: {
             animationStudio: {
-              storyBible: { id: 'story-bible-1', status: 'done' },
+              storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [{ id: 'episode-plan-1', status: 'done' }],

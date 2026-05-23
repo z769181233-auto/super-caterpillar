@@ -11,6 +11,7 @@ import {
 } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { filterStableSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
+import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   imported: '已导入故事来源',
@@ -571,10 +572,70 @@ export class ProjectProductionStateService {
     const studioShotScripts = animationStudioMetadata.shotScripts;
     const studioStoryboardAssets = animationStudioMetadata.storyboardAssets;
     const studioVideoPrompts = animationStudioMetadata.videoPrompts;
+    const storyBibleRecord = asRecord(studioStoryBible);
+    const hasStoredStoryBible = Object.keys(storyBibleRecord).length > 0;
+    const storyBibleQuality = hasStoredStoryBible
+      ? validateStoryBibleQuality({
+          id: typeof storyBibleRecord.id === 'string' ? storyBibleRecord.id : null,
+          projectId,
+          project_id: projectId,
+          source_type: storyBibleRecord.source_type as any,
+          status: storyBibleRecord.status as any,
+          title: typeof storyBibleRecord.title === 'string' ? storyBibleRecord.title : null,
+          logline: typeof storyBibleRecord.logline === 'string' ? storyBibleRecord.logline : null,
+          genre: typeof storyBibleRecord.genre === 'string' ? storyBibleRecord.genre : null,
+          theme: typeof storyBibleRecord.theme === 'string' ? storyBibleRecord.theme : null,
+          tone: typeof storyBibleRecord.tone === 'string' ? storyBibleRecord.tone : null,
+          story_world: storyBibleRecord.story_world as any,
+          main_characters: Array.isArray(storyBibleRecord.main_characters)
+            ? (storyBibleRecord.main_characters as any)
+            : [],
+          worldview: typeof storyBibleRecord.worldview === 'string' ? storyBibleRecord.worldview : null,
+          mainConflict:
+            typeof storyBibleRecord.mainConflict === 'string' ? storyBibleRecord.mainConflict : null,
+          emotionalArc:
+            typeof storyBibleRecord.emotionalArc === 'string' ? storyBibleRecord.emotionalArc : null,
+          characterRelationship:
+            typeof storyBibleRecord.characterRelationship === 'string'
+              ? storyBibleRecord.characterRelationship
+              : null,
+          longTermForeshadowing: stringList(storyBibleRecord.longTermForeshadowing),
+          season_arc: typeof storyBibleRecord.season_arc === 'string' ? storyBibleRecord.season_arc : null,
+          continuity_rules: stringList(storyBibleRecord.continuity_rules),
+          visualStyle:
+            typeof storyBibleRecord.visualStyle === 'string' ? storyBibleRecord.visualStyle : null,
+          targetPlatform:
+            typeof storyBibleRecord.targetPlatform === 'string' ? storyBibleRecord.targetPlatform : null,
+          adaptationStrategy:
+            typeof storyBibleRecord.adaptationStrategy === 'string'
+              ? storyBibleRecord.adaptationStrategy
+              : null,
+          audienceHook:
+            typeof storyBibleRecord.audienceHook === 'string' ? storyBibleRecord.audienceHook : null,
+          sourceSummary:
+            typeof storyBibleRecord.sourceSummary === 'string' ? storyBibleRecord.sourceSummary : null,
+          sourceEvidence: stringList(storyBibleRecord.sourceEvidence),
+          source_evidence: stringList(storyBibleRecord.source_evidence),
+          quality_score:
+            typeof storyBibleRecord.quality_score === 'number' ? storyBibleRecord.quality_score : null,
+          blockers: stringList(storyBibleRecord.blockers),
+          missingReasons: stringList(storyBibleRecord.missingReasons),
+          generatedAt:
+            typeof storyBibleRecord.generatedAt === 'string' ? storyBibleRecord.generatedAt : null,
+          version:
+            typeof storyBibleRecord.version === 'string'
+              ? storyBibleRecord.version
+              : 'studio-story-bible-v1',
+          missingReason:
+            typeof storyBibleRecord.missingReason === 'string'
+              ? storyBibleRecord.missingReason
+              : null,
+        })
+      : null;
     const hasStudioStoryBible =
-      Boolean(studioStoryBible) &&
-      typeof studioStoryBible === 'object' &&
-      !Array.isArray(studioStoryBible);
+      hasStoredStoryBible &&
+      storyBibleRecord.status === 'ready' &&
+      Boolean(storyBibleQuality?.passed);
     const characterBibleCount = Array.isArray(studioCharacterBibles)
       ? studioCharacterBibles.length
       : 0;
@@ -679,15 +740,22 @@ export class ProjectProductionStateService {
       ),
       stage(
         'story_bible_ready',
-        hasStudioStoryBible ? 'done' : 'missing',
+        hasStudioStoryBible ? 'done' : hasStoredStoryBible ? 'blocked' : 'missing',
         hasStudioStoryBible
           ? [
               `Project.metadata.animationStudio.storyBible`,
               `version:${String(asRecord(studioStoryBible).version || 'unknown')}`,
+              `quality_score:${String(storyBibleRecord.quality_score ?? 'unknown')}`,
             ]
+          : hasStoredStoryBible
+            ? storyBibleQuality?.blockers || ['StoryBible 字段完整性或质量门槛不足']
           : [],
-        hasStudioStoryBible ? null : '故事圣经未生成',
-        hasStudioStoryBible ? '进入角色资产生成阶段' : 'Phase 2A 生成 StoryBible'
+        hasStudioStoryBible
+          ? null
+          : hasStoredStoryBible
+            ? `故事圣经质量门槛未通过：${storyBibleQuality?.blockers.join('；') || '字段不足'}`
+            : '故事圣经未生成',
+        hasStudioStoryBible ? '进入角色资产生成阶段' : 'Phase 1B-A 生成 StoryBible'
       ),
       stage(
         'characters_ready',
