@@ -7,6 +7,7 @@ import { StudioLayout } from './StudioLayout';
 import {
   formatLegacySummary,
   formatSceneCandidateCoverage,
+  formatShotScriptQualityGate,
   getDoneStages,
   getMissingOrBlockedStages,
   getRequiredEmptyStateLabels,
@@ -153,6 +154,30 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
               {(state ? formatSceneCandidateCoverage(state) : ['状态读取中']).map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--r-md)',
+                    padding: '0.75rem',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {card(
+          <>
+            <h2 style={{ marginTop: 0 }}>镜头台本质量门禁</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              这里显示 ShotScript 写入前质量门槛。若不能生成镜头台本，原因会直接显示在这里，不需要只看 API 报错。
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
+              {(state ? formatShotScriptQualityGate(state) : ['状态读取中']).map((item) => (
                 <div
                   key={item}
                   style={{

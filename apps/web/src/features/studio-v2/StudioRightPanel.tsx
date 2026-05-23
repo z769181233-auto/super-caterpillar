@@ -13,6 +13,7 @@ function panelTitle(text: string) {
 export function StudioRightPanel({ state }: StudioRightPanelProps) {
   const legacy = state?.legacyDataSummary;
   const coverage = legacy?.sceneCandidateCoverage;
+  const shotScriptGate = state?.shotScriptQualityGate;
   const canContinue = Boolean(state && state.riskFlags.length === 0);
 
   return (
@@ -78,6 +79,30 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
           </div>
           <div>缺失能力：{coverage?.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}</div>
           <div>阻断原因：{coverage?.blockerReason || '无'}</div>
+        </div>
+      </section>
+
+      <section>
+        {panelTitle('镜头台本门槛')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>状态：{shotScriptGate?.status || '--'}</div>
+          <div>
+            镜头候选：
+            {shotScriptGate
+              ? `${shotScriptGate.candidateShotCount}/${shotScriptGate.minShotCount}`
+              : '--'}
+          </div>
+          <div>
+            对白抽取率：
+            {shotScriptGate?.dialogueExtractionRate === null || !shotScriptGate
+              ? '--'
+              : `${Math.round(shotScriptGate.dialogueExtractionRate * 100)}%`}
+          </div>
+          <div>
+            阻断原因：
+            {shotScriptGate?.reasons.length ? shotScriptGate.reasons.join('；') : '无'}
+          </div>
+          <div>下一步：{shotScriptGate?.nextAction || '无'}</div>
         </div>
       </section>
     </aside>

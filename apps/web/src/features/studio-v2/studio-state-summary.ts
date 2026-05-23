@@ -54,3 +54,23 @@ export function formatSceneCandidateCoverage(state: ProductionStateDTO): string[
     `阻断原因：${coverage.blockerReason || '无'}`,
   ];
 }
+
+function formatPercent(value: number | null): string {
+  return value === null ? '未评估' : `${Math.round(value * 100)}%`;
+}
+
+export function formatShotScriptQualityGate(state: ProductionStateDTO): string[] {
+  const gate = state.shotScriptQualityGate;
+  return [
+    `状态：${gate.status}`,
+    `来源：${gate.source}`,
+    `镜头候选数：${gate.candidateShotCount}/${gate.minShotCount}`,
+    `对白抽取率：${formatPercent(gate.dialogueExtractionRate)}/${formatPercent(gate.minDialogueExtractionRate)}`,
+    `角色绑定率：${formatPercent(gate.characterBindingRate)}/${formatPercent(gate.minCharacterBindingRate)}`,
+    `场景绑定率：${formatPercent(gate.locationBindingRate)}/${formatPercent(gate.minLocationBindingRate)}`,
+    `证据绑定率：${formatPercent(gate.evidenceBindingRate)}/${formatPercent(gate.minEvidenceBindingRate)}`,
+    `占位文本：${gate.hasPlaceholderText ? '存在' : '未发现'}`,
+    `阻断原因：${gate.reasons.length ? gate.reasons.join('；') : '无'}`,
+    `下一步：${gate.nextAction || '无'}`,
+  ];
+}

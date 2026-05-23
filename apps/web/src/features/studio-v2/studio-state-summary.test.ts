@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { ProductionStateDTO } from '@scu/shared-types';
-import { formatSceneCandidateCoverage, getRequiredEmptyStateLabels } from './studio-state-summary';
+import {
+  formatSceneCandidateCoverage,
+  formatShotScriptQualityGate,
+  getRequiredEmptyStateLabels,
+} from './studio-state-summary';
 
 test('Studio empty-state summary does not treat missing core assets as generated', () => {
   const state: ProductionStateDTO = {
@@ -63,6 +67,24 @@ test('Studio empty-state summary does not treat missing core assets as generated
         nextAction: '补足章节到 scene candidate 的可追踪映射后再重试。',
       },
     },
+    shotScriptQualityGate: {
+      status: 'blocked',
+      source: 'studio_director_scripts',
+      candidateShotCount: 2,
+      minShotCount: 4,
+      dialogueExtractionRate: 0.25,
+      minDialogueExtractionRate: 0.5,
+      characterBindingRate: 1,
+      minCharacterBindingRate: 1,
+      locationBindingRate: 0.5,
+      minLocationBindingRate: 1,
+      evidenceBindingRate: 1,
+      minEvidenceBindingRate: 1,
+      hasPlaceholderText: false,
+      reasons: ['镜头候选数不足：2/4', '场景绑定率不足：50%/100%'],
+      nextAction: '修复 sceneCandidates 后重试。',
+      checkedAt: '2026-05-23T00:00:00.000Z',
+    },
     riskFlags: [],
   };
 
@@ -80,5 +102,17 @@ test('Studio empty-state summary does not treat missing core assets as generated
     '质量门禁：blocked (35)',
     '缺失能力：locations',
     '阻断原因：可用 scene candidates 不足：0/1。',
+  ]);
+  assert.deepEqual(formatShotScriptQualityGate(state), [
+    '状态：blocked',
+    '来源：studio_director_scripts',
+    '镜头候选数：2/4',
+    '对白抽取率：25%/50%',
+    '角色绑定率：100%/100%',
+    '场景绑定率：50%/100%',
+    '证据绑定率：100%/100%',
+    '占位文本：未发现',
+    '阻断原因：镜头候选数不足：2/4；场景绑定率不足：50%/100%',
+    '下一步：修复 sceneCandidates 后重试。',
   ]);
 });
