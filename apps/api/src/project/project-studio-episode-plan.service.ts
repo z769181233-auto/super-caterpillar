@@ -1,27 +1,13 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { EpisodePlanDTO, NovelSceneCandidate } from '@scu/shared-types';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EpisodePlanDTO, StoryBibleDTO } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
-import { formatSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
+import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 
 type JsonRecord = Record<string, unknown>;
-type EpisodePlanInput = {
-  episodeId: string | null;
-  episodeNo: number;
-  title: string;
-  text: string;
-  nextTitle: string | null;
-  characterNames: string[];
-  locationNames: string[];
-  sourceEvidence: string[];
-};
-type SceneCandidateExtraction = {
-  candidates: NovelSceneCandidate[];
-  blockedReason: string | null;
-};
 
 const EPISODE_PLAN_VERSION = 'studio-episode-plan-v1';
-const MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER = 1;
+const EPISODE_PLAN_MIN_QUALITY_SCORE = 70;
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -35,6 +21,16 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+function asNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function stringList(value: unknown): string[] {
+  return asArray(value)
+    .map((item) => (typeof item === 'string' ? item.trim() : null))
+    .filter(Boolean) as string[];
+}
+
 function truncate(value: string, maxLength: number): string {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return normalized.length > maxLength ? `${normalized.slice(0, maxLength - 1)}…` : normalized;
@@ -44,215 +40,252 @@ function uniq(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
+function sourceEvidenceOf(value: unknown): string[] {
+  const record = asRecord(value);
+  return uniq([...stringList(record.source_evidence), ...stringList(record.sourceEvidence)]);
+}
+
+function storyBibleFromMetadata(projectId: string, value: unknown): StoryBibleDTO {
+  const record = asRecord(value);
+  return {
+    id: asString(record.id),
+    project_id: asString(record.project_id) || projectId,
+    projectId,
+    source_type: record.source_type as any,
+    status: record.status as any,
+    title: asString(record.title),
+    logline: asString(record.logline),
+    genre: asString(record.genre),
+    theme: asString(record.theme),
+    tone: asString(record.tone),
+    story_world: asRecord(record.story_world) as any,
+    main_characters: asArray(record.main_characters) as any,
+    worldview: asString(record.worldview),
+    mainConflict: asString(record.mainConflict),
+    emotionalArc: asString(record.emotionalArc),
+    characterRelationship: asString(record.characterRelationship),
+    longTermForeshadowing: stringList(record.longTermForeshadowing),
+    season_arc: asString(record.season_arc),
+    continuity_rules: stringList(record.continuity_rules),
+    visualStyle: asString(record.visualStyle),
+    targetPlatform: asString(record.targetPlatform),
+    adaptationStrategy: asString(record.adaptationStrategy),
+    audienceHook: asString(record.audienceHook),
+    sourceSummary: asString(record.sourceSummary),
+    sourceEvidence: stringList(record.sourceEvidence),
+    source_evidence: stringList(record.source_evidence),
+    quality_score: asNumber(record.quality_score),
+    blockers: stringList(record.blockers),
+    missingReasons: stringList(record.missingReasons),
+    generatedAt: asString(record.generatedAt),
+    version: asString(record.version) || 'studio-story-bible-v1',
+    missingReason: asString(record.missingReason),
+  };
+}
+
+function characterNames(storyBible: StoryBibleDTO): string[] {
+  return uniq(
+    (storyBible.main_characters || [])
+      .map((character) => character.name)
+      .filter(Boolean)
+  );
+}
+
+function locationNames(storyBible: StoryBibleDTO): string[] {
+  return uniq((storyBible.story_world?.core_locations || []).map((location) => location.name));
+}
+
 function buildMissing(projectId: string, reason: string): EpisodePlanDTO[] {
   return [
-    {
+    completeEpisodePlan({
       id: null,
+      project_id: projectId,
       projectId,
+      episode_id: null,
       episodeId: null,
+      story_bible_id: null,
       episodeNo: 0,
+      episode_no: 0,
       title: '未生成剧集规划',
       status: 'missing',
       durationSec: null,
+      duration_target_sec: null,
+      logline: null,
+      beginning: null,
+      middle: null,
+      end: null,
       plotGoal: null,
       emotionCurve: [],
+      emotional_curve: [],
+      key_scenes: [],
       coolPoints: [],
       hook: null,
+      characters: [],
+      locations: [],
       appearingCharacterNames: [],
       appearingLocationNames: [],
       productionStatus: null,
       sourceEvidence: [],
+      source_evidence: [],
+      quality_score: null,
+      blockers: [reason],
+      missingReasons: [reason],
       generatedAt: null,
       version: EPISODE_PLAN_VERSION,
       missingReason: reason,
+    }),
+  ];
+}
+
+function blockedEpisodePlan(projectId: string, reason: string, blockers: string[] = [reason]): EpisodePlanDTO[] {
+  return [
+    {
+      ...buildMissing(projectId, reason)[0],
+      status: 'blocked',
+      blockers,
+      missingReasons: blockers,
+      missingReason: blockers.join('；'),
     },
   ];
 }
 
-function textFromMetadataItems(items: unknown[], field: string): string[] {
-  return uniq(items.map((item) => asString(asRecord(item)[field])).filter(Boolean) as string[]);
-}
+export function validateEpisodePlanQuality(
+  episodePlan: EpisodePlanDTO,
+  storyBible?: StoryBibleDTO | null
+): { passed: boolean; qualityScore: number; blockers: string[] } {
+  const blockers: string[] = [];
+  const storyBibleQuality = storyBible ? validateStoryBibleQuality(storyBible) : null;
+  const evidence = sourceEvidenceOf(episodePlan);
+  const keyScenes = episodePlan.key_scenes || [];
+  const characters = episodePlan.characters?.length
+    ? episodePlan.characters
+    : episodePlan.appearingCharacterNames;
+  const locations = episodePlan.locations?.length
+    ? episodePlan.locations
+    : episodePlan.appearingLocationNames;
+  const qualityScore = asNumber(episodePlan.quality_score) || 0;
 
-function isUsableSceneCandidate(value: unknown): value is NovelSceneCandidate {
-  const record = asRecord(value);
-  const candidateId = asString(record.candidateId);
-  const text = asString(record.text);
-  const confidence = asString(record.confidence);
-  const characters = asArray(record.characters).map((item) => asString(item)).filter(Boolean);
-  const sourceBlockIndexes = asArray(record.sourceBlockIndexes).filter(
-    (item) => typeof item === 'number' && Number.isFinite(item)
-  );
-  const dialogueBlockIndexes = asArray(record.dialogueBlockIndexes).filter(
-    (item) => typeof item === 'number' && Number.isFinite(item)
-  );
-  const actionBlockIndexes = asArray(record.actionBlockIndexes).filter(
-    (item) => typeof item === 'number' && Number.isFinite(item)
-  );
-  const location = asString(record.location);
-  return Boolean(
-    candidateId &&
-      text &&
-      confidence &&
-      confidence !== 'low' &&
-      characters.length > 0 &&
-      sourceBlockIndexes.length > 0 &&
-      (location || dialogueBlockIndexes.length > 0 || actionBlockIndexes.length > 0)
-  );
-}
-
-function formatCount(value: unknown): string {
-  return typeof value === 'number' && Number.isFinite(value) ? String(value) : 'unknown';
-}
-
-function textList(value: unknown): string[] {
-  return asArray(value)
-    .map((item) => asString(item))
-    .filter(Boolean) as string[];
-}
-
-function formatCoverageReportSummary(coverageReport: JsonRecord): string {
-  const qualityGate = asRecord(coverageReport.qualityGate);
-  const blockingReasons = textList(qualityGate.blockingReasons);
-  const warnings = textList(qualityGate.warnings);
-  const nextActions = textList(qualityGate.nextActions);
-  const missingCapabilities = textList(coverageReport.missingCapabilities);
-  const details = [
-    `sceneCandidates=${formatCount(coverageReport.sceneCandidateCount)}`,
-    `characters=${formatCount(coverageReport.characterCount)}`,
-    `locations=${formatCount(coverageReport.locationCount)}`,
-    `dialogueBlocks=${formatCount(coverageReport.dialogueBlockCount)}`,
-    `actionBlocks=${formatCount(coverageReport.actionBlockCount)}`,
-    `qualityGate=${asString(qualityGate.status) || 'unknown'}`,
-  ];
-  const reasons = [
-    ...blockingReasons.map((reason) => `blocking:${reason}`),
-    ...warnings.map((warning) => `warning:${warning}`),
-    ...missingCapabilities.map((capability) => `missing:${capability}`),
-    ...nextActions.map((action) => `next:${action}`),
-  ];
-  return [...details, ...reasons].join(' | ');
-}
-
-function sceneCandidateExtractionFromAnalysisResult(value: unknown): SceneCandidateExtraction {
-  const analysisResult = asRecord(value);
-  const coverageReport = asRecord(analysisResult.coverageReport);
-  if (Object.keys(coverageReport).length === 0) {
-    return {
-      candidates: [],
-      blockedReason:
-        'missing coverageReport.sceneCandidates; rerun novel analysis quality pipeline first',
-    };
+  if (!storyBible || storyBible.status !== 'ready' || !storyBibleQuality?.passed) {
+    blockers.push('StoryBible 未生成或未通过质量门槛。');
   }
-
-  const qualityGate = asRecord(coverageReport.qualityGate);
-  if (asString(qualityGate.status) === 'blocked') {
-    return {
-      candidates: [],
-      blockedReason: `coverage quality gate blocked: ${formatCoverageReportSummary(coverageReport)}`,
-    };
-  }
-
-  const sceneCandidates = asArray(coverageReport.sceneCandidates);
-  const usableCandidates = sceneCandidates
-    .filter((candidate) => isUsableSceneCandidate(candidate))
-    .map((candidate) => candidate as NovelSceneCandidate);
-  if (usableCandidates.length < MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER) {
-    return {
-      candidates: [],
-      blockedReason: `usable scene candidates below threshold (${usableCandidates.length}/${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER}): ${formatCoverageReportSummary(coverageReport)}`,
-    };
+  if (!asString(episodePlan.beginning)) blockers.push('缺少 beginning。');
+  if (!asString(episodePlan.middle)) blockers.push('缺少 middle。');
+  if (!asString(episodePlan.end)) blockers.push('缺少 end。');
+  if (keyScenes.length < 3) blockers.push('key_scenes 少于 3 个。');
+  if (characters.length < 2) blockers.push('characters 少于 2 个。');
+  if (locations.length < 1) blockers.push('locations 少于 1 个。');
+  if (evidence.length < 3) blockers.push('source_evidence 少于 3 条。');
+  if (!asString(episodePlan.hook)) blockers.push('缺少 hook。');
+  if (qualityScore < EPISODE_PLAN_MIN_QUALITY_SCORE) {
+    blockers.push(`quality_score 低于门槛：${qualityScore}/${EPISODE_PLAN_MIN_QUALITY_SCORE}。`);
   }
 
   return {
-    candidates: usableCandidates,
-    blockedReason: null,
+    passed: blockers.length === 0,
+    qualityScore,
+    blockers,
   };
 }
 
-function formatEpisodePlanBlockerMessage(reasons: string[]): string {
-  const uniqueReasons = uniq(reasons).slice(0, 8);
-  const reasonText =
-    uniqueReasons.length > 0
-      ? uniqueReasons.map((reason) => `- ${reason}`).join('\n')
-      : '- missing coverageReport.sceneCandidates';
-  return [
-    'No usable scene candidates found for EpisodePlan generation.',
-    `Required threshold: at least ${MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER} usable medium/high scene candidate per chapter.`,
-    'Blocking reasons:',
-    reasonText,
-    'Next action: rerun novel analysis quality pipeline and ensure chapter split, character extraction, location extraction, dialogue/action blocks, and scene candidates are present before generating EpisodePlan.',
-  ].join('\n');
-}
-
-function isEpisodePlanInput(value: EpisodePlanInput | null): value is EpisodePlanInput {
-  return value !== null;
-}
-
-function inferNames(text: string, candidates: string[]): string[] {
-  const matched = candidates.filter((name) => text.includes(name));
-  return matched.length > 0 ? matched : candidates.slice(0, 4);
-}
-
-function inferEmotionCurve(text: string): string[] {
-  const curve = ['开场铺陈'];
-  if (/压抑|拒绝|为难|规矩|盘问|查/.test(text)) curve.push('压力上升');
-  if (/偷|藏|秘密|律法|书/.test(text)) curve.push('秘密行动');
-  if (/公子|回府|出现|忽然|冲突/.test(text)) curve.push('关系转折');
-  curve.push('钩子收束');
-  return uniq(curve).slice(0, 5);
-}
-
-function inferCoolPoints(text: string): string[] {
-  const points: string[] = [];
-  if (/偷|藏|秘密|律法|书/.test(text)) points.push('隐秘行动带来的紧张感');
-  if (/拒绝|婚|夫人|嬷嬷|规矩/.test(text)) points.push('家族规训与个人选择的冲突');
-  if (/公子|朝政|回府|萧/.test(text)) points.push('关键人物登场引发关系反转');
-  if (/跑|门|廊|追/.test(text)) points.push('人物行动推动节奏');
-  return points.length > 0 ? points : ['用人物选择和关系压力形成单集爽点'];
-}
-
-function inferHook(text: string, nextTitle: string | null): string {
-  if (nextTitle) return `结尾钩子：把悬念引向下一段「${nextTitle}」。`;
-  if (/公子|萧/.test(text)) return '结尾钩子：关键人物出现，改变主角当前处境。';
-  if (/查|发现|藏/.test(text)) return '结尾钩子：秘密即将暴露，迫使主角做出下一步选择。';
-  return '结尾钩子：保留未解决冲突，推动观众进入下一集。';
+function completeEpisodePlan(episodePlan: EpisodePlanDTO, storyBible?: StoryBibleDTO | null): EpisodePlanDTO {
+  if (episodePlan.status === 'missing') return episodePlan;
+  const validation = validateEpisodePlanQuality(episodePlan, storyBible);
+  return {
+    ...episodePlan,
+    status: validation.passed ? 'ready' : 'blocked',
+    quality_score: validation.qualityScore,
+    source_evidence: sourceEvidenceOf(episodePlan),
+    blockers: validation.blockers,
+    missingReasons: validation.blockers,
+    missingReason: validation.passed ? null : validation.blockers.join('；'),
+  };
 }
 
 function buildEpisodePlan(input: {
   projectId: string;
-  episodeId: string | null;
-  episodeNo: number;
-  title: string;
-  text: string;
-  nextTitle: string | null;
-  characterNames: string[];
-  locationNames: string[];
-  sourceEvidence?: string[];
+  storyBible: StoryBibleDTO;
   generatedAt: string;
 }): EpisodePlanDTO {
-  return {
-    id: `project-metadata:${input.projectId}:episode-plan:${input.episodeId || input.episodeNo}`,
-    projectId: input.projectId,
-    episodeId: input.episodeId,
-    episodeNo: input.episodeNo,
-    title: input.title,
-    status: 'done',
-    durationSec: 300,
-    plotGoal: truncate(input.text || input.title, 220),
-    emotionCurve: inferEmotionCurve(input.text),
-    coolPoints: inferCoolPoints(input.text),
-    hook: inferHook(input.text, input.nextTitle),
-    appearingCharacterNames: inferNames(input.text, input.characterNames),
-    appearingLocationNames: inferNames(input.text, input.locationNames),
-    productionStatus: 'draft',
-    sourceEvidence:
-      input.sourceEvidence && input.sourceEvidence.length > 0
-        ? input.sourceEvidence.slice(0, 6)
-        : [truncate(input.text || input.title, 280)],
-    generatedAt: input.generatedAt,
-    version: EPISODE_PLAN_VERSION,
-    missingReason: null,
-  };
+  const sourceEvidence = sourceEvidenceOf(input.storyBible).slice(0, 6);
+  const characters = characterNames(input.storyBible);
+  const locations = locationNames(input.storyBible);
+  const title = `第 1 集：${input.storyBible.title || '第一集'}`;
+  const firstEvidence = sourceEvidence[0] || input.storyBible.logline || input.storyBible.title || title;
+  const keyScenes = [
+    {
+      scene_id: 'episode-1-scene-1',
+      title: '处境建立',
+      summary: truncate(input.storyBible.logline || firstEvidence, 160),
+      function: '建立主角处境、核心地点和第一集行动目标',
+      source_evidence: sourceEvidence.slice(0, 1),
+    },
+    {
+      scene_id: 'episode-1-scene-2',
+      title: '压力上升',
+      summary: truncate(input.storyBible.mainConflict || input.storyBible.theme || firstEvidence, 160),
+      function: '放大关系压力并制造选择困境',
+      source_evidence: sourceEvidence.slice(1, 2).length ? sourceEvidence.slice(1, 2) : sourceEvidence.slice(0, 1),
+    },
+    {
+      scene_id: 'episode-1-scene-3',
+      title: '钩子收束',
+      summary: truncate(input.storyBible.audienceHook || input.storyBible.season_arc || firstEvidence, 160),
+      function: '保留秘密或关系反转，推动下一集',
+      source_evidence: sourceEvidence.slice(2, 3).length ? sourceEvidence.slice(2, 3) : sourceEvidence.slice(0, 1),
+    },
+  ];
+  const emotionalCurve = ['处境建立', '压力上升', '秘密行动', '悬念收束'];
+  const qualityScore = Math.min(
+    100,
+    20 +
+      10 +
+      keyScenes.length * 10 +
+      Math.min(characters.length, 2) * 10 +
+      Math.min(locations.length, 1) * 10 +
+      Math.min(sourceEvidence.length, 3) * 5 +
+      15
+  );
+
+  return completeEpisodePlan(
+    {
+      id: `project-metadata:${input.projectId}:episode-plan:episode-1`,
+      project_id: input.projectId,
+      projectId: input.projectId,
+      episode_id: 'episode-1',
+      episodeId: 'episode-1',
+      story_bible_id: input.storyBible.id,
+      episodeNo: 1,
+      episode_no: 1,
+      title,
+      status: 'draft',
+      durationSec: 300,
+      duration_target_sec: 300,
+      logline: truncate(input.storyBible.logline || `${title} 建立第一集追看钩子。`, 220),
+      beginning: `建立${characters[0] || '主角'}在${locations[0] || '核心地点'}的处境，并明确第一集行动目标。`,
+      middle: `围绕${input.storyBible.theme || '核心主题'}放大关系压力，推动人物做出选择。`,
+      end: input.storyBible.audienceHook || '以秘密即将暴露或关键人物出现作为下一集钩子。',
+      plotGoal: truncate(input.storyBible.mainConflict || input.storyBible.logline || title, 220),
+      emotionCurve: emotionalCurve,
+      emotional_curve: emotionalCurve,
+      key_scenes: keyScenes,
+      coolPoints: ['隐秘行动带来的紧张感', '关系压力下的主动选择'],
+      hook: input.storyBible.audienceHook || '结尾钩子：秘密即将暴露，迫使主角做出下一步选择。',
+      characters,
+      locations,
+      appearingCharacterNames: characters,
+      appearingLocationNames: locations,
+      productionStatus: 'ready',
+      sourceEvidence,
+      source_evidence: sourceEvidence,
+      quality_score: qualityScore,
+      blockers: [],
+      missingReasons: [],
+      generatedAt: input.generatedAt,
+      version: EPISODE_PLAN_VERSION,
+      missingReason: null,
+    },
+    input.storyBible
+  );
 }
 
 @Injectable()
@@ -269,191 +302,63 @@ export class ProjectStudioEpisodePlanService {
       throw new NotFoundException('Project not found');
     }
 
-    const episodePlans = asArray(asRecord(asRecord(project.metadata).animationStudio).episodePlans);
+    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    const storyBible = storyBibleFromMetadata(projectId, animationStudio.storyBible);
+    const episodePlans = asArray(animationStudio.episodePlans);
     if (episodePlans.length === 0) {
       return buildMissing(projectId, '剧集规划未生成');
     }
 
-    return episodePlans.map((episodePlan) => ({
-      ...buildMissing(projectId, '剧集规划未生成')[0],
-      ...(asRecord(episodePlan) as JsonRecord),
-      projectId,
-      status: 'done',
-      missingReason: null,
-      version: asString(asRecord(episodePlan).version) || EPISODE_PLAN_VERSION,
-    })) as EpisodePlanDTO[];
+    return episodePlans.map((episodePlan) =>
+      completeEpisodePlan(
+        {
+          ...buildMissing(projectId, '剧集规划未生成')[0],
+          ...(asRecord(episodePlan) as JsonRecord),
+          projectId,
+          project_id: projectId,
+          episodeId: asString(asRecord(episodePlan).episodeId) || asString(asRecord(episodePlan).episode_id),
+          episode_id: asString(asRecord(episodePlan).episode_id) || asString(asRecord(episodePlan).episodeId),
+          episodeNo: asNumber(asRecord(episodePlan).episodeNo) || asNumber(asRecord(episodePlan).episode_no) || 0,
+          episode_no: asNumber(asRecord(episodePlan).episode_no) || asNumber(asRecord(episodePlan).episodeNo) || 0,
+          version: asString(asRecord(episodePlan).version) || EPISODE_PLAN_VERSION,
+        } as EpisodePlanDTO,
+        storyBible
+      )
+    );
   }
 
   async generateEpisodePlans(projectId: string, organizationId: string): Promise<EpisodePlanDTO[]> {
     const project = await this.prisma.project.findFirst({
       where: { id: projectId, organizationId },
-      select: { id: true, name: true, metadata: true },
+      select: { id: true, metadata: true },
     });
 
     if (!project) {
       throw new NotFoundException('Project not found');
     }
 
-    const [storySource, novelSource, novel, legacyEpisodes, sceneDrafts] = await Promise.all([
-      this.prisma.storySource.findFirst({
-        where: { projectId },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true, name: true },
-      }),
-      this.prisma.novelSource.findUnique({
-        where: { projectId },
-        select: { id: true, fileName: true },
-      }),
-      this.prisma.novel.findUnique({
-        where: { projectId },
-        select: {
-          id: true,
-          title: true,
-          chapters: {
-            orderBy: { index: 'asc' },
-            take: 12,
-            select: { id: true, index: true, title: true, summary: true, rawContent: true },
-          },
-        },
-      }),
-      this.prisma.episode.findMany({
-        where: { projectId },
-        orderBy: { index: 'asc' },
-        take: 24,
-        select: {
-          id: true,
-          index: true,
-          name: true,
-          summary: true,
-          status: true,
-          _count: { select: { scenes: true } },
-        },
-      }),
-      this.prisma.sceneDraft.findMany({
-        where: { chapter: { novelSource: { projectId } } },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          chapterId: true,
-          analysisResult: true,
-        },
-      }),
-    ]);
-
-    if (!storySource && !novelSource && !novel && legacyEpisodes.length === 0) {
-      throw new BadRequestException('No StorySource, legacy novel source, novel chapters, or episode source found');
-    }
-
-    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
-    const characterNames = textFromMetadataItems(asArray(animationStudio.characterBibles), 'name');
-    const locationNames = textFromMetadataItems(asArray(animationStudio.locationBibles), 'name');
-    const generatedAt = new Date().toISOString();
-
-    const sceneCandidatesByChapterId = new Map<string, NovelSceneCandidate[]>();
-    const coverageBlockersByChapterId = new Map<string, string[]>();
-    for (const sceneDraft of sceneDrafts) {
-      const extraction = sceneCandidateExtractionFromAnalysisResult(sceneDraft.analysisResult);
-      const candidates = extraction.candidates;
-      if (extraction.blockedReason) {
-        coverageBlockersByChapterId.set(sceneDraft.chapterId, [
-          ...(coverageBlockersByChapterId.get(sceneDraft.chapterId) || []),
-          extraction.blockedReason,
-        ]);
-      }
-      if (candidates.length === 0) continue;
-      sceneCandidatesByChapterId.set(sceneDraft.chapterId, [
-        ...(sceneCandidatesByChapterId.get(sceneDraft.chapterId) || []),
-        ...candidates,
-      ]);
-    }
-
-    let episodeInputs: EpisodePlanInput[];
-    if ((novel?.chapters || []).length > 0) {
-      const chapterEpisodeInputs: Array<EpisodePlanInput | null> = (novel?.chapters || []).map(
-        (chapter, index, chapters) => {
-          const chapterSceneCandidates = sceneCandidatesByChapterId.get(chapter.id) || [];
-          if (chapterSceneCandidates.length < MIN_USABLE_SCENE_CANDIDATES_PER_CHAPTER) return null;
-          const candidateCharacters = uniq(chapterSceneCandidates.flatMap((candidate) => candidate.characters));
-          const candidateLocations = uniq(
-            chapterSceneCandidates.map((candidate) => candidate.location).filter(Boolean) as string[]
-          );
-          const candidateText = chapterSceneCandidates
-            .slice(0, 8)
-            .map((candidate) => [candidate.text, candidate.conflictSummary].filter(Boolean).join(' '))
-            .join('\n');
-          return {
-            episodeId: null,
-            episodeNo: index + 1,
-            title: `第 ${index + 1} 集：${chapter.title || `第 ${chapter.index} 章`}`,
-            text: candidateText,
-            nextTitle: chapters[index + 1]?.title || null,
-            characterNames: uniq([...candidateCharacters, ...characterNames]),
-            locationNames: uniq([...candidateLocations, ...locationNames]),
-            sourceEvidence: chapterSceneCandidates
-              .slice(0, 6)
-              .map((candidate) => formatSceneCandidateEvidence(candidate)),
-          };
-        }
-      );
-      episodeInputs = chapterEpisodeInputs.filter(isEpisodePlanInput);
-    } else if (legacyEpisodes.length > 0) {
-      episodeInputs = legacyEpisodes.map((episode, index) => ({
-        episodeId: episode.id,
-        episodeNo: episode.index || index + 1,
-        title: episode.name || `第 ${episode.index || index + 1} 集`,
-        text: [episode.name, episode.summary, `旧结构场景数：${episode._count.scenes}`, episode.status]
-          .filter(Boolean)
-          .join(' '),
-        nextTitle: legacyEpisodes[index + 1]?.name || null,
-        characterNames,
-        locationNames,
-        sourceEvidence: [] as string[],
-      }));
-    } else {
-      episodeInputs = [];
-    }
-
-    if (episodeInputs.length === 0) {
-      if ((novel?.chapters || []).length > 0) {
-        const blockerReasons = (novel?.chapters || []).flatMap((chapter) => {
-          const chapterLabel = chapter.title || `chapter:${chapter.id}`;
-          const chapterReasons = coverageBlockersByChapterId.get(chapter.id);
-          if (chapterReasons && chapterReasons.length > 0) {
-            return chapterReasons.map((reason) => `${chapterLabel}: ${reason}`);
-          }
-          return [
-            `${chapterLabel}: no usable scene candidates mapped from coverageReport.sceneCandidates`,
-          ];
-        });
-        throw new BadRequestException(
-          formatEpisodePlanBlockerMessage(blockerReasons)
-        );
-      }
-      throw new BadRequestException('No usable chapters or legacy episodes found for EpisodePlan generation');
-    }
-
-    const fallbackCharacters = characterNames.length > 0 ? characterNames : ['待识别主角'];
-    const fallbackLocations = locationNames.length > 0 ? locationNames : ['待识别场景'];
-    const episodePlans = episodeInputs.map((input) =>
-      buildEpisodePlan({
-        projectId,
-        episodeId: input.episodeId,
-        episodeNo: input.episodeNo,
-        title: input.title,
-        text: input.text || project.name || storySource?.name || novel?.title || novelSource?.fileName || '',
-        nextTitle: input.nextTitle,
-        characterNames: input.characterNames.length > 0 ? input.characterNames : fallbackCharacters,
-        locationNames: input.locationNames.length > 0 ? input.locationNames : fallbackLocations,
-        sourceEvidence: input.sourceEvidence,
-        generatedAt,
-      })
-    );
-
     const metadata = asRecord(project.metadata);
+    const animationStudio = asRecord(metadata.animationStudio);
+    const storyBible = storyBibleFromMetadata(projectId, animationStudio.storyBible);
+    const storyBibleQuality = validateStoryBibleQuality(storyBible);
+    if (storyBible.status !== 'ready' || !storyBibleQuality.passed) {
+      return blockedEpisodePlan(projectId, `StoryBible 未生成或未通过质量门槛：${storyBibleQuality.blockers.join('；')}`);
+    }
+
+    const episodePlan = buildEpisodePlan({
+      projectId,
+      storyBible,
+      generatedAt: new Date().toISOString(),
+    });
+    if (episodePlan.status !== 'ready') {
+      return [episodePlan];
+    }
+
     const nextMetadata = {
       ...metadata,
       animationStudio: {
         ...animationStudio,
-        episodePlans,
+        episodePlans: [episodePlan],
       },
     } as unknown as Prisma.InputJsonValue;
 
@@ -462,6 +367,6 @@ export class ProjectStudioEpisodePlanService {
       data: { metadata: nextMetadata },
     });
 
-    return episodePlans;
+    return [episodePlan];
   }
 }

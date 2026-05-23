@@ -252,20 +252,43 @@ export interface LocationBibleDTO {
 
 export interface EpisodePlanDTO {
   id: string | null;
+  project_id?: string;
   projectId: string;
+  episode_id?: string | null;
   episodeId: string | null;
+  story_bible_id?: string | null;
   episodeNo: number;
+  episode_no?: number;
   title: string;
-  status: StudioCapabilityStatus;
+  status: StudioCapabilityStatus | 'draft' | 'ready';
   durationSec: number | null;
+  duration_target_sec?: number | null;
+  logline?: string | null;
+  beginning?: string | null;
+  middle?: string | null;
+  end?: string | null;
   plotGoal: string | null;
   emotionCurve: string[];
+  emotional_curve?: string[];
+  key_scenes?: Array<{
+    scene_id: string;
+    title: string;
+    summary: string;
+    function: string;
+    source_evidence: string[];
+  }>;
   coolPoints: string[];
   hook: string | null;
+  characters?: string[];
+  locations?: string[];
   appearingCharacterNames: string[];
   appearingLocationNames: string[];
   productionStatus: string | null;
   sourceEvidence: string[];
+  source_evidence?: string[];
+  quality_score?: number | null;
+  blockers?: string[];
+  missingReasons?: string[];
   generatedAt: string | null;
   version: string;
   missingReason: string | null;
@@ -273,14 +296,31 @@ export interface EpisodePlanDTO {
 
 export interface DirectorScriptDTO {
   id: string | null;
+  director_script_id?: string;
+  project_id?: string;
   projectId: string;
+  episode_id?: string;
   episodeId: string;
   episodeNo: number | null;
   title: string;
-  status: StudioCapabilityStatus;
+  status: StudioCapabilityStatus | 'draft' | 'ready';
   logline: string | null;
   beats: string[];
   sceneBeats: string[];
+  visual_strategy?: string | null;
+  pacing_strategy?: string | null;
+  camera_strategy?: string | null;
+  character_blocking?: string | null;
+  lighting_strategy?: string | null;
+  sound_strategy?: string | null;
+  scene_beats?: Array<{
+    beat_id: string;
+    scene_id: string;
+    dramatic_function: string;
+    action: string;
+    camera_intent: string;
+    source_evidence: string[];
+  }>;
   keyCharacters: string[];
   keyLocations: string[];
   visualTone: string | null;
@@ -288,8 +328,13 @@ export interface DirectorScriptDTO {
   soundDesign: string | null;
   pacingNotes: string | null;
   directorNotes: string[];
+  transition_notes?: string[];
   sourceEpisodePlanId: string | null;
   sourceEvidence: string[];
+  source_evidence?: string[];
+  quality_score?: number | null;
+  blockers?: string[];
+  missingReasons?: string[];
   generatedAt: string | null;
   version: string;
   missingReason: string | null;

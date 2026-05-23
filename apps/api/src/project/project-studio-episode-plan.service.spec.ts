@@ -1,51 +1,60 @@
-import { BadRequestException } from '@nestjs/common';
-import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
+import {
+  ProjectStudioEpisodePlanService,
+  validateEpisodePlanQuality,
+} from './project-studio-episode-plan.service';
+
+function readyStoryBible(overrides: Record<string, any> = {}) {
+  return {
+    id: 'story-bible-1',
+    projectId: 'project-1',
+    project_id: 'project-1',
+    source_type: 'legacy_novel_source',
+    status: 'ready',
+    title: '表姑娘又又又又跑了',
+    logline: '薛知盈在静水院藏起秘密，家族压力逼近。',
+    genre: '古风剧情',
+    theme: '身份秩序下的自我选择',
+    tone: '克制、悬念、关系张力',
+    story_world: {
+      setting: '古代宅院',
+      core_locations: [{ location_id: 'location-1', name: '静水院', description: '核心院落' }],
+    },
+    main_characters: [
+      { character_id: 'character-1', name: '薛知盈', role: '主角', motivation: '守住秘密', conflict: '家族压力' },
+      { character_id: 'character-2', name: '王嬷嬷', role: '压力角色', motivation: '维护规矩', conflict: '盘问主角' },
+    ],
+    worldview: '古代宅院关系世界',
+    mainConflict: '秘密与家族压力',
+    emotionalArc: '从躲避到选择',
+    characterRelationship: '薛知盈与王嬷嬷形成规训压力',
+    longTermForeshadowing: [],
+    visualStyle: '古风动画',
+    targetPlatform: '短剧动漫',
+    adaptationStrategy: '先故事圣经后剧集规划',
+    audienceHook: '秘密即将暴露。',
+    sourceSummary: '薛知盈在静水院藏书。',
+    sourceEvidence: ['Novel:novel-1', 'NovelSource:novel-source-1', 'ChapterEvidence:1:薛知盈在静水院藏书'],
+    source_evidence: ['Novel:novel-1', 'NovelSource:novel-source-1', 'ChapterEvidence:1:薛知盈在静水院藏书'],
+    quality_score: 85,
+    generatedAt: '2026-05-23T00:00:00.000Z',
+    version: 'studio-story-bible-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
 
 function createPrismaMock(overrides: Record<string, any> = {}) {
   return {
     project: {
       findFirst: jest.fn().mockResolvedValue({
         id: 'project-1',
-        name: '表姑娘又又又又跑了',
         metadata: {},
       }),
       update: jest.fn().mockResolvedValue({ id: 'project-1' }),
     },
-    storySource: {
-      findFirst: jest.fn().mockResolvedValue(null),
-    },
-    novelSource: {
-      findUnique: jest.fn().mockResolvedValue(null),
-    },
-    novel: {
-      findUnique: jest.fn().mockResolvedValue(null),
-    },
-    episode: {
-      findMany: jest.fn().mockResolvedValue([]),
-    },
-    sceneDraft: {
-      findMany: jest.fn().mockResolvedValue([]),
-    },
     ...overrides,
   };
 }
-
-const sceneCandidate = {
-  candidateId: 'chapter-1:scene-candidate:1',
-  index: 1,
-  source: 'paragraph',
-  text: '薛知盈在静水院偷读律法书，王嬷嬷忽然来查，春桃守在门外。',
-  characters: ['薛知盈', '王嬷嬷', '春桃'],
-  location: '静水院',
-  timeOfDay: '午后',
-  emotionalTone: '压抑',
-  conflictSummary: '秘密读书与家族规训冲突',
-  dialogueBlockIndexes: [1, 2, 3],
-  actionBlockIndexes: [1, 2, 3],
-  sourceBlockIndexes: [1],
-  confidence: 'high',
-  traceReason: '人物、地点、对白、动作同时命中',
-};
 
 describe('ProjectStudioEpisodePlanService', () => {
   it('returns a missing EpisodePlan DTO when metadata has no episode plans', async () => {
@@ -59,60 +68,44 @@ describe('ProjectStudioEpisodePlanService', () => {
     expect(episodePlans[0].missingReason).toBe('剧集规划未生成');
   });
 
-  it('generates deterministic EpisodePlan records from legacy novel chapters', async () => {
+  it('returns blocked when StoryBible is missing and does not write metadata', async () => {
+    const prisma = createPrismaMock();
+    const service = new ProjectStudioEpisodePlanService(prisma as any);
+
+    const episodePlans = await service.generateEpisodePlans('project-1', 'org-1');
+
+    expect(episodePlans[0].status).toBe('blocked');
+    expect(episodePlans[0].missingReason).toContain('StoryBible 未生成或未通过质量门槛');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('returns blocked when StoryBible fields are incomplete', async () => {
     const prisma = createPrismaMock({
       project: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'project-1',
-          name: '表姑娘又又又又跑了',
-          metadata: {
-            animationStudio: {
-              characterBibles: [
-                { id: 'character-1', name: '薛知盈', status: 'done' },
-                { id: 'character-2', name: '王嬷嬷', status: 'done' },
-              ],
-              locationBibles: [
-                { id: 'location-1', name: '静水院', status: 'done' },
-                { id: 'location-2', name: '云墨斋', status: 'done' },
-              ],
-            },
-          },
+          metadata: { animationStudio: { storyBible: { id: 'story-bible-1', status: 'ready', title: '残缺' } } },
         }),
         update: jest.fn().mockResolvedValue({ id: 'project-1' }),
       },
-      novelSource: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-source-1',
-          fileName: '表姑娘又又又又跑了.txt',
+    });
+    const service = new ProjectStudioEpisodePlanService(prisma as any);
+
+    const episodePlans = await service.generateEpisodePlans('project-1', 'org-1');
+
+    expect(episodePlans[0].status).toBe('blocked');
+    expect(episodePlans[0].missingReason).toContain('缺少 StorySource 或 NovelSource compatibility');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('generates only the first ready EpisodePlan from a ready StoryBible and persists it', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: { animationStudio: { storyBible: readyStoryBible() } },
         }),
-      },
-      novel: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-1',
-          title: '表姑娘又又又又跑了',
-          chapters: [
-            {
-              id: 'chapter-1',
-              index: 1,
-              title: '第一章',
-              summary: '薛知盈在静水院偷读律法书，王嬷嬷忽然来查。',
-              rawContent: '春桃守在门外，云墨斋里仍留着旧书和墨砚。',
-            },
-          ],
-        }),
-      },
-      sceneDraft: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            chapterId: 'chapter-1',
-            analysisResult: {
-              coverageReport: {
-                qualityGate: { status: 'pass' },
-                sceneCandidates: [sceneCandidate],
-              },
-            },
-          },
-        ]),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
       },
     });
     const service = new ProjectStudioEpisodePlanService(prisma as any);
@@ -122,37 +115,36 @@ describe('ProjectStudioEpisodePlanService', () => {
     expect(episodePlans).toHaveLength(1);
     expect(episodePlans[0]).toEqual(
       expect.objectContaining({
+        episode_id: 'episode-1',
+        episodeId: 'episode-1',
+        episode_no: 1,
         episodeNo: 1,
-        title: '第 1 集：第一章',
-        status: 'done',
-        version: 'studio-episode-plan-v1',
-        productionStatus: 'draft',
+        story_bible_id: 'story-bible-1',
+        status: 'ready',
+        duration_target_sec: 300,
       })
     );
-    expect(episodePlans[0].appearingCharacterNames).toEqual(
-      expect.arrayContaining(['薛知盈', '王嬷嬷'])
-    );
-    expect(episodePlans[0].appearingLocationNames).toEqual(expect.arrayContaining(['静水院']));
-    expect(episodePlans[0].coolPoints.length).toBeGreaterThan(0);
-    expect(episodePlans[0].plotGoal).toContain('薛知盈在静水院');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('scene-candidate:chapter-1:scene-candidate:1');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('confidence:high');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('sourceBlocks:1');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('dialogueBlocks:1,2,3');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain('actionBlocks:1,2,3');
+    expect(episodePlans[0].beginning).toContain('薛知盈');
+    expect(episodePlans[0].middle).toBeTruthy();
+    expect(episodePlans[0].end).toBeTruthy();
+    expect(episodePlans[0].key_scenes).toHaveLength(3);
+    expect(episodePlans[0].characters).toEqual(expect.arrayContaining(['薛知盈', '王嬷嬷']));
+    expect(episodePlans[0].locations).toEqual(expect.arrayContaining(['静水院']));
+    expect(episodePlans[0].source_evidence?.length).toBeGreaterThanOrEqual(3);
+    expect(episodePlans[0].quality_score).toBeGreaterThanOrEqual(70);
     expect(prisma.project.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'project-1' },
         data: {
           metadata: expect.objectContaining({
             animationStudio: expect.objectContaining({
-              episodePlans: expect.arrayContaining([
+              episodePlans: [
                 expect.objectContaining({
-                  episodeNo: 1,
-                  status: 'done',
+                  episode_id: 'episode-1',
+                  status: 'ready',
                   version: 'studio-episode-plan-v1',
                 }),
-              ]),
+              ],
             }),
           }),
         },
@@ -160,283 +152,45 @@ describe('ProjectStudioEpisodePlanService', () => {
     );
   });
 
-  it('generates EpisodePlan records from legacy episodes without replacing old episode APIs', async () => {
-    const prisma = createPrismaMock({
-      episode: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: 'episode-1',
-            index: 1,
-            name: '第一集',
-            summary: '薛知盈在静水院被王嬷嬷盘问。',
-            status: 'ready',
-            _count: { scenes: 4 },
-          },
-        ]),
+  it('blocks EpisodePlan when source_evidence is insufficient', () => {
+    const storyBible = readyStoryBible();
+    const result = validateEpisodePlanQuality(
+      {
+        id: 'episode-plan-1',
+        projectId: 'project-1',
+        episodeId: 'episode-1',
+        episodeNo: 1,
+        title: '第一集',
+        status: 'ready',
+        durationSec: 300,
+        beginning: '开端',
+        middle: '中段',
+        end: '结尾',
+        plotGoal: '目标',
+        emotionCurve: ['开端', '压力', '钩子'],
+        key_scenes: [
+          { scene_id: 's1', title: 's1', summary: 's1', function: '开端', source_evidence: ['Novel:1'] },
+          { scene_id: 's2', title: 's2', summary: 's2', function: '中段', source_evidence: [] },
+          { scene_id: 's3', title: 's3', summary: 's3', function: '结尾', source_evidence: [] },
+        ],
+        coolPoints: [],
+        hook: '钩子',
+        characters: ['薛知盈', '王嬷嬷'],
+        locations: ['静水院'],
+        appearingCharacterNames: ['薛知盈', '王嬷嬷'],
+        appearingLocationNames: ['静水院'],
+        productionStatus: 'ready',
+        sourceEvidence: ['Novel:1'],
+        source_evidence: ['Novel:1'],
+        quality_score: 80,
+        generatedAt: null,
+        version: 'studio-episode-plan-v1',
+        missingReason: null,
       },
-    });
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    const episodePlans = await service.generateEpisodePlans('project-1', 'org-1');
-
-    expect(episodePlans[0].episodeId).toBe('episode-1');
-    expect(episodePlans[0].title).toBe('第一集');
-    expect(episodePlans[0].plotGoal).toContain('静水院');
-  });
-
-  it('prefers coverageReport scene candidates over legacy episodes when novel chapters exist', async () => {
-    const prisma = createPrismaMock({
-      novelSource: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-source-1',
-          fileName: '表姑娘又又又又跑了.txt',
-        }),
-      },
-      novel: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-1',
-          title: '表姑娘又又又又跑了',
-          chapters: [
-            {
-              id: 'chapter-1',
-              index: 1,
-              title: '第一章',
-              summary: '旧摘要不应优先。',
-              rawContent: '旧正文。',
-            },
-          ],
-        }),
-      },
-      episode: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: 'legacy-episode-1',
-            index: 1,
-            name: '旧结构第一集',
-            summary: '旧结构摘要不能覆盖 scene candidate。',
-            status: 'ready',
-            _count: { scenes: 4 },
-          },
-        ]),
-      },
-      sceneDraft: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            chapterId: 'chapter-1',
-            analysisResult: {
-              coverageReport: {
-                qualityGate: { status: 'pass' },
-                sceneCandidates: [sceneCandidate],
-              },
-            },
-          },
-        ]),
-      },
-    });
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    const episodePlans = await service.generateEpisodePlans('project-1', 'org-1');
-
-    expect(episodePlans).toHaveLength(1);
-    expect(episodePlans[0].episodeId).toBeNull();
-    expect(episodePlans[0].title).toBe('第 1 集：第一章');
-    expect(episodePlans[0].sourceEvidence.join('\n')).toContain(
-      'scene-candidate:chapter-1:scene-candidate:1'
+      storyBible as any
     );
-    expect(episodePlans[0].plotGoal).not.toContain('旧结构摘要不能覆盖');
-  });
 
-  it('blocks EpisodePlan generation from novel chapters when scene candidates are missing', async () => {
-    const prisma = createPrismaMock({
-      novelSource: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-source-1',
-          fileName: '表姑娘又又又又跑了.txt',
-        }),
-      },
-      novel: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-1',
-          title: '表姑娘又又又又跑了',
-          chapters: [
-            {
-              id: 'chapter-1',
-              index: 1,
-              title: '第一章',
-              summary: '只有旧摘要，没有可追踪 scene candidate。',
-              rawContent: '旧正文。',
-            },
-          ],
-        }),
-      },
-      sceneDraft: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            chapterId: 'chapter-1',
-            analysisResult: {
-              coverageReport: {
-                qualityGate: { status: 'blocked' },
-                sceneCandidates: [],
-              },
-            },
-          },
-        ]),
-      },
-      episode: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            id: 'legacy-episode-1',
-            index: 1,
-            name: '旧结构第一集',
-            summary: '不应在 scene candidate 缺失时回退。',
-            status: 'ready',
-            _count: { scenes: 4 },
-          },
-        ]),
-      },
-    });
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
-      /No usable scene candidates found for EpisodePlan generation/
-    );
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(/quality gate blocked/);
-    expect(prisma.project.update).not.toHaveBeenCalled();
-  });
-
-  it('explains the coverage shortage when scene candidates are below the usable threshold', async () => {
-    const prisma = createPrismaMock({
-      novelSource: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-source-1',
-          fileName: '表姑娘又又又又跑了.txt',
-        }),
-      },
-      novel: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-1',
-          title: '表姑娘又又又又跑了',
-          chapters: [
-            {
-              id: 'chapter-1',
-              index: 1,
-              title: '第一章',
-              summary: '只有低置信度候选。',
-              rawContent: '旧正文。',
-            },
-          ],
-        }),
-      },
-      sceneDraft: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            chapterId: 'chapter-1',
-            analysisResult: {
-              coverageReport: {
-                sceneCandidateCount: 1,
-                characterCount: 0,
-                locationCount: 0,
-                dialogueBlockCount: 0,
-                actionBlockCount: 0,
-                missingCapabilities: ['character_extraction', 'location_extraction'],
-                qualityGate: {
-                  status: 'warning',
-                  warnings: ['low_character_coverage'],
-                  nextActions: ['rerun scene candidate extraction'],
-                },
-                sceneCandidates: [
-                  {
-                    ...sceneCandidate,
-                    candidateId: 'chapter-1:scene-candidate:low',
-                    confidence: 'low',
-                  },
-                ],
-              },
-            },
-          },
-        ]),
-      },
-    });
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
-      /usable scene candidates below threshold/
-    );
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
-      /missing:character_extraction/
-    );
-    expect(prisma.project.update).not.toHaveBeenCalled();
-  });
-
-  it('blocks EpisodePlan generation when scene candidates are not traceable enough for downstream scripts', async () => {
-    const prisma = createPrismaMock({
-      novelSource: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-source-1',
-          fileName: '表姑娘又又又又跑了.txt',
-        }),
-      },
-      novel: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'novel-1',
-          title: '表姑娘又又又又跑了',
-          chapters: [
-            {
-              id: 'chapter-1',
-              index: 1,
-              title: '第一章',
-              summary: '候选缺少来源块和叙事证据。',
-              rawContent: '旧正文。',
-            },
-          ],
-        }),
-      },
-      sceneDraft: {
-        findMany: jest.fn().mockResolvedValue([
-          {
-            chapterId: 'chapter-1',
-            analysisResult: {
-              coverageReport: {
-                sceneCandidateCount: 1,
-                characterCount: 1,
-                locationCount: 0,
-                dialogueBlockCount: 0,
-                actionBlockCount: 0,
-                qualityGate: {
-                  status: 'warning',
-                  warnings: ['scene_candidate_trace_incomplete'],
-                },
-                sceneCandidates: [
-                  {
-                    ...sceneCandidate,
-                    location: undefined,
-                    dialogueBlockIndexes: [],
-                    actionBlockIndexes: [],
-                    sourceBlockIndexes: [],
-                    confidence: 'medium',
-                  },
-                ],
-              },
-            },
-          },
-        ]),
-      },
-    });
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toThrow(
-      /usable scene candidates below threshold[\s\S]*warning:scene_candidate_trace_incomplete/
-    );
-    expect(prisma.project.update).not.toHaveBeenCalled();
-  });
-
-  it('does not generate EpisodePlan when no story, novel, chapter, or episode source exists', async () => {
-    const prisma = createPrismaMock();
-    const service = new ProjectStudioEpisodePlanService(prisma as any);
-
-    await expect(service.generateEpisodePlans('project-1', 'org-1')).rejects.toBeInstanceOf(
-      BadRequestException
-    );
-    expect(prisma.project.update).not.toHaveBeenCalled();
+    expect(result.passed).toBe(false);
+    expect(result.blockers).toContain('source_evidence 少于 3 条。');
   });
 });

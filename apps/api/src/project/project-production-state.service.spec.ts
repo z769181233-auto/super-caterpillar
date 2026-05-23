@@ -102,6 +102,93 @@ function readyStoryBible(overrides: Record<string, any> = {}) {
   };
 }
 
+function readyEpisodePlan(overrides: Record<string, any> = {}) {
+  return {
+    id: 'episode-plan-1',
+    projectId: 'project-1',
+    project_id: 'project-1',
+    episodeId: 'episode-1',
+    episode_id: 'episode-1',
+    story_bible_id: 'story-bible-1',
+    episodeNo: 1,
+    episode_no: 1,
+    title: '第 1 集：秘密将露',
+    status: 'ready',
+    durationSec: 300,
+    duration_target_sec: 300,
+    logline: '薛知盈在静水院藏起秘密。',
+    beginning: '建立薛知盈在静水院的处境。',
+    middle: '关系压力上升。',
+    end: '秘密即将暴露。',
+    plotGoal: '秘密与家族压力',
+    emotionCurve: ['处境建立', '压力上升', '悬念收束'],
+    emotional_curve: ['处境建立', '压力上升', '悬念收束'],
+    key_scenes: [
+      { scene_id: 's1', title: '处境建立', summary: '藏书', function: '开端', source_evidence: ['Novel:1'] },
+      { scene_id: 's2', title: '压力上升', summary: '盘问', function: '推进', source_evidence: ['NovelSource:1'] },
+      { scene_id: 's3', title: '钩子收束', summary: '将露', function: '钩子', source_evidence: ['ChapterEvidence:1'] },
+    ],
+    coolPoints: ['隐秘行动'],
+    hook: '秘密即将暴露。',
+    characters: ['薛知盈', '王嬷嬷'],
+    locations: ['静水院'],
+    appearingCharacterNames: ['薛知盈', '王嬷嬷'],
+    appearingLocationNames: ['静水院'],
+    productionStatus: 'ready',
+    sourceEvidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
+    source_evidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
+    quality_score: 85,
+    generatedAt: '2026-05-23T00:00:00.000Z',
+    version: 'studio-episode-plan-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
+
+function readyDirectorScript(overrides: Record<string, any> = {}) {
+  return {
+    id: 'director-script-1',
+    director_script_id: 'director-script-1',
+    projectId: 'project-1',
+    project_id: 'project-1',
+    episodeId: 'episode-1',
+    episode_id: 'episode-1',
+    episodeNo: 1,
+    title: '第 1 集：秘密将露',
+    status: 'ready',
+    logline: '导演层执行稿',
+    beats: ['开场', '推进', '收束'],
+    sceneBeats: ['场次 1', '场次 2', '场次 3'],
+    visual_strategy: '古风宅院空间层次',
+    pacing_strategy: '处境建立 -> 压力上升 -> 悬念收束',
+    camera_strategy: '导演层镜头语言方向，不拆 shot_no',
+    character_blocking: '薛知盈与王嬷嬷形成压迫关系',
+    lighting_strategy: '柔和自然光与局部阴影',
+    sound_strategy: '脚步声、翻书声和停顿',
+    scene_beats: [
+      { beat_id: 'b1', scene_id: 's1', dramatic_function: '开端', action: '藏书', camera_intent: '中景', source_evidence: ['Novel:1'] },
+      { beat_id: 'b2', scene_id: 's2', dramatic_function: '推进', action: '盘问', camera_intent: '推近', source_evidence: ['NovelSource:1'] },
+      { beat_id: 'b3', scene_id: 's3', dramatic_function: '钩子', action: '将露', camera_intent: '留白', source_evidence: ['ChapterEvidence:1'] },
+    ],
+    keyCharacters: ['薛知盈', '王嬷嬷'],
+    keyLocations: ['静水院'],
+    visualTone: '古风宅院空间层次',
+    dialogueStyle: '身份差异控制台词口吻',
+    soundDesign: '声音方向',
+    pacingNotes: '节奏说明',
+    directorNotes: ['不生成 ShotScript'],
+    transition_notes: ['用环境声承接'],
+    sourceEpisodePlanId: 'episode-plan-1',
+    sourceEvidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
+    source_evidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
+    quality_score: 85,
+    generatedAt: '2026-05-23T00:00:00.000Z',
+    version: 'studio-director-script-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
+
 describe('ProjectProductionStateService', () => {
   it('returns missing stages for an empty project without throwing', async () => {
     const prisma = createPrismaMock();
@@ -400,9 +487,7 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
-              episodePlans: [
-                { id: 'episode-plan-1', episodeNo: 1, title: '第一集', status: 'done' },
-              ],
+              episodePlans: [readyEpisodePlan()],
             },
           },
         }),
@@ -436,17 +521,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
-              episodePlans: [
-                { id: 'episode-plan-1', episodeNo: 1, title: '第一集', status: 'done' },
-              ],
-              directorScripts: [
-                {
-                  id: 'director-script-1',
-                  episodeId: 'episode-1',
-                  title: '第一集',
-                  status: 'done',
-                },
-              ],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
             },
           },
         }),
@@ -490,19 +566,19 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
               directorScripts: [
-                {
-                  id: 'director-script-1',
-                  episodeId: 'episode-1',
-                  title: '第一集',
-                  status: 'done',
+                readyDirectorScript({
                   keyLocations: ['静水院'],
                   sourceEvidence: [
                     'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈说：“不能被发现。”',
                     'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:薛知盈 | dialogueBlocks:2 | actionBlocks:2 | text:旧摘要：薛知盈藏起书页。',
                   ],
-                },
+                  source_evidence: [
+                    'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈说：“不能被发现。”',
+                    'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:薛知盈 | dialogueBlocks:2 | actionBlocks:2 | text:旧摘要：薛知盈藏起书页。',
+                  ],
+                }),
               ],
             },
           },
@@ -557,17 +633,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
               locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
-              directorScripts: [
-                {
-                  id: 'director-script-1',
-                  episodeId: 'episode-1',
-                  title: '第一集',
-                  status: 'done',
-                  keyLocations: ['静水院'],
-                  sourceEvidence,
-                },
-              ],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript({ keyLocations: ['静水院'], sourceEvidence, source_evidence: sourceEvidence })],
             },
           },
         }),
@@ -631,8 +698,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
-              directorScripts: [{ id: 'director-script-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
               shotScripts: [
                 {
                   shot_id: 'shot-script-1',
@@ -676,8 +743,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
-              directorScripts: [{ id: 'director-script-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
               shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
               storyboardAssets: [
                 {
@@ -723,8 +790,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
-              directorScripts: [{ id: 'director-script-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
               shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
               storyboardAssets: [
                 {
@@ -765,8 +832,8 @@ describe('ProjectProductionStateService', () => {
               storyBible: readyStoryBible(),
               characterBibles: [{ id: 'character-1', status: 'done' }],
               locationBibles: [{ id: 'location-1', status: 'done' }],
-              episodePlans: [{ id: 'episode-plan-1', status: 'done' }],
-              directorScripts: [{ id: 'director-script-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
               shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
               storyboardAssets: [
                 {
