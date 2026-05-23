@@ -48,7 +48,10 @@ export function StudioDirectorScriptPage({
     [state]
   );
   const realDirectorScripts = directorScripts.filter(
-    (directorScript) => directorScript.status === 'done'
+    (directorScript) => directorScript.status === 'ready'
+  );
+  const blockedDirectorScripts = directorScripts.filter(
+    (directorScript) => directorScript.status === 'blocked'
   );
   const visibleDirectorScripts = useMemo(() => {
     if (!episodeId || episodeId === 'episode-placeholder') return realDirectorScripts;
@@ -84,7 +87,7 @@ export function StudioDirectorScriptPage({
         }}
       >
         <p style={{ color: 'var(--text-secondary)', margin: '0 0 0.5rem' }}>
-          Phase 2E：只生成 DirectorScript，不接镜头台本/分镜/图片/视频
+          Phase 1B-B：只生成第一集 DirectorScript，不接 ShotScript/分镜/图片/视频/worker
         </p>
         <div
           style={{
@@ -97,7 +100,7 @@ export function StudioDirectorScriptPage({
           <div>
             <h1 style={{ margin: 0 }}>导演剧本 DirectorScript</h1>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              从已生成的 EpisodePlan 生成每集导演层执行稿：剧情 logline、场次节奏、关键人物、关键场景、视觉基调、对白口吻、声音方向和导演备注。
+              从 ready EpisodePlan 生成第一集导演层执行稿：视觉策略、节奏策略、镜头策略、角色调度、灯光、声音和场次节拍。
             </p>
           </div>
           <button
@@ -123,12 +126,16 @@ export function StudioDirectorScriptPage({
 
         {!isDone && (
           <Callout
-            tone="warn"
-            title="导演剧本未生成"
+            tone={blockedDirectorScripts.length > 0 ? 'error' : 'warn'}
+            title={blockedDirectorScripts.length > 0 ? '导演剧本质量不足' : '导演剧本未生成'}
             body={
-              directorStage?.missingReason ||
-              directorScripts[0]?.missingReason ||
-              '当前还没有 DirectorScript。这里不会把旧剧情章节、旧场景摘要或旧视频脚本伪装成正式导演剧本。'
+              blockedDirectorScripts[0]?.blockers?.length
+                ? blockedDirectorScripts[0].blockers.join('；')
+                : blockedDirectorScripts[0]?.missingReasons?.length
+                  ? blockedDirectorScripts[0].missingReasons.join('；')
+                  : directorStage?.missingReason ||
+                    directorScripts[0]?.missingReason ||
+                    '当前还没有 DirectorScript。这里不会把旧剧情章节、旧场景摘要或旧视频脚本伪装成正式导演剧本。'
             }
           />
         )}
@@ -136,7 +143,7 @@ export function StudioDirectorScriptPage({
         <Callout
           tone="info"
           title="边界说明"
-          body="本页只生成导演层结构化文本。ShotScript、分镜图、StoryboardAsset、图片资产、视频提示词和镜头视频仍未生成。"
+          body="本页只生成第一集导演层结构化文本。ShotScript、分镜图、StoryboardAsset、图片资产、视频提示词、镜头视频和 worker 均不会启动。"
         />
 
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
@@ -170,6 +177,16 @@ function DirectorScriptCard({ directorScript }: { directorScript: DirectorScript
       </h2>
       <div style={{ display: 'grid', gap: '0.85rem' }}>
         <InfoRow label="导演 Logline" value={directorScript.logline || '未生成'} />
+        <InfoRow label="director_script_id" value={directorScript.director_script_id || directorScript.id || '未生成'} />
+        <InfoRow label="episode_id" value={directorScript.episode_id || directorScript.episodeId || '未绑定'} />
+        <InfoRow label="状态" value={directorScript.status || '未生成'} />
+        <InfoRow label="质量评分" value={formatNullable(directorScript.quality_score)} />
+        <InfoRow label="视觉策略" value={directorScript.visual_strategy || directorScript.visualTone || '未生成'} />
+        <InfoRow label="节奏策略" value={directorScript.pacing_strategy || directorScript.pacingNotes || '未生成'} />
+        <InfoRow label="镜头策略" value={directorScript.camera_strategy || '未生成'} />
+        <InfoRow label="角色调度" value={directorScript.character_blocking || '未生成'} />
+        <InfoRow label="灯光策略" value={directorScript.lighting_strategy || '未生成'} />
+        <InfoRow label="声音策略" value={directorScript.sound_strategy || directorScript.soundDesign || '未生成'} />
         <InfoRow
           label="导演节拍"
           value={directorScript.beats.length > 0 ? directorScript.beats.join('\n') : '未生成'}
@@ -178,6 +195,7 @@ function DirectorScriptCard({ directorScript }: { directorScript: DirectorScript
           label="场次节奏"
           value={directorScript.sceneBeats.length > 0 ? directorScript.sceneBeats.join('\n') : '未生成'}
         />
+        <InfoRow label="结构化场次节拍" value={formatSceneBeats(directorScript)} />
         <InfoRow
           label="关键人物"
           value={
@@ -206,15 +224,55 @@ function DirectorScriptCard({ directorScript }: { directorScript: DirectorScript
         />
         <InfoRow label="来源 EpisodePlan" value={directorScript.sourceEpisodePlanId || '未绑定'} />
         <InfoRow
+          label="过渡说明"
+          value={directorScript.transition_notes?.length ? directorScript.transition_notes.join('\n') : '未生成'}
+        />
+        <InfoRow
           label="来源证据"
           value={
-            directorScript.sourceEvidence.length > 0 ? directorScript.sourceEvidence.join('\n') : '未生成'
+            (directorScript.source_evidence?.length ? directorScript.source_evidence : directorScript.sourceEvidence).length > 0
+              ? (directorScript.source_evidence?.length ? directorScript.source_evidence : directorScript.sourceEvidence).join('\n')
+              : '未生成'
+          }
+        />
+        <InfoRow
+          label="阻断原因"
+          value={
+            directorScript.blockers?.length
+              ? directorScript.blockers.join('\n')
+              : directorScript.missingReasons?.length
+                ? directorScript.missingReasons.join('\n')
+                : directorScript.missingReason || '无'
           }
         />
         <InfoRow label="协议版本" value={directorScript.version || '未生成'} />
       </div>
     </article>
   );
+}
+
+function formatNullable(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'string' && value.trim()) return value;
+  return '未生成';
+}
+
+function formatSceneBeats(directorScript: DirectorScriptDTO): string {
+  const beats = directorScript.scene_beats || [];
+  if (!beats.length) return '未生成';
+  return beats
+    .map((beat) =>
+      [
+        `${beat.beat_id} · ${beat.scene_id}`,
+        `戏剧功能：${beat.dramatic_function}`,
+        `动作：${beat.action}`,
+        `镜头意图：${beat.camera_intent}`,
+        beat.source_evidence.length ? `证据：${beat.source_evidence.join('；')}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    )
+    .join('\n\n');
 }
 
 function Callout({ tone, title, body }: { tone: 'error' | 'warn' | 'info'; title: string; body: string }) {
