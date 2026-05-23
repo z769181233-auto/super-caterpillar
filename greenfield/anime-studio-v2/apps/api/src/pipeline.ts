@@ -15,7 +15,7 @@ import { createId } from './id';
 
 const DEFAULT_LOCATIONS = ['祖宅庭院', '城门大道', '宗门广场', '山门石阶', '藏书阁', '夜雨长廊', '偏殿', '禁地边缘'];
 const CHAPTER_HEADING_PATTERN =
-  /^(第\s*[0-9零一二三四五六七八九十百千万两〇\d]+[章节卷回集部篇]\s*[^\n]{0,60}|(?:序章|楔子|引子|终章|尾声|后记|番外)\s*[^\n]{0,60})$/gm;
+  /^(第\s*[0-9零一二三四五六七八九十百千万两〇]+[章节卷回集部篇]\s*[^\n]{0,60}|(?:序章|楔子|引子|终章|尾声|后记|番外)\s*[^\n]{0,60})$/gm;
 const TITLE_PLACEHOLDERS = new Set(['', '未命名小说', '雨夜真相', '小说正文', '新建小说']);
 
 function now(): string {
@@ -764,7 +764,7 @@ function buildSyntheticChapters(text: string): NovelChapter[] {
 
 function normalizeHeading(heading: string): string {
   const cleaned = heading.replace(/\s+/g, ' ').trim();
-  const numbered = cleaned.match(/^(第\s*[0-9零一二三四五六七八九十百千万两〇\d]+[章节卷回集部篇])\s*(.*)$/);
+  const numbered = cleaned.match(/^(第\s*[0-9零一二三四五六七八九十百千万两〇]+[章节卷回集部篇])\s*(.*)$/);
   if (!numbered) {
     return cleaned;
   }

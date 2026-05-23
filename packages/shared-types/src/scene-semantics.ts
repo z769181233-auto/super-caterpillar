@@ -629,8 +629,11 @@ function extractActionBlocks(text: string, seededCharacters: string[]): NovelNar
 }
 
 function detectChapterMarkerCount(rawText: string): number {
-  const matches = rawText.match(/(?:^|\n)\s*(?:第\s*[一二三四五六七八九十百千万0-9]+\s*[章节回集卷部]|[0-9]+\s*[.、]\s*)/g);
-  return matches?.length ?? 0;
+  const chapterMarkerPattern =
+    /^(?:第\s*[一二三四五六七八九十百千万0-9]+\s*[章节回集卷部]|[0-9]+\s*[.、]\s*)/;
+  return rawText
+    .split('\n')
+    .reduce((count, line) => count + (chapterMarkerPattern.test(line.trimStart()) ? 1 : 0), 0);
 }
 
 function classifyBlockCoverage(count: number, paragraphCount: number): 'none' | 'partial' | 'present' {

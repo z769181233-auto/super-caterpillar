@@ -18,8 +18,10 @@ import { SecretEncryptionService } from '../../src/security/api-security/secret-
 process.env.API_KEY_MASTER_KEY_B64 =
   process.env.API_KEY_MASTER_KEY_B64 || Buffer.alloc(32, 7).toString('base64');
 
-function computeSignature(secret: string, apiKey: string, nonce: string, timestamp: string, body: string) {
-  return createHmac('sha256', secret).update(`${apiKey}${nonce}${timestamp}${body}`).digest('hex');
+function computeSignature(secret: string, credentialId: string, nonce: string, timestamp: string, body: string) {
+  return createHmac('sha256', secret)
+    .update(`${credentialId}${nonce}${timestamp}${body}`)
+    .digest('hex');
 }
 
 const TEST_PATH = '/api/audit/logs';
@@ -36,10 +38,10 @@ const TEST_BODY_JSON = JSON.stringify(TEST_BODY);
 describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  const API_KEY = process.env.TEST_API_KEY || 'test-key';
+  const CREDENTIAL_ID = process.env.HMAC_CONTRACT_CREDENTIAL_ID || 'test-key';
   const API_SECRET = process.env.TEST_API_SECRET || 'test-secret';
   let userId: string;
-  let apiKeyId: string;
+  let credentialRecordId: string;
   let secretEncryptionService: SecretEncryptionService;
 
   beforeAll(async () => {
@@ -65,9 +67,9 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
     // Create API Key
     const encrypted = secretEncryptionService.encryptSecret(API_SECRET);
-    const apiKey = await prisma.apiKey.create({
+    const credentialRecord = await prisma.apiKey.create({
       data: {
-        key: API_KEY,
+        key: CREDENTIAL_ID,
         secretEnc: encrypted.enc,
         secretEncIv: encrypted.iv,
         secretEncTag: encrypted.tag,
@@ -76,11 +78,11 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
         ownerUserId: userId,
       },
     });
-    apiKeyId = apiKey.id;
+    credentialRecordId = credentialRecord.id;
   });
 
   afterAll(async () => {
-    if (apiKeyId) await prisma.apiKey.delete({ where: { id: apiKeyId } }).catch(() => {});
+    if (credentialRecordId) await prisma.apiKey.delete({ where: { id: credentialRecordId } }).catch(() => {});
     if (userId) await prisma.user.delete({ where: { id: userId } }).catch(() => {});
     await app.close();
   });
@@ -89,7 +91,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     it('should return 4003 when signature is missing', async () => {
       const response = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('Content-Type', 'application/json')
         .send(TEST_BODY);
 
@@ -111,7 +113,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
       const response = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('X-Signature', 'invalid-signature')
         .set('X-Nonce', invalidNonce)
         .set('X-Timestamp', Math.floor(Date.now() / 1000).toString())
@@ -142,7 +144,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
     it('should return 4004 when nonce is reused', async () => {
       const firstSignature = computeSignature(
         API_SECRET,
-        API_KEY,
+        CREDENTIAL_ID,
         validNonce,
         validTimestamp,
         TEST_BODY_JSON
@@ -151,7 +153,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       // First request with valid nonce
       const firstResponse = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('X-Signature', firstSignature)
         .set('X-Nonce', validNonce)
         .set('X-Timestamp', validTimestamp)
@@ -163,7 +165,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       const replayTimestamp = Math.floor((Date.now() + 1000) / 1000).toString();
       const replaySignature = computeSignature(
         API_SECRET,
-        API_KEY,
+        CREDENTIAL_ID,
         validNonce,
         replayTimestamp,
         TEST_BODY_JSON
@@ -172,7 +174,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
       // Second request with same nonce
       const secondResponse = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('X-Signature', replaySignature)
         .set('X-Nonce', validNonce) // Same nonce
         .set('X-Timestamp', replayTimestamp)
@@ -196,7 +198,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
       const response = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('X-Signature', 'test-signature')
         .set('X-Nonce', `nonce-${Date.now()}`)
         .set('X-Timestamp', oldTimestamp)
@@ -212,7 +214,7 @@ describe('HMAC/Nonce Contract Tests (APISpec V1.1)', () => {
 
       const response = await request(app.getHttpServer())
         .post(TEST_PATH)
-        .set('X-Api-Key', API_KEY)
+        .set('X-Api-Key', CREDENTIAL_ID)
         .set('X-Signature', 'test-signature')
         .set('X-Nonce', `nonce-${Date.now()}`)
         .set('X-Timestamp', futureTimestamp)
