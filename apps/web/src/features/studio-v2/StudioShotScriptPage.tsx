@@ -7,7 +7,10 @@ import {
   getStudioProductionState,
   getStudioShotScripts,
 } from './api';
-import { formatStudioGenerationError } from './studio-generation-blockers';
+import {
+  formatStudioGenerationError,
+  getShotScriptGenerationGate,
+} from './studio-generation-blockers';
 import { StudioLayout } from './StudioLayout';
 
 interface StudioShotScriptPageProps {
@@ -50,8 +53,16 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
     return matching.length > 0 ? matching : realShotScripts;
   }, [episodeId, realShotScripts]);
   const isDone = realShotScripts.length > 0;
+  const generationGate = useMemo(
+    () => getShotScriptGenerationGate(state, isDone),
+    [state, isDone]
+  );
 
   async function handleGenerate() {
+    if (!generationGate.canGenerate) {
+      setError(generationGate.reason);
+      return;
+    }
     setGenerating(true);
     setError(null);
     try {
@@ -97,13 +108,13 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={generating}
+            disabled={generating || !generationGate.canGenerate}
             style={{
-              background: 'var(--accent)',
+              background: generationGate.canGenerate ? 'var(--accent)' : 'var(--border-subtle)',
               border: 'none',
               borderRadius: '999px',
-              color: '#0f1115',
-              cursor: generating ? 'not-allowed' : 'pointer',
+              color: generationGate.canGenerate ? '#0f1115' : 'var(--text-secondary)',
+              cursor: generating || !generationGate.canGenerate ? 'not-allowed' : 'pointer',
               fontWeight: 800,
               minWidth: '158px',
               padding: '0.85rem 1.15rem',
@@ -114,6 +125,30 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
         </div>
 
         {error && <Callout tone="error" title="生成失败" body={error} />}
+
+        {!generationGate.canGenerate && generationGate.reason && (
+          <Callout tone="error" title="生成入口已暂停" body={generationGate.reason} />
+        )}
+
+        {state?.shotScriptQualityGate &&
+          state.shotScriptQualityGate.status !== 'passed' && (
+            <Callout
+              tone={state.shotScriptQualityGate.status === 'blocked' ? 'error' : 'warn'}
+              title="镜头台本质量门槛"
+              body={[
+                `状态：${state.shotScriptQualityGate.status}`,
+                `镜头候选：${state.shotScriptQualityGate.candidateShotCount}/${state.shotScriptQualityGate.minShotCount}`,
+                state.shotScriptQualityGate.reasons.length
+                  ? `原因：${state.shotScriptQualityGate.reasons.join('；')}`
+                  : null,
+                state.shotScriptQualityGate.nextAction
+                  ? `下一步：${state.shotScriptQualityGate.nextAction}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join('\n')}
+            />
+          )}
 
         {!isDone && (
           <Callout
