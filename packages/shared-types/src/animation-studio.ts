@@ -154,21 +154,49 @@ export interface StorySourceCompatibilityDTO {
 
 export interface StoryBibleDTO {
   id: string | null;
+  project_id?: string;
   projectId: string;
-  status: StudioCapabilityStatus;
+  source_type?: StorySourceKind;
+  status: StudioCapabilityStatus | 'draft' | 'ready';
   title: string | null;
+  logline?: string | null;
   genre: string | null;
+  theme?: string | null;
+  tone?: string | null;
+  story_world?: {
+    setting: string | null;
+    time_period?: string | null;
+    core_locations: Array<{
+      location_id: string;
+      name: string;
+      description: string | null;
+    }>;
+  } | null;
+  main_characters?: Array<{
+    character_id: string;
+    name: string;
+    role: string | null;
+    motivation: string | null;
+    conflict: string | null;
+    visual_identity?: string | null;
+  }>;
   worldview: string | null;
   mainConflict: string | null;
   emotionalArc: string | null;
   characterRelationship: string | null;
   longTermForeshadowing: string[];
+  season_arc?: string | null;
+  continuity_rules?: string[];
   visualStyle: string | null;
   targetPlatform: string | null;
   adaptationStrategy: string | null;
   audienceHook: string | null;
   sourceSummary: string | null;
   sourceEvidence: string[];
+  source_evidence?: string[];
+  quality_score?: number | null;
+  blockers?: string[];
+  missingReasons?: string[];
   generatedAt: string | null;
   version: string;
   missingReason: string | null;
