@@ -80,6 +80,7 @@ describe('FilmIRService Smoke Tests', () => {
     filmIR: {
       findFirst: jest.fn(),
       findUnique: jest.fn(),
+      findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
     },
@@ -148,7 +149,7 @@ describe('FilmIRService Smoke Tests', () => {
   describe('findByScene()', () => {
     it('应返回 sceneId 对应的最新 FilmIR', async () => {
       mockPrismaService.scene.findUnique.mockResolvedValue({ id: 'scene-001' });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(mockDraftFilmIR);
+      mockPrismaService.filmIR.findMany.mockResolvedValue([mockDraftFilmIR]);
 
       const result = await service.findByScene('scene-001');
       expect(result?.sceneId).toBe('scene-001');
@@ -161,7 +162,7 @@ describe('FilmIRService Smoke Tests', () => {
 
     it('Scene 无 FilmIR 时应返回 null（不报错）', async () => {
       mockPrismaService.scene.findUnique.mockResolvedValue({ id: 'scene-001' });
-      mockPrismaService.filmIR.findFirst.mockResolvedValue(null);
+      mockPrismaService.filmIR.findMany.mockResolvedValue([]);
 
       const result = await service.findByScene('scene-001');
       expect(result).toBeNull();

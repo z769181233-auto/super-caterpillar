@@ -12,6 +12,13 @@ describe('ShotPreviewFastAdapter', () => {
   let adapter: ShotPreviewFastAdapter;
   let redisService: RedisService;
   let routerAdapter: ShotRenderRouterAdapter;
+  const context = {
+    traceId: 'trace-preview-test',
+    projectId: 'project-preview-test',
+    userId: 'user-preview-test',
+    jobId: 'job-preview-test',
+    attempt: 1,
+  };
 
   beforeEach(() => {
     // Mock Redis
@@ -46,7 +53,7 @@ describe('ShotPreviewFastAdapter', () => {
 
     const result = await adapter.invoke({
       payload: { prompt: 'test' },
-      context: {},
+      context,
       engineKey: 'shot_preview',
       jobType: 'shot_render',
     });
@@ -70,7 +77,7 @@ describe('ShotPreviewFastAdapter', () => {
 
     const result = await adapter.invoke({
       payload: { prompt: 'test' },
-      context: {},
+      context,
       engineKey: 'shot_preview',
       jobType: 'shot_render',
     });
