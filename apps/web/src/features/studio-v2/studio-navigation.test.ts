@@ -8,10 +8,11 @@ test('buildStudioV2Nav returns locale-aware Studio v2 paths', () => {
 
   assert.equal(byId.get('overview'), '/zh/projects/project-1/studio');
   assert.equal(byId.get('source'), '/zh/projects/project-1/studio/source');
-  assert.equal(byId.get('audit'), '/zh/projects/project-1/studio/audit');
   assert.equal(byId.get('shots'), '/zh/projects/project-1/studio/episodes/episode-9/shots');
   assert.equal(byId.get('storyboards'), '/zh/projects/project-1/studio/episodes/episode-9/storyboards');
+  assert.equal(byId.get('images'), '/zh/projects/project-1/studio/episodes/episode-9/storyboards');
   assert.equal(byId.get('videos'), '/zh/projects/project-1/studio/episodes/episode-9/videos');
-  assert.equal(byId.get('review'), '/zh/projects/project-1/studio/review');
-  assert.equal(byId.get('export'), '/zh/projects/project-1/studio/export');
+  assert.equal(nav.find((item) => item.id === 'storyboards')?.locked, true);
+  assert.equal(nav.find((item) => item.id === 'images')?.locked, true);
+  assert.equal(nav.find((item) => item.id === 'videos')?.locked, true);
 });

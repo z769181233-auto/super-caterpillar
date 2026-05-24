@@ -42,6 +42,11 @@ export function StudioAssetNav({ locale, projectId }: StudioAssetNavProps) {
             }}
           >
             {item.label}
+            {item.locked ? (
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+                未开始，不开放生成
+              </span>
+            ) : null}
           </Link>
         );
       })}
