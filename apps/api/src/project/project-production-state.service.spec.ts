@@ -146,6 +146,10 @@ function readyEpisodePlan(overrides: Record<string, any> = {}) {
 }
 
 function readyDirectorScript(overrides: Record<string, any> = {}) {
+  const shotEvidence = [1, 2, 3, 4].map(
+    (index) =>
+      `scene-candidate:chapter-1:scene-candidate:${index} | confidence:high | sourceBlocks:${index} | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:${index} | actionBlocks:${index} | text:薛知盈说：“第 ${index} 个秘密不能暴露。”`
+  );
   return {
     id: 'director-script-1',
     director_script_id: 'director-script-1',
@@ -166,9 +170,9 @@ function readyDirectorScript(overrides: Record<string, any> = {}) {
     lighting_strategy: '柔和自然光与局部阴影',
     sound_strategy: '脚步声、翻书声和停顿',
     scene_beats: [
-      { beat_id: 'b1', scene_id: 's1', dramatic_function: '开端', action: '藏书', camera_intent: '中景', source_evidence: ['Novel:1'] },
-      { beat_id: 'b2', scene_id: 's2', dramatic_function: '推进', action: '盘问', camera_intent: '推近', source_evidence: ['NovelSource:1'] },
-      { beat_id: 'b3', scene_id: 's3', dramatic_function: '钩子', action: '将露', camera_intent: '留白', source_evidence: ['ChapterEvidence:1'] },
+      { beat_id: 'b1', scene_id: 's1', dramatic_function: '开端', action: '藏书', camera_intent: '中景', source_evidence: [shotEvidence[0]] },
+      { beat_id: 'b2', scene_id: 's2', dramatic_function: '推进', action: '盘问', camera_intent: '推近', source_evidence: [shotEvidence[1]] },
+      { beat_id: 'b3', scene_id: 's3', dramatic_function: '钩子', action: '将露', camera_intent: '留白', source_evidence: [shotEvidence[2], shotEvidence[3]] },
     ],
     keyCharacters: ['薛知盈', '王嬷嬷'],
     keyLocations: ['静水院'],
@@ -179,12 +183,70 @@ function readyDirectorScript(overrides: Record<string, any> = {}) {
     directorNotes: ['不生成 ShotScript'],
     transition_notes: ['用环境声承接'],
     sourceEpisodePlanId: 'episode-plan-1',
-    sourceEvidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
-    source_evidence: ['Novel:1', 'NovelSource:1', 'ChapterEvidence:1'],
+    sourceEvidence: shotEvidence,
+    source_evidence: shotEvidence,
     quality_score: 85,
     generatedAt: '2026-05-23T00:00:00.000Z',
     version: 'studio-director-script-v1',
     missingReason: null,
+    ...overrides,
+  };
+}
+
+function readyShotScript(shotNo: number, overrides: Record<string, any> = {}) {
+  return {
+    project_id: 'project-1',
+    shot_id: `shot-script-${shotNo}`,
+    episode_id: 'episode-1',
+    shot_no: shotNo,
+    duration_sec: 6,
+    location_id: 'location-1',
+    scene_id: `episode-1:scene-${Math.ceil(shotNo / 2)}`,
+    characters: [
+      {
+        character_id: 'character-1',
+        character_name: '薛知盈',
+        costume_id: 'costume-1',
+        expression: '警觉',
+        position: '画面中景',
+        action: '藏书',
+        asset_ids: [],
+      },
+    ],
+    character_id: 'character-1',
+    costume_id: 'costume-1',
+    expression: '警觉',
+    position: '画面中景',
+    action: '薛知盈藏书',
+    shot_size: '中景',
+    camera_movement: '缓慢推进',
+    dialogue: [{ character_id: 'character-1', character_name: '薛知盈', text: '不能让书被发现。', delivery: '压低声音' }],
+    voiceover: null,
+    sound_design: ['脚步声'],
+    lighting: '午后柔光',
+    emotion: '紧张',
+    visual_goal: '呈现人物压力',
+    plot_function: '推动秘密暴露',
+    storyboard_prompt: '分镜构图提示词，本阶段不生成图片。',
+    video_prompt: '视频提示词草案，本阶段不调用视频生成。',
+    continuity_notes: ['连续性备注'],
+    quality_score: {
+      overall: 88,
+      story_clarity: 88,
+      character_consistency: 88,
+      location_consistency: 88,
+      cinematic_quality: 88,
+      publish_readiness: 88,
+      needs_revision: false,
+    },
+    status: 'ready',
+    source_director_script_id: 'director-script-1',
+    source_evidence: [
+      `scene-candidate:chapter-1:scene-candidate:${shotNo} | confidence:high | sourceBlocks:${shotNo} | location:静水院 | characters:薛知盈、王嬷嬷 | dialogueBlocks:${shotNo} | actionBlocks:${shotNo} | text:薛知盈说：“第 ${shotNo} 个秘密不能暴露。”`,
+    ],
+    generated_at: '2026-05-24T00:00:00.000Z',
+    version: 'studio-shot-script-v1',
+    missing_reason: null,
     ...overrides,
   };
 }
@@ -539,16 +601,15 @@ describe('ProjectProductionStateService', () => {
       'Project.metadata.animationStudio.directorScripts:1'
     );
     expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
-      'blocked'
+      'missing'
     );
     expect(state.shotScriptQualityGate).toEqual(
       expect.objectContaining({
-        status: 'blocked',
+        status: 'passed',
         source: 'studio_director_scripts',
-        candidateShotCount: 0,
+        candidateShotCount: 8,
       })
     );
-    expect(state.riskFlags.join('\n')).toContain('镜头台本文本质量不足');
     expect(state.riskFlags.join('\n')).toContain(
       'StoryBible、CharacterBible、LocationBible、EpisodePlan 与 DirectorScript 已生成'
     );
@@ -593,8 +654,8 @@ describe('ProjectProductionStateService', () => {
       expect.objectContaining({
         status: 'blocked',
         source: 'studio_director_scripts',
-        candidateShotCount: 2,
-        minShotCount: 4,
+        candidateShotCount: 8,
+        minShotCount: 8,
         dialogueExtractionRate: 1,
         characterBindingRate: 1,
         locationBindingRate: 1,
@@ -604,7 +665,6 @@ describe('ProjectProductionStateService', () => {
     );
     expect(state.shotScriptQualityGate.reasons).toEqual(
       expect.arrayContaining([
-        '镜头候选数不足：2/4',
         '存在占位或旧摘要文本，不能作为正式镜头台本输入。',
       ])
     );
@@ -648,7 +708,7 @@ describe('ProjectProductionStateService', () => {
       expect.objectContaining({
         status: 'passed',
         source: 'studio_director_scripts',
-        candidateShotCount: 4,
+        candidateShotCount: 8,
         reasons: [],
       })
     );
@@ -700,14 +760,7 @@ describe('ProjectProductionStateService', () => {
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
-              shotScripts: [
-                {
-                  shot_id: 'shot-script-1',
-                  episode_id: 'episode-1',
-                  shot_no: 1,
-                  status: 'ready',
-                },
-              ],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
             },
           },
         }),
@@ -721,7 +774,7 @@ describe('ProjectProductionStateService', () => {
       'done'
     );
     expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.evidence).toContain(
-      'Project.metadata.animationStudio.shotScripts:1'
+      'Project.metadata.animationStudio.shotScripts:8'
     );
     expect(state.stages.find((stage) => stage.key === 'storyboard_ready')?.status).toBe(
       'missing'
