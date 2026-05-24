@@ -1,5 +1,12 @@
 import type { ProductionStateDTO, ProductionStageDTO } from '@scu/shared-types';
 
+const TEXT_PIPELINE_STAGE_KEYS = [
+  'story_bible_ready',
+  'episodes_ready',
+  'director_script_ready',
+  'shot_script_ready',
+] as const;
+
 export function getDoneStages(state: ProductionStateDTO): ProductionStageDTO[] {
   return state.stages.filter((stage) => stage.status === 'done');
 }
@@ -11,17 +18,45 @@ export function getMissingOrBlockedStages(state: ProductionStateDTO): Production
 }
 
 export function getRequiredEmptyStateLabels(state: ProductionStateDTO): string[] {
-  const requiredKeys = new Set([
-    'story_bible_ready',
-    'characters_ready',
-    'episodes_ready',
-    'director_script_ready',
-    'shot_script_ready',
-  ]);
+  const requiredKeys = new Set([...TEXT_PIPELINE_STAGE_KEYS, 'characters_ready', 'locations_ready']);
   return state.stages
     .filter((stage) => requiredKeys.has(stage.key))
     .filter((stage) => stage.status !== 'done')
     .map((stage) => stage.missingReason || `${stage.label}未生成`);
+}
+
+export function getTextPipelineStages(state: ProductionStateDTO): ProductionStageDTO[] {
+  return TEXT_PIPELINE_STAGE_KEYS.map(
+    (key) => state.stages.find((stage) => stage.key === key)
+  ).filter(Boolean) as ProductionStageDTO[];
+}
+
+export function isTextPipelineReady(state: ProductionStateDTO): boolean {
+  return getTextPipelineStages(state).every((stage) => stage.status === 'done');
+}
+
+export function getFirstTextPipelineBlocker(state: ProductionStateDTO): ProductionStageDTO | null {
+  return (
+    getTextPipelineStages(state).find(
+      (stage) => stage.status === 'missing' || stage.status === 'blocked' || stage.status === 'failed'
+    ) || null
+  );
+}
+
+export function formatTextPipelineSummary(state: ProductionStateDTO): string[] {
+  const textStages = getTextPipelineStages(state);
+  const firstBlocker = getFirstTextPipelineBlocker(state);
+  const storyboardStage = state.stages.find((stage) => stage.key === 'storyboard_ready');
+  const videoPromptStage = state.stages.find((stage) => stage.key === 'video_prompt_ready');
+
+  return [
+    `文本链路：${isTextPipelineReady(state) ? '已完成' : '未完成'}`,
+    ...textStages.map((stage) => `${stage.label}：${stage.status}`),
+    `最早阻断：${firstBlocker ? `${firstBlocker.label} - ${firstBlocker.missingReason || firstBlocker.status}` : '无'}`,
+    `下一步：${firstBlocker?.nextAction || '文本链路已到 ShotScript；下一阶段仍需方案设计'}`,
+    `Storyboard：${storyboardStage?.status || '未知'}（ShotScript ready 不会自动生成）`,
+    `VideoPrompt：${videoPromptStage?.status || '未知'}（ShotScript video_prompt 只是文本草案）`,
+  ];
 }
 
 export function formatLegacySummary(state: ProductionStateDTO): string[] {

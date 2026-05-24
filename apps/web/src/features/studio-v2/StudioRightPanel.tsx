@@ -1,6 +1,11 @@
 'use client';
 
 import type { ProductionStateDTO } from '@scu/shared-types';
+import {
+  getFirstTextPipelineBlocker,
+  getTextPipelineStages,
+  isTextPipelineReady,
+} from './studio-state-summary';
 
 interface StudioRightPanelProps {
   state: ProductionStateDTO | null;
@@ -19,7 +24,9 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
   const videoPromptStage = state?.stages.find((stage) => stage.key === 'video_prompt_ready');
   const episodeStage = state?.stages.find((stage) => stage.key === 'episodes_ready');
   const directorStage = state?.stages.find((stage) => stage.key === 'director_script_ready');
-  const canContinue = Boolean(state && state.riskFlags.length === 0);
+  const textPipelineStages = state ? getTextPipelineStages(state) : [];
+  const firstTextBlocker = state ? getFirstTextPipelineBlocker(state) : null;
+  const textPipelineReady = state ? isTextPipelineReady(state) : false;
 
   return (
     <aside
@@ -40,9 +47,37 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
         <p style={{ color: 'var(--text-secondary)' }}>
           {state ? `当前阶段：${state.currentStage}` : '正在读取生产状态'}
         </p>
-        <p style={{ color: canContinue ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-          是否可继续下一步：{canContinue ? '可继续' : '需要补齐缺失能力'}
+        <p style={{ color: textPipelineReady ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+          文本链路是否完成：{textPipelineReady ? '已完成到 ShotScript' : '仍有文本阶段阻断'}
         </p>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          是否可继续下一步：
+          {firstTextBlocker
+            ? `先处理 ${firstTextBlocker.label}`
+            : '只允许进入下一阶段方案设计，不自动进入视觉生成'}
+        </p>
+      </section>
+
+      <section>
+        {panelTitle('文本链路状态')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          {textPipelineStages.length ? (
+            textPipelineStages.map((stage) => (
+              <div key={stage.key}>
+                {stage.label}：{stage.status}
+              </div>
+            ))
+          ) : (
+            <div>状态读取中</div>
+          )}
+          <div>
+            最早阻断：
+            {firstTextBlocker
+              ? `${firstTextBlocker.label} - ${firstTextBlocker.missingReason || firstTextBlocker.status}`
+              : '无'}
+          </div>
+          <div>下一步：{firstTextBlocker?.nextAction || '文本链路封板后只做下一阶段方案设计'}</div>
+        </div>
       </section>
 
       <section>
@@ -121,7 +156,7 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
           <div>下一步：{shotScriptGate?.nextAction || '无'}</div>
           <div>Storyboard：{storyboardStage?.status || '--'}</div>
           <div>VideoPrompt：{videoPromptStage?.status || '--'}</div>
-          <div>边界：ShotScript ready 不会自动生成分镜、图片、视频或 worker job</div>
+          <div>边界：ShotScript ready 不会自动生成分镜、图片、视频、worker 或 job</div>
         </div>
       </section>
     </aside>

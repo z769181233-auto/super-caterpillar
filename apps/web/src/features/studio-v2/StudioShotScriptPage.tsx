@@ -46,13 +46,14 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
     () => state?.stages.find((stage) => stage.key === 'shot_script_ready') || null,
     [state]
   );
-  const realShotScripts = shotScripts.filter((shotScript) => shotScript.status !== 'missing');
+  const readyShotScripts = shotScripts.filter((shotScript) => shotScript.status === 'ready');
+  const displayableShotScripts = shotScripts.filter((shotScript) => shotScript.status !== 'missing');
   const visibleShotScripts = useMemo(() => {
-    if (!episodeId || episodeId === 'episode-placeholder') return realShotScripts;
-    const matching = realShotScripts.filter((shotScript) => shotScript.episode_id === episodeId);
-    return matching.length > 0 ? matching : realShotScripts;
-  }, [episodeId, realShotScripts]);
-  const isDone = realShotScripts.length > 0;
+    if (!episodeId || episodeId === 'episode-placeholder') return displayableShotScripts;
+    const matching = displayableShotScripts.filter((shotScript) => shotScript.episode_id === episodeId);
+    return matching.length > 0 ? matching : displayableShotScripts;
+  }, [episodeId, displayableShotScripts]);
+  const isDone = readyShotScripts.length > 0;
   const generationGate = useMemo(
     () => getShotScriptGenerationGate(state, isDone),
     [state, isDone]
@@ -158,6 +159,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
             title="镜头台本未生成"
             body={
               shotStage?.missingReason ||
+              (shotScripts[0]?.status === 'blocked' ? formatBlockers(shotScripts[0]) : null) ||
               shotScripts[0]?.missing_reason ||
               '当前还没有 ShotScript。这里不会把旧 Shot、旧摘要或旧视频脚本文本伪装成标准镜头台本。'
             }
