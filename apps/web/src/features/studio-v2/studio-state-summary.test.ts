@@ -111,6 +111,7 @@ test('Studio empty-state summary does not treat missing core assets as generated
     '角色绑定率：100%/100%',
     '场景绑定率：50%/100%',
     '证据绑定率：100%/100%',
+    '连续性备注：Phase 1B-C 要求 >= 80%，详情见 ShotScript 卡片',
     '占位文本：未发现',
     '阻断原因：镜头候选数不足：2/4；场景绑定率不足：50%/100%',
     '下一步：修复 sceneCandidates 后重试。',

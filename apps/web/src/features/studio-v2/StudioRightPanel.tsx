@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ProductionStateDTO } from '@scu/shared-types';
 import {
   getFirstTextPipelineBlocker,
@@ -8,25 +9,66 @@ import {
 } from './studio-state-summary';
 
 interface StudioRightPanelProps {
+  locale: string;
+  projectId: string;
   state: ProductionStateDTO | null;
+  stateError?: string | null;
+  onRetryState?: () => void;
 }
 
 function panelTitle(text: string) {
   return <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{text}</h3>;
 }
 
-export function StudioRightPanel({ state }: StudioRightPanelProps) {
+function compactStatus(status: string | undefined): string {
+  if (!status) return '未开始';
+  if (status === 'done') return 'READY';
+  if (status === 'blocked') return 'BLOCKED';
+  if (status === 'missing') return 'MISSING';
+  return status.toUpperCase();
+}
+
+function readableNextAction(state: ProductionStateDTO | null): string {
+  if (!state) return '请确认 API 服务已启动，然后刷新制作状态。';
+  const legacy = state.legacyDataSummary;
+  if (!legacy.hasStorySource && !legacy.hasNovelSource) return '先导入小说，或等待 AI 原创剧本入口开放。';
+  const blocker = getFirstTextPipelineBlocker(state);
+  if (!blocker) return '文本链路已完成到 ShotScript；下一阶段只能先做视觉资产方案设计。';
+  if (blocker.key === 'story_bible_ready') return '先生成或修复 StoryBible，再继续剧集规划。';
+  if (blocker.key === 'episodes_ready') return '先生成或修复第一集 EpisodePlan。';
+  if (blocker.key === 'director_script_ready') return '先生成或修复第一集 DirectorScript。';
+  if (blocker.key === 'shot_script_ready') return '先生成或修复第一集 ShotScript。';
+  return blocker.nextAction || '先处理当前阻断项。';
+}
+
+function primaryBlocker(state: ProductionStateDTO | null): string {
+  if (!state) return '制作状态暂时不可用';
+  const legacy = state.legacyDataSummary;
+  if (!legacy.hasStorySource && !legacy.hasNovelSource) return '还没有小说或剧本来源';
+  const blocker = getFirstTextPipelineBlocker(state);
+  return blocker ? `${blocker.label}：${blocker.missingReason || blocker.status}` : '无';
+}
+
+function actionLinkStyle() {
+  return {
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-primary)',
+    display: 'block',
+    fontWeight: 700,
+    padding: '0.75rem',
+    textDecoration: 'none',
+  };
+}
+
+export function StudioRightPanel({ locale, projectId, state, stateError = null, onRetryState }: StudioRightPanelProps) {
   const legacy = state?.legacyDataSummary;
-  const coverage = legacy?.sceneCandidateCoverage;
-  const shotScriptGate = state?.shotScriptQualityGate;
   const shotStage = state?.stages.find((stage) => stage.key === 'shot_script_ready');
   const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
   const videoPromptStage = state?.stages.find((stage) => stage.key === 'video_prompt_ready');
-  const episodeStage = state?.stages.find((stage) => stage.key === 'episodes_ready');
-  const directorStage = state?.stages.find((stage) => stage.key === 'director_script_ready');
   const textPipelineStages = state ? getTextPipelineStages(state) : [];
-  const firstTextBlocker = state ? getFirstTextPipelineBlocker(state) : null;
   const textPipelineReady = state ? isTextPipelineReady(state) : false;
+  const importHref = `/${locale}/projects/${projectId}/import-novel`;
 
   return (
     <aside
@@ -42,20 +84,33 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
         gap: '1.25rem',
       }}
     >
+      {stateError ? (
+        <section
+          style={{
+            border: '1px solid var(--hsl-error)',
+            borderRadius: 'var(--r-md)',
+            padding: '1rem',
+          }}
+        >
+          {panelTitle('制作状态暂不可用')}
+          <p style={{ color: 'var(--text-secondary)' }}>请确认 API 服务已启动，或刷新页面重试。</p>
+          <button type="button" onClick={onRetryState} style={{ padding: '0.6rem 0.8rem' }}>
+            Retry
+          </button>
+        </section>
+      ) : null}
+
       <section>
-        {panelTitle('质量 / 风险')}
+        {panelTitle('下一步')}
         <p style={{ color: 'var(--text-secondary)' }}>
-          {state ? `当前阶段：${state.currentStage}` : '正在读取生产状态'}
+          当前最早 blocker：<strong style={{ color: 'var(--text-primary)' }}>{primaryBlocker(state)}</strong>
         </p>
-        <p style={{ color: textPipelineReady ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-          文本链路是否完成：{textPipelineReady ? '已完成到 ShotScript' : '仍有文本阶段阻断'}
-        </p>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          是否可继续下一步：
-          {firstTextBlocker
-            ? `先处理 ${firstTextBlocker.label}`
-            : '只允许进入下一阶段方案设计，不自动进入视觉生成'}
-        </p>
+        <p style={{ color: 'var(--text-secondary)' }}>{readableNextAction(state)}</p>
+        {state && !legacy?.hasStorySource && !legacy?.hasNovelSource ? (
+          <Link href={importHref} style={actionLinkStyle()}>
+            导入小说
+          </Link>
+        ) : null}
       </section>
 
       <section>
@@ -64,99 +119,44 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
           {textPipelineStages.length ? (
             textPipelineStages.map((stage) => (
               <div key={stage.key}>
-                {stage.label}：{stage.status}
+                {stage.label}：{compactStatus(stage.status)}
               </div>
             ))
           ) : (
-            <div>状态读取中</div>
+            <div>{stateError ? '读取失败' : '等待状态'}</div>
           )}
-          <div>
-            最早阻断：
-            {firstTextBlocker
-              ? `${firstTextBlocker.label} - ${firstTextBlocker.missingReason || firstTextBlocker.status}`
-              : '无'}
-          </div>
-          <div>下一步：{firstTextBlocker?.nextAction || '文本链路封板后只做下一阶段方案设计'}</div>
+          <div>文本链路：{textPipelineReady ? '已完成到 ShotScript' : '尚未完成'}</div>
         </div>
       </section>
 
       <section>
-        {panelTitle('当前项目风险')}
-        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-          {(state?.riskFlags || ['状态读取中']).map((flag) => (
-            <li key={flag}>{flag}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        {panelTitle('缺失能力')}
-        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-          {(state?.missingCapabilities || ['状态读取中']).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        {panelTitle('可用旧资产')}
+        {panelTitle('视觉链路状态')}
         <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>旧小说：{legacy?.hasNovelSource ? '有' : '无'}</div>
+          <div>Storyboard：{compactStatus(storyboardStage?.status)} / 未开始</div>
+          <div>Image：LOCKED / 未开始</div>
+          <div>VideoPrompt：{compactStatus(videoPromptStage?.status)} / 未开始</div>
+          <div>Video：LOCKED / 未开始</div>
+          <div>边界：不会生成分镜、图片、视频，不会启动 worker 或新增 job。</div>
+        </div>
+      </section>
+
+      <section>
+        {panelTitle('来源与风险')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>StorySource：{legacy?.hasStorySource ? '有' : '无'}</div>
+          <div>旧 NovelSource：{legacy?.hasNovelSource ? '可兼容' : '无'}</div>
           <div>章节：{legacy?.novelChapterCount ?? '--'}</div>
-          <div>旧剧集：{legacy?.episodeCount ?? '--'}</div>
-          <div>旧场景：{legacy?.sceneCount ?? '--'}</div>
-          <div>旧镜头：{legacy?.shotCount ?? '--'}</div>
+          <div>风险：{state?.riskFlags?.length ? state.riskFlags[0] : stateError ? '制作状态读取失败' : '无'}</div>
         </div>
       </section>
 
       <section>
-        {panelTitle('小说分析质量')}
+        {panelTitle('镜头台本边界')}
         <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>场景候选状态：{coverage?.coverageStatus || '--'}</div>
-          <div>
-            可用场景候选：
-            {coverage ? `${coverage.usableSceneCandidateCount}/${Math.max(1, coverage.chapterCount)}` : '--'}
-          </div>
-          <div>缺失能力：{coverage?.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}</div>
-          <div>阻断原因：{coverage?.blockerReason || '无'}</div>
-        </div>
-      </section>
-
-      <section>
-        {panelTitle('剧集 / 导演门槛')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>EpisodePlan：{episodeStage?.status || '--'}</div>
-          <div>EpisodePlan 阻断：{episodeStage?.missingReason || '无'}</div>
-          <div>DirectorScript：{directorStage?.status || '--'}</div>
-          <div>DirectorScript 阻断：{directorStage?.missingReason || '无'}</div>
-        </div>
-      </section>
-
-      <section>
-        {panelTitle('镜头台本门槛')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>ShotScript：{shotStage?.status || '--'}</div>
-          <div>状态：{shotScriptGate?.status || '--'}</div>
-          <div>
-            镜头候选：
-            {shotScriptGate
-              ? `${shotScriptGate.candidateShotCount}/${shotScriptGate.minShotCount}`
-              : '--'}
-          </div>
-          <div>
-            对白抽取率：
-            {shotScriptGate?.dialogueExtractionRate === null || !shotScriptGate
-              ? '--'
-              : `${Math.round(shotScriptGate.dialogueExtractionRate * 100)}%`}
-          </div>
-          <div>
-            阻断原因：
-            {shotScriptGate?.reasons.length ? shotScriptGate.reasons.join('；') : '无'}
-          </div>
-          <div>下一步：{shotScriptGate?.nextAction || '无'}</div>
-          <div>Storyboard：{storyboardStage?.status || '--'}</div>
-          <div>VideoPrompt：{videoPromptStage?.status || '--'}</div>
-          <div>边界：ShotScript ready 不会自动生成分镜、图片、视频、worker 或 job</div>
+          <div>ShotScript：{compactStatus(shotStage?.status)}</div>
+          <div>storyboard_prompt：文本准备态，不生成图片。</div>
+          <div>video_prompt：文本准备态，不调用视频生成。</div>
+          <div>worker/job：未创建。</div>
         </div>
       </section>
     </aside>
