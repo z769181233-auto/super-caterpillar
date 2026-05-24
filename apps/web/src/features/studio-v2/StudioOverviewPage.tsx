@@ -8,6 +8,7 @@ import {
   formatLegacySummary,
   formatSceneCandidateCoverage,
   formatShotScriptQualityGate,
+  formatTextPipelineSummary,
   getDoneStages,
   getMissingOrBlockedStages,
   getRequiredEmptyStateLabels,
@@ -115,13 +116,37 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
           <>
             <h2 style={{ marginTop: 0 }}>空态确认</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
-              本轮不伪造结果：没有 StoryBible、CharacterBible、ShotScript 时必须显示未生成。
+              本轮不伪造结果：没有 StoryBible、EpisodePlan、DirectorScript、ShotScript 时必须显示未生成。
             </p>
             <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
               {(requiredEmptyStates.length ? requiredEmptyStates : ['状态读取中']).map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </>
+        )}
+
+        {card(
+          <>
+            <h2 style={{ marginTop: 0 }}>文本生产链路封板</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Phase 1B-D 只验收 StoryBible → EpisodePlan → DirectorScript → ShotScript。ShotScript ready 不代表分镜、图片、视频或 worker job 已生成。
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
+              {(state ? formatTextPipelineSummary(state) : ['状态读取中']).map((item) => (
+                <div
+                  key={item}
+                  style={{
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--r-md)',
+                    color: 'var(--text-secondary)',
+                    padding: '0.75rem',
+                  }}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
           </>
         )}
 

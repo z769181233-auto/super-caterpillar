@@ -227,7 +227,7 @@ function createMutablePrismaMock() {
 }
 
 describe('Studio text production pipeline acceptance', () => {
-  it('turns fixed novel scene candidates into Phase 1B-C ready ShotScript text without storyboard or video generation', async () => {
+  it('seals the Phase 1B text pipeline at ShotScript without storyboard, video, or jobs', async () => {
     const prisma = createMutablePrismaMock();
     const episodePlanService = new ProjectStudioEpisodePlanService(prisma as any);
     const directorScriptService = new ProjectStudioDirectorScriptService(prisma as any);
@@ -290,20 +290,27 @@ describe('Studio text production pipeline acceptance', () => {
 
     const persistedProject = await prisma.project.findFirst();
     const animationStudio = persistedProject.metadata.animationStudio;
+    expect(animationStudio.storyBible.status).toBe('ready');
+    expect(animationStudio.storyBible.source_evidence.length).toBeGreaterThanOrEqual(3);
     expect(animationStudio.episodePlans).toHaveLength(1);
     expect(animationStudio.episodePlans[0].status).toBe('ready');
     expect(animationStudio.directorScripts).toHaveLength(1);
     expect(animationStudio.directorScripts[0].status).toBe('ready');
     expect(animationStudio.shotScripts).toHaveLength(shotScripts.length);
+    expect(animationStudio.shotScripts.every((shot: any) => shot.status === 'ready')).toBe(true);
     expect(animationStudio.storyboardAssets).toBeUndefined();
     expect(animationStudio.videoPrompts).toBeUndefined();
+    expect(animationStudio.videoJobs).toBeUndefined();
 
     const productionState = await productionStateService.getProductionState('project-fixed-sample', 'org-1');
+    expect(productionState.stages.find((stage) => stage.key === 'story_bible_ready')?.status).toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'episodes_ready')?.status).toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'director_script_ready')?.status).toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'storyboard_ready')?.status).not.toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).not.toBe('done');
+    expect(productionState.stages.find((stage) => stage.key === 'video_generating')?.status).not.toBe('done');
+    expect(productionState.riskFlags.join('\n')).toContain('StoryboardAsset 尚未真实生成');
     expect(prisma.project.update).toHaveBeenCalledTimes(3);
   });
 });

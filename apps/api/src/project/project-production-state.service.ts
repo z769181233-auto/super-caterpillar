@@ -827,7 +827,8 @@ export class ProjectProductionStateService {
       studioEpisodePlans,
       checkedAt: new Date().toISOString(),
     });
-    const hasStudioReadyShotScripts = hasStudioShotScripts && shotScriptQualityGate.status === 'passed';
+    const hasStudioReadyShotScripts =
+      hasStudioDirectorScripts && hasStudioShotScripts && shotScriptQualityGate.status === 'passed';
     const storyboardAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.length
       : 0;
@@ -996,14 +997,24 @@ export class ProjectProductionStateService {
               `quality_score:${String(shotScriptQualityGate.reasons.length ? 'blocked' : 'passed')}`,
             ]
           : hasStudioShotScripts || shotScriptQualityGate.status === 'blocked'
-            ? shotScriptQualityGate.reasons
+            ? [
+                ...(!hasStudioDirectorScripts
+                  ? ['上游 DirectorScript / EpisodePlan / StoryBible 未通过质量门槛，不能把已存 ShotScript 标记为 ready。']
+                  : []),
+                ...shotScriptQualityGate.reasons,
+              ]
           : hasLegacyStructure
             ? [`旧 Shot 数量：${shotCount}`]
             : [],
         hasStudioReadyShotScripts
           ? null
           : hasStudioShotScripts || shotScriptQualityGate.status === 'blocked'
-            ? `镜头台本文本质量门槛未通过：${shotScriptQualityGate.reasons.join('；')}`
+            ? `镜头台本文本质量门槛未通过：${[
+                ...(!hasStudioDirectorScripts
+                  ? ['上游 DirectorScript / EpisodePlan / StoryBible 未通过质量门槛']
+                  : []),
+                ...shotScriptQualityGate.reasons,
+              ].join('；')}`
             : '当前没有标准 ShotScript；不能把旧摘要伪装成镜头台本',
         hasStudioReadyShotScripts ? '后续阶段生成 StoryboardAsset；本阶段不生成分镜/图片/视频' : 'Phase 1B-C 生成第一集 ShotScript'
       ),
@@ -1094,7 +1105,7 @@ export class ProjectProductionStateService {
       hasStudioLocationBibles,
       hasStudioEpisodePlans,
       hasStudioDirectorScripts,
-      hasStudioShotScripts,
+      hasStudioShotScripts: hasStudioReadyShotScripts,
       hasStudioStoryboardAssets,
       studioStoryboardImageAssetCount,
       hasStudioVideoPrompts,

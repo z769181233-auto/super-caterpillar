@@ -784,6 +784,94 @@ describe('ProjectProductionStateService', () => {
     );
   });
 
+  it('does not mark downstream text stages ready when upstream StoryBible is blocked', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: readyStoryBible({
+                status: 'ready',
+                logline: null,
+                source_evidence: [],
+                sourceEvidence: [],
+                quality_score: 20,
+              }),
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.stages.find((stage) => stage.key === 'story_bible_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(state.stages.find((stage) => stage.key === 'episodes_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(state.stages.find((stage) => stage.key === 'director_script_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(
+      state.stages.find((stage) => stage.key === 'shot_script_ready')?.missingReason
+    ).toContain('上游 DirectorScript / EpisodePlan / StoryBible 未通过质量门槛');
+  });
+
+  it('keeps storyboard and video prompt stages missing when ShotScript only has text prompts', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: readyStoryBible(),
+              characterBibles: [{ id: 'character-1', status: 'done' }],
+              locationBibles: [{ id: 'location-1', status: 'done' }],
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
+              shotScripts: Array.from({ length: 8 }, (_, index) =>
+                readyShotScript(index + 1, {
+                  storyboard_prompt: 'Storyboard prompt text only; 本阶段不生成图片。',
+                  video_prompt: 'Video prompt text only; 本阶段不调用视频生成。',
+                })
+              ),
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe(
+      'done'
+    );
+    expect(state.stages.find((stage) => stage.key === 'storyboard_ready')?.status).toBe(
+      'missing'
+    );
+    expect(state.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).toBe(
+      'missing'
+    );
+    expect(state.stages.find((stage) => stage.key === 'video_generating')?.status).toBe(
+      'missing'
+    );
+  });
+
   it('marks storyboard ready only when Studio StoryboardAsset metadata exists', async () => {
     const prisma = createPrismaMock({
       project: {
@@ -798,7 +886,7 @@ describe('ProjectProductionStateService', () => {
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
-              shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
               storyboardAssets: [
                 {
                   id: 'storyboard-asset-1',
@@ -845,7 +933,7 @@ describe('ProjectProductionStateService', () => {
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
-              shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
               storyboardAssets: [
                 {
                   id: 'storyboard-asset-1',
@@ -887,7 +975,7 @@ describe('ProjectProductionStateService', () => {
               locationBibles: [{ id: 'location-1', status: 'done' }],
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
-              shotScripts: [{ shot_id: 'shot-script-1', status: 'ready' }],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
               storyboardAssets: [
                 {
                   id: 'storyboard-asset-1',
