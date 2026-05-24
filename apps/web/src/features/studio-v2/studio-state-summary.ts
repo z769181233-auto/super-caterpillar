@@ -11,7 +11,13 @@ export function getMissingOrBlockedStages(state: ProductionStateDTO): Production
 }
 
 export function getRequiredEmptyStateLabels(state: ProductionStateDTO): string[] {
-  const requiredKeys = new Set(['story_bible_ready', 'characters_ready', 'shot_script_ready']);
+  const requiredKeys = new Set([
+    'story_bible_ready',
+    'characters_ready',
+    'episodes_ready',
+    'director_script_ready',
+    'shot_script_ready',
+  ]);
   return state.stages
     .filter((stage) => requiredKeys.has(stage.key))
     .filter((stage) => stage.status !== 'done')

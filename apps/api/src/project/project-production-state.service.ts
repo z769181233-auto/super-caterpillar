@@ -11,6 +11,8 @@ import {
 } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { filterStableSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
+import { validateDirectorScriptQuality } from './project-studio-director-script.service';
+import { validateEpisodePlanQuality } from './project-studio-episode-plan.service';
 import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
@@ -79,6 +81,14 @@ function toNumber(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
+function nullableNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -136,7 +146,7 @@ function buildShotScriptQualityGate(input: {
 
   const directorScripts = asArray(input.studioDirectorScripts)
     .map((item) => asRecord(item))
-    .filter((item) => String(item.status || '').toLowerCase() === 'done');
+    .filter((item) => ['done', 'ready'].includes(String(item.status || '').toLowerCase()));
 
   if (directorScripts.length === 0) {
     return {
@@ -636,6 +646,140 @@ export class ProjectProductionStateService {
       hasStoredStoryBible &&
       storyBibleRecord.status === 'ready' &&
       Boolean(storyBibleQuality?.passed);
+    const firstEpisodePlanRecord = asRecord(asArray(studioEpisodePlans)[0]);
+    const hasStoredEpisodePlan = Object.keys(firstEpisodePlanRecord).length > 0;
+    const firstEpisodePlan = hasStoredEpisodePlan
+      ? {
+          id: nullableString(firstEpisodePlanRecord.id),
+          project_id: projectId,
+          projectId,
+          episode_id: nullableString(firstEpisodePlanRecord.episode_id) || nullableString(firstEpisodePlanRecord.episodeId),
+          episodeId: nullableString(firstEpisodePlanRecord.episodeId) || nullableString(firstEpisodePlanRecord.episode_id),
+          story_bible_id: nullableString(firstEpisodePlanRecord.story_bible_id),
+          episodeNo: toNumber(firstEpisodePlanRecord.episodeNo) || toNumber(firstEpisodePlanRecord.episode_no),
+          episode_no: toNumber(firstEpisodePlanRecord.episode_no) || toNumber(firstEpisodePlanRecord.episodeNo),
+          title: nullableString(firstEpisodePlanRecord.title) || '未命名剧集',
+          status: firstEpisodePlanRecord.status as any,
+          durationSec: nullableNumber(firstEpisodePlanRecord.durationSec) ?? nullableNumber(firstEpisodePlanRecord.duration_target_sec),
+          duration_target_sec: nullableNumber(firstEpisodePlanRecord.duration_target_sec) ?? nullableNumber(firstEpisodePlanRecord.durationSec),
+          logline: nullableString(firstEpisodePlanRecord.logline),
+          beginning: nullableString(firstEpisodePlanRecord.beginning),
+          middle: nullableString(firstEpisodePlanRecord.middle),
+          end: nullableString(firstEpisodePlanRecord.end),
+          plotGoal: nullableString(firstEpisodePlanRecord.plotGoal),
+          emotionCurve: stringList(firstEpisodePlanRecord.emotionCurve).length
+            ? stringList(firstEpisodePlanRecord.emotionCurve)
+            : stringList(firstEpisodePlanRecord.emotional_curve),
+          emotional_curve: stringList(firstEpisodePlanRecord.emotional_curve).length
+            ? stringList(firstEpisodePlanRecord.emotional_curve)
+            : stringList(firstEpisodePlanRecord.emotionCurve),
+          key_scenes: asArray(firstEpisodePlanRecord.key_scenes) as any,
+          coolPoints: stringList(firstEpisodePlanRecord.coolPoints),
+          hook: nullableString(firstEpisodePlanRecord.hook),
+          characters: stringList(firstEpisodePlanRecord.characters),
+          locations: stringList(firstEpisodePlanRecord.locations),
+          appearingCharacterNames: stringList(firstEpisodePlanRecord.appearingCharacterNames),
+          appearingLocationNames: stringList(firstEpisodePlanRecord.appearingLocationNames),
+          productionStatus: nullableString(firstEpisodePlanRecord.productionStatus),
+          sourceEvidence: stringList(firstEpisodePlanRecord.sourceEvidence),
+          source_evidence: stringList(firstEpisodePlanRecord.source_evidence),
+          quality_score: nullableNumber(firstEpisodePlanRecord.quality_score),
+          blockers: stringList(firstEpisodePlanRecord.blockers),
+          missingReasons: stringList(firstEpisodePlanRecord.missingReasons),
+          generatedAt: nullableString(firstEpisodePlanRecord.generatedAt),
+          version: nullableString(firstEpisodePlanRecord.version) || 'studio-episode-plan-v1',
+          missingReason: nullableString(firstEpisodePlanRecord.missingReason),
+        }
+      : null;
+    const episodePlanQuality = firstEpisodePlan
+      ? validateEpisodePlanQuality(firstEpisodePlan, hasStudioStoryBible ? ({
+          id: nullableString(storyBibleRecord.id),
+          projectId,
+          project_id: projectId,
+          source_type: storyBibleRecord.source_type as any,
+          status: storyBibleRecord.status as any,
+          title: nullableString(storyBibleRecord.title),
+          logline: nullableString(storyBibleRecord.logline),
+          genre: nullableString(storyBibleRecord.genre),
+          theme: nullableString(storyBibleRecord.theme),
+          tone: nullableString(storyBibleRecord.tone),
+          story_world: storyBibleRecord.story_world as any,
+          main_characters: asArray(storyBibleRecord.main_characters) as any,
+          worldview: nullableString(storyBibleRecord.worldview),
+          mainConflict: nullableString(storyBibleRecord.mainConflict),
+          emotionalArc: nullableString(storyBibleRecord.emotionalArc),
+          characterRelationship: nullableString(storyBibleRecord.characterRelationship),
+          longTermForeshadowing: stringList(storyBibleRecord.longTermForeshadowing),
+          season_arc: nullableString(storyBibleRecord.season_arc),
+          continuity_rules: stringList(storyBibleRecord.continuity_rules),
+          visualStyle: nullableString(storyBibleRecord.visualStyle),
+          targetPlatform: nullableString(storyBibleRecord.targetPlatform),
+          adaptationStrategy: nullableString(storyBibleRecord.adaptationStrategy),
+          audienceHook: nullableString(storyBibleRecord.audienceHook),
+          sourceSummary: nullableString(storyBibleRecord.sourceSummary),
+          sourceEvidence: stringList(storyBibleRecord.sourceEvidence),
+          source_evidence: stringList(storyBibleRecord.source_evidence),
+          quality_score: nullableNumber(storyBibleRecord.quality_score),
+          blockers: stringList(storyBibleRecord.blockers),
+          missingReasons: stringList(storyBibleRecord.missingReasons),
+          generatedAt: nullableString(storyBibleRecord.generatedAt),
+          version: nullableString(storyBibleRecord.version) || 'studio-story-bible-v1',
+          missingReason: nullableString(storyBibleRecord.missingReason),
+        } as any) : null)
+      : null;
+    const hasStudioEpisodePlans =
+      hasStoredEpisodePlan &&
+      firstEpisodePlan?.status === 'ready' &&
+      Boolean(episodePlanQuality?.passed);
+    const firstDirectorScriptRecord = asRecord(asArray(studioDirectorScripts)[0]);
+    const hasStoredDirectorScript = Object.keys(firstDirectorScriptRecord).length > 0;
+    const firstDirectorScript = hasStoredDirectorScript
+      ? {
+          id: nullableString(firstDirectorScriptRecord.id),
+          director_script_id: nullableString(firstDirectorScriptRecord.director_script_id),
+          project_id: projectId,
+          projectId,
+          episode_id: nullableString(firstDirectorScriptRecord.episode_id) || nullableString(firstDirectorScriptRecord.episodeId) || 'unknown',
+          episodeId: nullableString(firstDirectorScriptRecord.episodeId) || nullableString(firstDirectorScriptRecord.episode_id) || 'unknown',
+          episodeNo: nullableNumber(firstDirectorScriptRecord.episodeNo),
+          title: nullableString(firstDirectorScriptRecord.title) || '未命名导演剧本',
+          status: firstDirectorScriptRecord.status as any,
+          logline: nullableString(firstDirectorScriptRecord.logline),
+          beats: stringList(firstDirectorScriptRecord.beats),
+          sceneBeats: stringList(firstDirectorScriptRecord.sceneBeats),
+          visual_strategy: nullableString(firstDirectorScriptRecord.visual_strategy),
+          pacing_strategy: nullableString(firstDirectorScriptRecord.pacing_strategy),
+          camera_strategy: nullableString(firstDirectorScriptRecord.camera_strategy),
+          character_blocking: nullableString(firstDirectorScriptRecord.character_blocking),
+          lighting_strategy: nullableString(firstDirectorScriptRecord.lighting_strategy),
+          sound_strategy: nullableString(firstDirectorScriptRecord.sound_strategy),
+          scene_beats: asArray(firstDirectorScriptRecord.scene_beats) as any,
+          keyCharacters: stringList(firstDirectorScriptRecord.keyCharacters),
+          keyLocations: stringList(firstDirectorScriptRecord.keyLocations),
+          visualTone: nullableString(firstDirectorScriptRecord.visualTone),
+          dialogueStyle: nullableString(firstDirectorScriptRecord.dialogueStyle),
+          soundDesign: nullableString(firstDirectorScriptRecord.soundDesign),
+          pacingNotes: nullableString(firstDirectorScriptRecord.pacingNotes),
+          directorNotes: stringList(firstDirectorScriptRecord.directorNotes),
+          transition_notes: stringList(firstDirectorScriptRecord.transition_notes),
+          sourceEpisodePlanId: nullableString(firstDirectorScriptRecord.sourceEpisodePlanId),
+          sourceEvidence: stringList(firstDirectorScriptRecord.sourceEvidence),
+          source_evidence: stringList(firstDirectorScriptRecord.source_evidence),
+          quality_score: nullableNumber(firstDirectorScriptRecord.quality_score),
+          blockers: stringList(firstDirectorScriptRecord.blockers),
+          missingReasons: stringList(firstDirectorScriptRecord.missingReasons),
+          generatedAt: nullableString(firstDirectorScriptRecord.generatedAt),
+          version: nullableString(firstDirectorScriptRecord.version) || 'studio-director-script-v1',
+          missingReason: nullableString(firstDirectorScriptRecord.missingReason),
+        }
+      : null;
+    const directorScriptQuality = firstDirectorScript
+      ? validateDirectorScriptQuality(firstDirectorScript as any, hasStudioEpisodePlans ? (firstEpisodePlan as any) : null)
+      : null;
+    const hasStudioDirectorScripts =
+      hasStoredDirectorScript &&
+      firstDirectorScript?.status === 'ready' &&
+      Boolean(directorScriptQuality?.passed);
     const characterBibleCount = Array.isArray(studioCharacterBibles)
       ? studioCharacterBibles.length
       : 0;
@@ -644,14 +788,8 @@ export class ProjectProductionStateService {
       ? studioLocationBibles.length
       : 0;
     const hasStudioLocationBibles = locationBibleCount > 0;
-    const episodePlanCount = Array.isArray(studioEpisodePlans)
-      ? studioEpisodePlans.length
-      : 0;
-    const hasStudioEpisodePlans = episodePlanCount > 0;
-    const directorScriptCount = Array.isArray(studioDirectorScripts)
-      ? studioDirectorScripts.length
-      : 0;
-    const hasStudioDirectorScripts = directorScriptCount > 0;
+    const episodePlanCount = Array.isArray(studioEpisodePlans) ? studioEpisodePlans.length : 0;
+    const directorScriptCount = Array.isArray(studioDirectorScripts) ? studioDirectorScripts.length : 0;
     const shotScriptCount = Array.isArray(studioShotScripts) ? studioShotScripts.length : 0;
     const hasStudioShotScripts = shotScriptCount > 0;
     const shotScriptQualityGate = buildShotScriptQualityGate({
@@ -777,23 +915,43 @@ export class ProjectProductionStateService {
       ),
       stage(
         'episodes_ready',
-        hasStudioEpisodePlans ? 'done' : hasLegacyStructure ? 'blocked' : 'missing',
+        hasStudioEpisodePlans ? 'done' : hasStoredEpisodePlan || hasLegacyStructure ? 'blocked' : 'missing',
         hasStudioEpisodePlans
-          ? [`Project.metadata.animationStudio.episodePlans:${episodePlanCount}`]
+          ? [
+              `Project.metadata.animationStudio.episodePlans:${episodePlanCount}`,
+              `quality_score:${String(firstEpisodePlan?.quality_score ?? 'unknown')}`,
+              `source_evidence:${String((firstEpisodePlan?.source_evidence || firstEpisodePlan?.sourceEvidence || []).length)}`,
+            ]
+          : hasStoredEpisodePlan
+            ? episodePlanQuality?.blockers || ['EpisodePlan 字段完整性或质量门槛不足']
           : hasLegacyStructure
             ? [`旧 Episode 数量：${episodeCount}`]
             : [],
-        hasStudioEpisodePlans ? null : '当前没有 EpisodePlan；旧 Episode 只作为兼容摘要',
-        hasStudioEpisodePlans ? '进入导演剧本生成阶段' : 'Phase 2D 生成 EpisodePlan'
+        hasStudioEpisodePlans
+          ? null
+          : hasStoredEpisodePlan
+            ? `EpisodePlan 质量门槛未通过：${episodePlanQuality?.blockers.join('；') || '字段不足'}`
+            : '当前没有 EpisodePlan；旧 Episode 只作为兼容摘要',
+        hasStudioEpisodePlans ? '进入导演剧本生成阶段' : 'Phase 1B-B 生成第一集 EpisodePlan'
       ),
       stage(
         'director_script_ready',
-        hasStudioDirectorScripts ? 'done' : 'missing',
+        hasStudioDirectorScripts ? 'done' : hasStoredDirectorScript ? 'blocked' : 'missing',
         hasStudioDirectorScripts
-          ? [`Project.metadata.animationStudio.directorScripts:${directorScriptCount}`]
+          ? [
+              `Project.metadata.animationStudio.directorScripts:${directorScriptCount}`,
+              `quality_score:${String(firstDirectorScript?.quality_score ?? 'unknown')}`,
+              `source_evidence:${String((firstDirectorScript?.source_evidence || firstDirectorScript?.sourceEvidence || []).length)}`,
+            ]
+          : hasStoredDirectorScript
+            ? directorScriptQuality?.blockers || ['DirectorScript 字段完整性或质量门槛不足']
           : [],
-        hasStudioDirectorScripts ? null : '当前没有 episode-level DirectorScript',
-        hasStudioDirectorScripts ? '进入镜头台本生成阶段' : 'Phase 2E 生成导演剧本'
+        hasStudioDirectorScripts
+          ? null
+          : hasStoredDirectorScript
+            ? `DirectorScript 质量门槛未通过：${directorScriptQuality?.blockers.join('；') || '字段不足'}`
+            : '当前没有 episode-level DirectorScript',
+        hasStudioDirectorScripts ? '进入镜头台本文本质量预检' : 'Phase 1B-B 生成第一集 DirectorScript'
       ),
       stage(
         'shot_script_ready',

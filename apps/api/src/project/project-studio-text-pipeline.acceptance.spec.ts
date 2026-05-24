@@ -1,11 +1,42 @@
 import { ProjectStudioDirectorScriptService } from './project-studio-director-script.service';
 import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
-import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
+import { ProjectProductionStateService } from './project-production-state.service';
 
 function createMutablePrismaMock() {
   let metadata: Record<string, any> = {
     animationStudio: {
       storyBible: {
+        id: 'story-bible-fixed-sample',
+        project_id: 'project-fixed-sample',
+        projectId: 'project-fixed-sample',
+        source_type: 'novel_import',
+        title: '表姑娘又又又又跑了',
+        logline: '薛知盈在家族规训中秘密读书，并在王嬷嬷逼近时寻找脱身机会。',
+        genre: '古风宅斗',
+        theme: '在规训压力下争取自主选择',
+        tone: '克制、紧张、细腻',
+        story_world: {
+          summary: '古风宅院中的静水院与云墨斋构成主角行动空间。',
+          core_locations: [
+            { location_id: 'loc-jingshuiyuan', name: '静水院', function: '秘密读书与搜查压力发生地' },
+            { location_id: 'loc-yunmozhai', name: '云墨斋', function: '藏书与脱身转折地点' },
+          ],
+        },
+        main_characters: [
+          { character_id: 'char-xue-zhiying', name: '薛知盈', role: '主角' },
+          { character_id: 'char-wang-momo', name: '王嬷嬷', role: '规训压力来源' },
+          { character_id: 'char-chuntao', name: '春桃', role: '协助者' },
+        ],
+        season_arc: '第一集建立秘密读书、搜查逼近和主角顺势脱身的核心矛盾。',
+        continuity_rules: ['薛知盈必须保持秘密读书不暴露', '王嬷嬷代表家族规训压力'],
+        source_evidence: [
+          'scene-candidate:chapter-1:scene-candidate:1 characters:薛知盈,春桃 location:静水院 sourceBlocks:1 text:薛知盈躲在静水院窗下翻开律法书，低声对春桃说：“若今日还不懂规矩，我便永远只能任人安排。”',
+          'scene-candidate:chapter-1:scene-candidate:2 characters:王嬷嬷,春桃,薛知盈 location:静水院 sourceBlocks:2 text:王嬷嬷的脚步声逼近门口，春桃慌忙替薛知盈收起书页，门闩轻轻一响。',
+          'scene-candidate:chapter-1:scene-candidate:3 characters:王嬷嬷,薛知盈 location:静水院 sourceBlocks:3 text:王嬷嬷推门进来，笑着劝她：“表姑娘，今日别再闹了，夫人已经等着回话。”',
+          'scene-candidate:chapter-1:scene-candidate:4 characters:薛知盈,王嬷嬷 location:云墨斋 sourceBlocks:4 text:薛知盈把书藏进云墨斋旧匣，抬头迎上王嬷嬷的目光，决定先顺势脱身。',
+        ],
+        quality_score: 88,
+        status: 'ready',
         visualStyle: '古风宅院、低饱和暖色、人物心理压迫、细腻表演',
       },
       characterBibles: [
@@ -65,6 +96,7 @@ function createMutablePrismaMock() {
   return {
     project,
     storySource: {
+      count: jest.fn().mockResolvedValue(0),
       findFirst: jest.fn().mockResolvedValue(null),
     },
     novelSource: {
@@ -89,7 +121,23 @@ function createMutablePrismaMock() {
       }),
     },
     episode: {
+      count: jest.fn().mockResolvedValue(0),
       findMany: jest.fn().mockResolvedValue([]),
+    },
+    scene: {
+      count: jest.fn().mockResolvedValue(0),
+    },
+    shot: {
+      count: jest.fn().mockResolvedValue(0),
+    },
+    videoJob: {
+      count: jest.fn().mockResolvedValue(0),
+    },
+    qualityScore: {
+      count: jest.fn().mockResolvedValue(0),
+    },
+    novelAnalysisJob: {
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     sceneDraft: {
       findMany: jest.fn().mockResolvedValue([
@@ -178,11 +226,11 @@ function createMutablePrismaMock() {
 }
 
 describe('Studio text production pipeline acceptance', () => {
-  it('turns fixed novel scene candidates into production-oriented EpisodePlan, DirectorScript, and ShotScript text', async () => {
+  it('stops the Phase 1B-B text pipeline at production-ready EpisodePlan and DirectorScript', async () => {
     const prisma = createMutablePrismaMock();
     const episodePlanService = new ProjectStudioEpisodePlanService(prisma as any);
     const directorScriptService = new ProjectStudioDirectorScriptService(prisma as any);
-    const shotScriptService = new ProjectStudioShotScriptService(prisma as any);
+    const productionStateService = new ProjectProductionStateService(prisma as any);
 
     const episodePlans = await episodePlanService.generateEpisodePlans(
       'project-fixed-sample',
@@ -192,13 +240,15 @@ describe('Studio text production pipeline acceptance', () => {
       'project-fixed-sample',
       'org-1'
     );
-    const shotScripts = await shotScriptService.generateShotScripts(
-      'project-fixed-sample',
-      'org-1'
-    );
 
     expect(episodePlans).toHaveLength(1);
+    expect(episodePlans[0].status).toBe('ready');
+    expect(episodePlans[0].quality_score).toBeGreaterThanOrEqual(70);
     expect(episodePlans[0].plotGoal).toContain('薛知盈');
+    expect(episodePlans[0].beginning).toBeTruthy();
+    expect(episodePlans[0].middle).toBeTruthy();
+    expect(episodePlans[0].end).toBeTruthy();
+    expect(episodePlans[0].key_scenes?.length).toBeGreaterThanOrEqual(3);
     expect(episodePlans[0].appearingCharacterNames).toEqual(
       expect.arrayContaining(['薛知盈', '王嬷嬷', '春桃'])
     );
@@ -211,37 +261,33 @@ describe('Studio text production pipeline acceptance', () => {
     expect(episodePlans[0].sourceEvidence.join('\n')).toContain('sourceBlocks:1');
 
     expect(directorScripts).toHaveLength(1);
-    expect(directorScripts[0].sceneBeats).toHaveLength(4);
-    expect(directorScripts[0].sceneBeats.join('\n')).toContain(
+    expect(directorScripts[0].status).toBe('ready');
+    expect(directorScripts[0].quality_score).toBeGreaterThanOrEqual(70);
+    expect(directorScripts[0].visual_strategy).toContain('静水院');
+    expect(directorScripts[0].pacing_strategy).toBeTruthy();
+    expect(directorScripts[0].camera_strategy).toBeTruthy();
+    expect(directorScripts[0].character_blocking).toBeTruthy();
+    expect(directorScripts[0].lighting_strategy).toBeTruthy();
+    expect(directorScripts[0].sound_strategy).toBeTruthy();
+    expect(directorScripts[0].sceneBeats).toHaveLength(3);
+    expect(directorScripts[0].source_evidence?.join('\n')).toContain(
       'scene-candidate:chapter-1:scene-candidate:1'
     );
-    expect(directorScripts[0].directorNotes.join('\n')).toContain('不允许用旧摘要替代');
+    expect(directorScripts[0].directorNotes.join('\n')).toContain('本轮不生成 ShotScript');
+    expect(directorScripts[0].source_evidence?.length).toBeGreaterThanOrEqual(3);
 
-    expect(shotScripts).toHaveLength(4);
-    for (const shot of shotScripts) {
-      expect(shot.duration_sec).toBeGreaterThan(0);
-      expect(shot.shot_size).not.toBe('未生成');
-      expect(shot.camera_movement).not.toBe('未生成');
-      expect(shot.action).toMatch(/薛知盈|王嬷嬷|春桃/);
-      expect(shot.dialogue.length > 0 || Boolean(shot.voiceover)).toBe(true);
-      expect(shot.sound_design.length).toBeGreaterThan(0);
-      expect(shot.lighting).toMatch(/光|影|古风|书斋/);
-      expect(shot.emotion).not.toBe('未生成');
-      expect(shot.storyboard_prompt).toContain(`镜头 ${shot.shot_no}`);
-      expect(shot.video_prompt).toContain('本阶段不调用视频生成');
-      expect(shot.source_evidence.join('\n')).toContain('scene-candidate:');
-      expect(
-        [
-          shot.action,
-          shot.dialogue.map((item) => item.text).join('\n'),
-          shot.storyboard_prompt,
-          shot.video_prompt,
-        ].join('\n')
-      ).not.toMatch(/待编剧精修|旧摘要|未生成/);
-    }
+    const persistedProject = await prisma.project.findFirst();
+    const animationStudio = persistedProject.metadata.animationStudio;
+    expect(animationStudio.episodePlans).toHaveLength(1);
+    expect(animationStudio.episodePlans[0].status).toBe('ready');
+    expect(animationStudio.directorScripts).toHaveLength(1);
+    expect(animationStudio.directorScripts[0].status).toBe('ready');
+    expect(animationStudio.shotScripts).toBeUndefined();
 
-    expect(shotScripts[0].dialogue[0].text).toContain('若今日还不懂规矩');
-    expect(shotScripts[2].dialogue[0].text).toContain('今日别再闹了');
-    expect(prisma.project.update).toHaveBeenCalledTimes(3);
+    const productionState = await productionStateService.getProductionState('project-fixed-sample', 'org-1');
+    expect(productionState.stages.find((stage) => stage.key === 'episodes_ready')?.status).toBe('done');
+    expect(productionState.stages.find((stage) => stage.key === 'director_script_ready')?.status).toBe('done');
+    expect(productionState.stages.find((stage) => stage.key === 'shot_script_ready')?.status).not.toBe('done');
+    expect(prisma.project.update).toHaveBeenCalledTimes(2);
   });
 });

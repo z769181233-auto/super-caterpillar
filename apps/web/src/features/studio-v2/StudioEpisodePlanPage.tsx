@@ -42,8 +42,9 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
     () => state?.stages.find((stage) => stage.key === 'episodes_ready') || null,
     [state]
   );
-  const realEpisodePlans = episodePlans.filter((episodePlan) => episodePlan.status === 'done');
-  const isDone = realEpisodePlans.length > 0;
+  const realEpisodePlans = episodePlans.filter((episodePlan) => episodePlan.status === 'ready');
+  const blockedEpisodePlans = episodePlans.filter((episodePlan) => episodePlan.status === 'blocked');
+  const isReady = realEpisodePlans.length > 0;
 
   async function handleGenerate() {
     setGenerating(true);
@@ -72,7 +73,7 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
         }}
       >
         <p style={{ color: 'var(--text-secondary)', margin: '0 0 0.5rem' }}>
-          Phase 2D：只生成 EpisodePlan，不接导演剧本/镜头台本/分镜/视频
+          Phase 1B-B：只生成第一集 EpisodePlan，不接镜头台本/分镜/图片/视频/worker
         </p>
         <div
           style={{
@@ -85,7 +86,7 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
           <div>
             <h1 style={{ margin: 0 }}>剧集规划 EpisodePlan</h1>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              从 StoryBible、角色资产、场景资产、小说章节和旧 Episode 中生成每集的剧情目标、情绪曲线、爽点、结尾钩子和出场资产绑定。
+              从 ready StoryBible 生成第一集剧情结构：开端、中段、结尾、关键场次、角色、地点、证据绑定和质量评分。
             </p>
           </div>
           <button
@@ -103,20 +104,24 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
               padding: '0.85rem 1.15rem',
             }}
           >
-            {generating ? '生成中...' : isDone ? '重新生成剧集规划' : '生成剧集规划'}
+            {generating ? '生成中...' : isReady ? '重新生成第一集规划' : '生成第一集规划'}
           </button>
         </div>
 
         {error && <Callout tone="error" title="生成失败" body={error} />}
 
-        {!isDone && (
+        {!isReady && (
           <Callout
-            tone="warn"
-            title="剧集规划未生成"
+            tone={blockedEpisodePlans.length > 0 ? 'error' : 'warn'}
+            title={blockedEpisodePlans.length > 0 ? '剧集规划质量不足' : '剧集规划未生成'}
             body={
-              episodeStage?.missingReason ||
-              episodePlans[0]?.missingReason ||
-              '当前还没有 EpisodePlan。这里不会把旧 Episode、章节摘要或场景列表伪装成正式剧集规划。'
+              blockedEpisodePlans[0]?.blockers?.length
+                ? blockedEpisodePlans[0].blockers.join('；')
+                : blockedEpisodePlans[0]?.missingReasons?.length
+                  ? blockedEpisodePlans[0].missingReasons.join('；')
+                  : episodeStage?.missingReason ||
+                    episodePlans[0]?.missingReason ||
+                    '当前还没有 EpisodePlan。这里不会把旧 Episode、章节摘要或场景列表伪装成正式剧集规划。'
             }
           />
         )}
@@ -124,7 +129,7 @@ export function StudioEpisodePlanPage({ locale, projectId }: StudioEpisodePlanPa
         <Callout
           tone="info"
           title="边界说明"
-          body="本页只生成结构化剧集规划。导演剧本、镜头台本、分镜图、视频提示词和镜头视频仍未生成，后续 Phase 继续补齐。"
+          body="本页只生成第一集 EpisodePlan。DirectorScript 需单独触发；ShotScript、分镜图、图片、视频和 worker 均不会在本页启动。"
         />
 
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
@@ -159,13 +164,31 @@ function EpisodePlanCard({ episodePlan }: { episodePlan: EpisodePlanDTO }) {
       <div style={{ display: 'grid', gap: '0.85rem' }}>
         <InfoRow
           label="预计时长"
-          value={episodePlan.durationSec ? `${Math.round(episodePlan.durationSec / 60)} 分钟` : '未生成'}
+          value={
+            episodePlan.duration_target_sec || episodePlan.durationSec
+              ? `${Math.round((episodePlan.duration_target_sec || episodePlan.durationSec || 0) / 60)} 分钟`
+              : '未生成'
+          }
         />
+        <InfoRow label="episode_id" value={episodePlan.episode_id || episodePlan.episodeId || '未生成'} />
+        <InfoRow label="story_bible_id" value={episodePlan.story_bible_id || '未绑定'} />
+        <InfoRow label="episode_no" value={String(episodePlan.episode_no || episodePlan.episodeNo || '未生成')} />
+        <InfoRow label="状态" value={episodePlan.status || '未生成'} />
+        <InfoRow label="质量评分" value={formatNullable(episodePlan.quality_score)} />
+        <InfoRow label="Logline" value={episodePlan.logline || '未生成'} />
+        <InfoRow label="开端" value={episodePlan.beginning || '未生成'} />
+        <InfoRow label="中段" value={episodePlan.middle || '未生成'} />
+        <InfoRow label="结尾" value={episodePlan.end || '未生成'} />
         <InfoRow label="剧情目标" value={episodePlan.plotGoal || '未生成'} />
         <InfoRow
           label="情绪曲线"
-          value={episodePlan.emotionCurve.length > 0 ? episodePlan.emotionCurve.join(' → ') : '未生成'}
+          value={
+            (episodePlan.emotional_curve?.length ? episodePlan.emotional_curve : episodePlan.emotionCurve).length > 0
+              ? (episodePlan.emotional_curve?.length ? episodePlan.emotional_curve : episodePlan.emotionCurve).join(' → ')
+              : '未生成'
+          }
         />
+        <InfoRow label="关键场次" value={formatKeyScenes(episodePlan)} />
         <InfoRow
           label="爽点"
           value={episodePlan.coolPoints.length > 0 ? episodePlan.coolPoints.join('\n') : '未生成'}
@@ -174,28 +197,65 @@ function EpisodePlanCard({ episodePlan }: { episodePlan: EpisodePlanDTO }) {
         <InfoRow
           label="出场角色"
           value={
-            episodePlan.appearingCharacterNames.length > 0
-              ? episodePlan.appearingCharacterNames.join('、')
+            (episodePlan.characters?.length ? episodePlan.characters : episodePlan.appearingCharacterNames).length > 0
+              ? (episodePlan.characters?.length ? episodePlan.characters : episodePlan.appearingCharacterNames).join('、')
               : '未绑定角色资产'
           }
         />
         <InfoRow
           label="出现场景"
           value={
-            episodePlan.appearingLocationNames.length > 0
-              ? episodePlan.appearingLocationNames.join('、')
+            (episodePlan.locations?.length ? episodePlan.locations : episodePlan.appearingLocationNames).length > 0
+              ? (episodePlan.locations?.length ? episodePlan.locations : episodePlan.appearingLocationNames).join('、')
               : '未绑定场景资产'
           }
         />
         <InfoRow label="生产状态" value={episodePlan.productionStatus || '未生成'} />
         <InfoRow
           label="来源证据"
-          value={episodePlan.sourceEvidence.length > 0 ? episodePlan.sourceEvidence.join('\n') : '未生成'}
+          value={
+            (episodePlan.source_evidence?.length ? episodePlan.source_evidence : episodePlan.sourceEvidence).length > 0
+              ? (episodePlan.source_evidence?.length ? episodePlan.source_evidence : episodePlan.sourceEvidence).join('\n')
+              : '未生成'
+          }
+        />
+        <InfoRow
+          label="阻断原因"
+          value={
+            episodePlan.blockers?.length
+              ? episodePlan.blockers.join('\n')
+              : episodePlan.missingReasons?.length
+                ? episodePlan.missingReasons.join('\n')
+                : episodePlan.missingReason || '无'
+          }
         />
         <InfoRow label="协议版本" value={episodePlan.version || '未生成'} />
       </div>
     </article>
   );
+}
+
+function formatNullable(value: unknown): string {
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'string' && value.trim()) return value;
+  return '未生成';
+}
+
+function formatKeyScenes(episodePlan: EpisodePlanDTO): string {
+  const scenes = episodePlan.key_scenes || [];
+  if (!scenes.length) return '未生成';
+  return scenes
+    .map((scene) =>
+      [
+        `${scene.scene_id} · ${scene.title}`,
+        scene.summary,
+        `功能：${scene.function}`,
+        scene.source_evidence.length ? `证据：${scene.source_evidence.join('；')}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n')
+    )
+    .join('\n\n');
 }
 
 function Callout({ tone, title, body }: { tone: 'error' | 'warn' | 'info'; title: string; body: string }) {

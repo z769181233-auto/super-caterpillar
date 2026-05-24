@@ -14,6 +14,8 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
   const legacy = state?.legacyDataSummary;
   const coverage = legacy?.sceneCandidateCoverage;
   const shotScriptGate = state?.shotScriptQualityGate;
+  const episodeStage = state?.stages.find((stage) => stage.key === 'episodes_ready');
+  const directorStage = state?.stages.find((stage) => stage.key === 'director_script_ready');
   const canContinue = Boolean(state && state.riskFlags.length === 0);
 
   return (
@@ -79,6 +81,16 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
           </div>
           <div>缺失能力：{coverage?.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}</div>
           <div>阻断原因：{coverage?.blockerReason || '无'}</div>
+        </div>
+      </section>
+
+      <section>
+        {panelTitle('剧集 / 导演门槛')}
+        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>EpisodePlan：{episodeStage?.status || '--'}</div>
+          <div>EpisodePlan 阻断：{episodeStage?.missingReason || '无'}</div>
+          <div>DirectorScript：{directorStage?.status || '--'}</div>
+          <div>DirectorScript 阻断：{directorStage?.missingReason || '无'}</div>
         </div>
       </section>
 
