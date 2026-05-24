@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { filterStableSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
 import { validateDirectorScriptQuality } from './project-studio-director-script.service';
 import { validateEpisodePlanQuality } from './project-studio-episode-plan.service';
+import { validateShotScriptQuality } from './project-studio-shot-script.service';
 import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
@@ -53,11 +54,11 @@ const STAGE_ORDER: ProductionStage[] = [
   'failed',
 ];
 
-const MIN_SHOT_SCRIPT_GATE_SHOTS = 4;
-const MIN_SHOT_SCRIPT_DIALOGUE_RATE = 0.5;
+const MIN_SHOT_SCRIPT_GATE_SHOTS = 8;
+const MIN_SHOT_SCRIPT_DIALOGUE_RATE = 0.01;
 const MIN_SHOT_SCRIPT_CHARACTER_RATE = 1;
 const MIN_SHOT_SCRIPT_LOCATION_RATE = 1;
-const MIN_SHOT_SCRIPT_EVIDENCE_RATE = 1;
+const MIN_SHOT_SCRIPT_EVIDENCE_RATE = 0.8;
 const SHOT_SCRIPT_PLACEHOLDER_PATTERN = /待编剧精修|旧摘要|未生成|待识别|待定场景/;
 
 function stage(
@@ -120,26 +121,38 @@ function extractQuotedDialogue(text: string): string | null {
 function buildShotScriptQualityGate(input: {
   hasStudioShotScripts: boolean;
   shotScriptCount: number;
+  studioShotScripts: unknown;
   studioDirectorScripts: unknown;
+  studioEpisodePlans: unknown;
   checkedAt: string;
 }): ShotScriptQualityGateDTO {
   if (input.hasStudioShotScripts) {
+    const shotScripts = asArray(input.studioShotScripts) as any[];
+    const directorScript = asArray(input.studioDirectorScripts).find(
+      (item) => asRecord(item).status === 'ready'
+    );
+    const episodePlan = asArray(input.studioEpisodePlans).find(
+      (item) => asRecord(item).status === 'ready'
+    );
+    const validation = validateShotScriptQuality(shotScripts, directorScript, episodePlan);
     return {
-      status: 'passed',
+      status: validation.passed ? 'passed' : 'blocked',
       source: 'studio_shot_scripts',
-      candidateShotCount: input.shotScriptCount,
+      candidateShotCount: validation.shotCount,
       minShotCount: MIN_SHOT_SCRIPT_GATE_SHOTS,
-      dialogueExtractionRate: null,
+      dialogueExtractionRate: validation.dialogueOrVoiceoverCoverageRate,
       minDialogueExtractionRate: MIN_SHOT_SCRIPT_DIALOGUE_RATE,
       characterBindingRate: null,
       minCharacterBindingRate: MIN_SHOT_SCRIPT_CHARACTER_RATE,
       locationBindingRate: null,
       minLocationBindingRate: MIN_SHOT_SCRIPT_LOCATION_RATE,
-      evidenceBindingRate: null,
+      evidenceBindingRate: validation.evidenceCoverageRate,
       minEvidenceBindingRate: MIN_SHOT_SCRIPT_EVIDENCE_RATE,
-      hasPlaceholderText: false,
-      reasons: [],
-      nextAction: null,
+      hasPlaceholderText: validation.blockers.some((reason) => reason.includes('placeholder_text')),
+      reasons: validation.blockers,
+      nextAction: validation.passed
+        ? null
+        : '修复 ShotScript 字段、source_evidence、continuity_notes 和质量分后，再重新生成 ShotScript。',
       checkedAt: input.checkedAt,
     };
   }
@@ -170,9 +183,23 @@ function buildShotScriptQualityGate(input: {
   }
 
   const candidateInputs = directorScripts.flatMap((directorScript) => {
-    const stableEvidence = filterStableSceneCandidateEvidence(stringList(directorScript.sourceEvidence));
+    const sceneBeatEvidence = asArray(directorScript.scene_beats).flatMap((beat) =>
+      stringList(asRecord(beat).source_evidence)
+    );
+    const seen = new Set<string>();
+    const stableEvidence = filterStableSceneCandidateEvidence([
+      ...sceneBeatEvidence,
+      ...stringList(directorScript.sourceEvidence),
+      ...stringList(directorScript.source_evidence),
+    ]).filter((evidence) => {
+      if (seen.has(evidence.candidateId)) return false;
+      seen.add(evidence.candidateId);
+      return true;
+    });
     const fallbackLocations = stringList(directorScript.keyLocations);
-    return stableEvidence.slice(0, 8).map((evidence, index) => ({
+    const targetCount =
+      stableEvidence.length > 0 ? Math.max(MIN_SHOT_SCRIPT_GATE_SHOTS, stableEvidence.length * 2) : 0;
+    return Array.from({ length: targetCount }, (_, index) => stableEvidence[index % stableEvidence.length]).map((evidence, index) => ({
       evidence,
       fallbackLocation: fallbackLocations[index % Math.max(fallbackLocations.length, 1)] || null,
     }));
@@ -252,7 +279,7 @@ function buildShotScriptQualityGate(input: {
     nextAction:
       reasons.length > 0
         ? '修复 sceneCandidates、对白/动作块抽取、CharacterBible 和 LocationBible 后，再重新生成 ShotScript。'
-        : '可以尝试生成 ShotScript；本预检不写入镜头台本。',
+        : '可以生成 Phase 1B-C ShotScript；本预检不写入镜头台本。',
     checkedAt: input.checkedAt,
   };
 }
@@ -795,9 +822,12 @@ export class ProjectProductionStateService {
     const shotScriptQualityGate = buildShotScriptQualityGate({
       hasStudioShotScripts,
       shotScriptCount,
+      studioShotScripts,
       studioDirectorScripts,
+      studioEpisodePlans,
       checkedAt: new Date().toISOString(),
     });
+    const hasStudioReadyShotScripts = hasStudioShotScripts && shotScriptQualityGate.status === 'passed';
     const storyboardAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.length
       : 0;
@@ -955,24 +985,27 @@ export class ProjectProductionStateService {
       ),
       stage(
         'shot_script_ready',
-        hasStudioShotScripts
+        hasStudioReadyShotScripts
           ? 'done'
-          : shotScriptQualityGate.status === 'blocked'
+          : hasStudioShotScripts || shotScriptQualityGate.status === 'blocked'
             ? 'blocked'
             : 'missing',
-        hasStudioShotScripts
-          ? [`Project.metadata.animationStudio.shotScripts:${shotScriptCount}`]
-          : shotScriptQualityGate.status === 'blocked'
+        hasStudioReadyShotScripts
+          ? [
+              `Project.metadata.animationStudio.shotScripts:${shotScriptCount}`,
+              `quality_score:${String(shotScriptQualityGate.reasons.length ? 'blocked' : 'passed')}`,
+            ]
+          : hasStudioShotScripts || shotScriptQualityGate.status === 'blocked'
             ? shotScriptQualityGate.reasons
           : hasLegacyStructure
             ? [`旧 Shot 数量：${shotCount}`]
             : [],
-        hasStudioShotScripts
+        hasStudioReadyShotScripts
           ? null
-          : shotScriptQualityGate.status === 'blocked'
+          : hasStudioShotScripts || shotScriptQualityGate.status === 'blocked'
             ? `镜头台本文本质量门槛未通过：${shotScriptQualityGate.reasons.join('；')}`
             : '当前没有标准 ShotScript；不能把旧摘要伪装成镜头台本',
-        hasStudioShotScripts ? '进入分镜图生成阶段' : 'Phase 2F 生成标准镜头台本'
+        hasStudioReadyShotScripts ? '后续阶段生成 StoryboardAsset；本阶段不生成分镜/图片/视频' : 'Phase 1B-C 生成第一集 ShotScript'
       ),
       stage(
         'storyboard_ready',

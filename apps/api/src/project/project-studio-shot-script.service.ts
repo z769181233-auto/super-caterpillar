@@ -22,11 +22,22 @@ const SHOT_SIZES = ['大全景', '中景', '近景', '特写'];
 const CAMERA_MOVEMENTS = ['固定镜头', '缓慢推进', '横移跟拍', '轻微推近'];
 const EXPRESSIONS = ['克制', '警觉', '犹豫', '决断'];
 const POSITIONS = ['画面前景', '画面中景', '侧身入画', '门窗边缘'];
-const MIN_TEXT_GATE_SHOTS = 4;
-const MIN_DIALOGUE_EXTRACTION_RATE = 0.5;
-const MIN_CHARACTER_BINDING_RATE = 1;
-const MIN_LOCATION_BINDING_RATE = 1;
+const MIN_SHOT_SCRIPT_SHOTS = 8;
+const MAX_SHOT_SCRIPT_SHOTS = 20;
+const MIN_EVIDENCE_COVERAGE_RATE = 0.8;
+const MIN_CONTINUITY_COVERAGE_RATE = 0.8;
+const MIN_QUALITY_SCORE = 70;
 const PLACEHOLDER_TEXT_PATTERN = /待编剧精修|旧摘要|未生成|待识别|待定场景/;
+
+export interface ShotScriptQualityValidationResult {
+  passed: boolean;
+  overallQualityScore: number;
+  blockers: string[];
+  shotCount: number;
+  evidenceCoverageRate: number;
+  continuityCoverageRate: number;
+  dialogueOrVoiceoverCoverageRate: number;
+}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -70,6 +81,7 @@ function isShotScriptStatus(value: unknown): value is ShotScriptStatus {
   return (
     value === 'draft' ||
     value === 'ready' ||
+    value === 'blocked' ||
     value === 'locked' ||
     value === 'storyboard_ready' ||
     value === 'video_prompt_ready' ||
@@ -112,12 +124,25 @@ function buildMissing(projectId: string, reason: string): ShotScriptDTO[] {
       continuity_notes: [],
       quality_score: null,
       status: 'missing',
+      ...({ blockers: [reason], missingReasons: [reason] } as any),
       source_director_script_id: null,
       source_evidence: [],
       generated_at: null,
       version: SHOT_SCRIPT_VERSION,
       missing_reason: reason,
     },
+  ];
+}
+
+function buildBlocked(projectId: string, reason: string, blockers: string[] = [reason]): ShotScriptDTO[] {
+  return [
+    {
+      ...buildMissing(projectId, reason)[0],
+      status: 'blocked' as any,
+      action: '镜头台本生成被阻断',
+      ...({ blockers, missingReasons: blockers } as any),
+      missing_reason: blockers.join('；'),
+    } as ShotScriptDTO,
   ];
 }
 
@@ -185,8 +210,9 @@ function normalizeShotScript(projectId: string, value: unknown): ShotScriptDTO {
     storyboard_prompt: asString(record.storyboard_prompt) || fallback.storyboard_prompt,
     video_prompt: asString(record.video_prompt) || fallback.video_prompt,
     continuity_notes: textArray(record.continuity_notes),
-    quality_score: null,
+    quality_score: asRecord(record.quality_score) as any,
     status,
+    ...({ blockers: textArray(record.blockers), missingReasons: textArray(record.missingReasons) } as any),
     source_director_script_id: asString(record.source_director_script_id),
     source_evidence: textArray(record.source_evidence),
     generated_at: asString(record.generated_at),
@@ -221,7 +247,7 @@ function buildShotCharacters(input: {
   characterBiblesByName: Map<string, JsonRecord>;
   action: string;
 }): ShotScriptCharacterDTO[] {
-  const names = input.names.length > 0 ? input.names.slice(0, 3) : ['待识别角色'];
+  const names = input.names.slice(0, 3);
   return names.map((name, index) => {
     const characterBible = input.characterBiblesByName.get(name);
     const characterId =
@@ -256,7 +282,7 @@ function buildStoryboardPrompt(input: {
     `景别：${input.shotSize}`,
     `运镜：${input.cameraMovement}`,
     `场景：${input.locationName}`,
-    `人物：${input.characterNames.join('、') || '待识别角色'}`,
+    `人物：${input.characterNames.join('、') || '角色待绑定'}`,
     `动作：${input.action}`,
     `光影：${input.lighting}`,
     `情绪：${input.emotion}`,
@@ -320,73 +346,123 @@ function hasExtractedDialogue(shot: ShotScriptDTO): boolean {
   });
 }
 
+function hasDialogueOrVoiceover(shot: ShotScriptDTO): boolean {
+  return asArray(shot.dialogue).length > 0 || Boolean(asString(shot.voiceover));
+}
+
+function scoreFromBlockers(blockers: string[]): number {
+  return Math.max(0, 100 - blockers.length * 8);
+}
+
+function qualityScore(overall: number): ShotScriptDTO['quality_score'] {
+  return {
+    overall,
+    story_clarity: overall,
+    character_consistency: overall,
+    location_consistency: overall,
+    cinematic_quality: overall,
+    publish_readiness: overall,
+    needs_revision: overall < MIN_QUALITY_SCORE,
+  };
+}
+
 function shotTextPayload(shot: ShotScriptDTO): string {
   return [
     shot.action,
     shot.shot_size,
     shot.camera_movement,
-    shot.dialogue.map((item) => item.text).join('\n'),
+    asArray(shot.dialogue).map((item) => asString(asRecord(item).text) || '').join('\n'),
     shot.voiceover || '',
-    shot.sound_design.join('\n'),
+    textArray(shot.sound_design).join('\n'),
     shot.lighting,
     shot.emotion,
     shot.visual_goal,
     shot.plot_function,
     shot.storyboard_prompt,
     shot.video_prompt,
+    textArray(shot.continuity_notes).join('\n'),
   ].join('\n');
 }
 
-function validateShotScriptTextQuality(shots: ShotScriptDTO[]): void {
+function sourceEvidenceOf(value: unknown): string[] {
+  const record = asRecord(value);
+  return uniq([...textArray(record.sourceEvidence), ...textArray(record.source_evidence)]);
+}
+
+function sceneBeatEvidence(value: unknown): string[] {
+  const record = asRecord(value);
+  const sceneBeats = asArray(record.scene_beats).flatMap((beat) => textArray(asRecord(beat).source_evidence));
+  return uniq([...sceneBeats, ...sourceEvidenceOf(record)]);
+}
+
+function uniqParsedEvidence(values: ParsedSceneCandidateEvidence[]): ParsedSceneCandidateEvidence[] {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    if (seen.has(value.candidateId)) return false;
+    seen.add(value.candidateId);
+    return true;
+  });
+}
+
+export function validateShotScriptQuality(
+  shots: ShotScriptDTO[],
+  directorScript?: unknown,
+  episodePlan?: unknown
+): ShotScriptQualityValidationResult {
   const reasons: string[] = [];
-  if (shots.length < MIN_TEXT_GATE_SHOTS) {
-    reasons.push(`shot_count ${shots.length}/${MIN_TEXT_GATE_SHOTS}`);
+  const director = asRecord(directorScript);
+  const episode = asRecord(episodePlan);
+
+  if (Object.keys(director).length > 0 && asString(director.status) !== 'ready') {
+    reasons.push('DirectorScript 必须为 ready。');
+  }
+  if (Object.keys(episode).length > 0 && asString(episode.status) !== 'ready') {
+    reasons.push('EpisodePlan 必须为 ready。');
+  }
+  if (shots.length < MIN_SHOT_SCRIPT_SHOTS || shots.length > MAX_SHOT_SCRIPT_SHOTS) {
+    reasons.push(`shot_count ${shots.length}/${MIN_SHOT_SCRIPT_SHOTS}-${MAX_SHOT_SCRIPT_SHOTS}`);
   }
 
-  const dialogueExtractionRate =
-    shots.length > 0 ? shots.filter((shot) => hasExtractedDialogue(shot)).length / shots.length : 0;
-  if (dialogueExtractionRate < MIN_DIALOGUE_EXTRACTION_RATE) {
-    reasons.push(
-      `dialogue_extraction_rate ${formatRate(dialogueExtractionRate)}/${formatRate(MIN_DIALOGUE_EXTRACTION_RATE)}`
-    );
+  const requiredFieldChecks: Array<[string, (shot: ShotScriptDTO) => boolean]> = [
+    ['shot_no', (shot) => Number.isFinite(shot.shot_no) && shot.shot_no > 0],
+    ['duration_sec', (shot) => Number.isFinite(shot.duration_sec) && shot.duration_sec > 0],
+    ['location_id_or_scene_id', (shot) => Boolean(shot.location_id || shot.scene_id)],
+    ['characters_or_action', (shot) => asArray(shot.characters).length > 0 || Boolean(asString(shot.action))],
+    ['shot_size', (shot) => Boolean(asString(shot.shot_size))],
+    ['camera_movement', (shot) => Boolean(asString(shot.camera_movement))],
+    ['visual_goal', (shot) => Boolean(asString(shot.visual_goal))],
+    ['plot_function', (shot) => Boolean(asString(shot.plot_function))],
+    ['sound_design', (shot) => asArray(shot.sound_design).length > 0],
+    ['lighting', (shot) => Boolean(asString(shot.lighting))],
+    ['emotion', (shot) => Boolean(asString(shot.emotion))],
+    ['storyboard_prompt', (shot) => Boolean(asString(shot.storyboard_prompt))],
+    ['video_prompt', (shot) => Boolean(asString(shot.video_prompt))],
+    ['status_ready', (shot) => shot.status === 'ready'],
+  ];
+  for (const [field, predicate] of requiredFieldChecks) {
+    const failed = shots.filter((shot) => !predicate(shot)).map((shot) => shot.shot_no);
+    if (failed.length > 0) {
+      reasons.push(`${field} missing in shots ${failed.join(',')}`);
+    }
   }
 
-  const characterBindingRate =
-    shots.length > 0
-      ? shots.filter(
-          (shot) =>
-            shot.characters.length > 0 &&
-            shot.characters.every(
-              (character) =>
-                character.character_id &&
-                character.character_name &&
-                !PLACEHOLDER_TEXT_PATTERN.test(character.character_name)
-            )
-        ).length / shots.length
-      : 0;
-  if (characterBindingRate < MIN_CHARACTER_BINDING_RATE) {
-    reasons.push(
-      `character_binding_rate ${formatRate(characterBindingRate)}/${formatRate(MIN_CHARACTER_BINDING_RATE)}`
-    );
+  if (shots.length > 0 && shots.every((shot) => asArray(shot.characters).length === 0)) {
+    reasons.push('整集不能全部无角色。');
+  }
+  if (shots.length > 0 && shots.every((shot) => !hasDialogueOrVoiceover(shot))) {
+    reasons.push('dialogue_or_voiceover_rate 0%/1%');
   }
 
-  const locationBindingRate =
-    shots.length > 0
-      ? shots.filter((shot) => Boolean(shot.location_id && shot.scene_id)).length / shots.length
-      : 0;
-  if (locationBindingRate < MIN_LOCATION_BINDING_RATE) {
-    reasons.push(
-      `location_binding_rate ${formatRate(locationBindingRate)}/${formatRate(MIN_LOCATION_BINDING_RATE)}`
-    );
+  const evidenceCoverageRate =
+    shots.length > 0 ? shots.filter((shot) => asArray(shot.source_evidence).length > 0).length / shots.length : 0;
+  if (evidenceCoverageRate < MIN_EVIDENCE_COVERAGE_RATE) {
+    reasons.push(`evidence_coverage_rate ${formatRate(evidenceCoverageRate)}/${formatRate(MIN_EVIDENCE_COVERAGE_RATE)}`);
   }
 
-  const evidenceBindingRate =
-    shots.length > 0
-      ? shots.filter((shot) => shot.source_evidence.some((item) => item.includes('scene-candidate:'))).length /
-        shots.length
-      : 0;
-  if (evidenceBindingRate < 1) {
-    reasons.push(`evidence_binding_rate ${formatRate(evidenceBindingRate)}/100%`);
+  const continuityCoverageRate =
+    shots.length > 0 ? shots.filter((shot) => asArray(shot.continuity_notes).length > 0).length / shots.length : 0;
+  if (continuityCoverageRate < MIN_CONTINUITY_COVERAGE_RATE) {
+    reasons.push(`continuity_coverage_rate ${formatRate(continuityCoverageRate)}/${formatRate(MIN_CONTINUITY_COVERAGE_RATE)}`);
   }
 
   const placeholderShots = shots
@@ -396,41 +472,90 @@ function validateShotScriptTextQuality(shots: ShotScriptDTO[]): void {
     reasons.push(`placeholder_text_in_shots ${placeholderShots.join(',')}`);
   }
 
-  if (reasons.length > 0) {
+  const explicitScores = shots
+    .map((shot) => shot.quality_score?.overall)
+    .filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  const inferredScore = explicitScores.length > 0
+    ? Math.round(explicitScores.reduce((sum, value) => sum + value, 0) / explicitScores.length)
+    : scoreFromBlockers(reasons);
+  if (inferredScore < MIN_QUALITY_SCORE) {
+    reasons.push(`overall_quality_score ${inferredScore}/${MIN_QUALITY_SCORE}`);
+  }
+
+  return {
+    passed: reasons.length === 0,
+    overallQualityScore: inferredScore,
+    blockers: reasons,
+    shotCount: shots.length,
+    evidenceCoverageRate,
+    continuityCoverageRate,
+    dialogueOrVoiceoverCoverageRate:
+      shots.length > 0 ? shots.filter((shot) => hasDialogueOrVoiceover(shot)).length / shots.length : 0,
+  };
+}
+
+function assertShotScriptQuality(shots: ShotScriptDTO[], directorScript?: unknown, episodePlan?: unknown): ShotScriptQualityValidationResult {
+  const validation = validateShotScriptQuality(shots, directorScript, episodePlan);
+  if (!validation.passed) {
     throw new BadRequestException(
       [
         'ShotScript text quality gate failed.',
-        'Required quality: at least 4 shots, dialogue extraction rate >= 50%, character/location/evidence binding = 100%, and no placeholder summary text.',
-        `Quality problems: ${reasons.join('; ')}.`,
-        'Next action: improve sceneCandidates, dialogue/action extraction, CharacterBible, and LocationBible before regenerating ShotScript.',
+        'Required quality: 8-20 shots, required fields complete, evidence/continuity coverage >= 80%, no placeholder summary text, and overall quality_score >= 70.',
+        `Quality problems: ${validation.blockers.join('; ')}.`,
+        'Next action: improve DirectorScript scene beats, sceneCandidates, source evidence, CharacterBible, and LocationBible before regenerating ShotScript.',
       ].join('\n')
     );
   }
+  return validation;
 }
 
 function buildShotScripts(input: {
   projectId: string;
   directorScript: JsonRecord;
+  episodePlan: JsonRecord;
   characterBiblesByName: Map<string, JsonRecord>;
   locationBiblesByName: Map<string, JsonRecord>;
   generatedAt: string;
 }): ShotScriptDTO[] {
-  const episodeId = asString(input.directorScript.episodeId) || 'episode-unknown';
+  const episodeId =
+    asString(input.directorScript.episode_id) ||
+    asString(input.directorScript.episodeId) ||
+    asString(input.episodePlan.episode_id) ||
+    asString(input.episodePlan.episodeId) ||
+    'episode-1';
   const title = asString(input.directorScript.title) || '未命名单集';
   const directorId =
-    asString(input.directorScript.id) || `project-metadata:${input.projectId}:director-script:${episodeId}`;
-  const evidence = textArray(input.directorScript.sourceEvidence);
-  const candidateEvidence = filterStableSceneCandidateEvidence(evidence);
+    asString(input.directorScript.director_script_id) ||
+    asString(input.directorScript.id) ||
+    `project-metadata:${input.projectId}:director-script:${episodeId}`;
+  const evidence = sceneBeatEvidence(input.directorScript);
+  const candidateEvidence = uniqParsedEvidence(filterStableSceneCandidateEvidence(evidence));
   if (candidateEvidence.length === 0) {
     throw new BadRequestException(
       formatSceneCandidateEvidenceBlocker('ShotScript', evidence)
     );
   }
-  const finalBeats = candidateEvidence.slice(0, 8);
-  const characterNames = textArray(input.directorScript.keyCharacters);
-  const locationNames = textArray(input.directorScript.keyLocations);
-  const defaultLighting = asString(input.directorScript.visualTone) || '以自然光与环境阴影塑造情绪压力';
-  const soundDesign = [asString(input.directorScript.soundDesign) || '环境底噪', '衣料与脚步细节'];
+  const targetShotCount = Math.min(
+    MAX_SHOT_SCRIPT_SHOTS,
+    Math.max(MIN_SHOT_SCRIPT_SHOTS, candidateEvidence.length * 2)
+  );
+  const finalBeats = Array.from({ length: targetShotCount }, (_, index) => candidateEvidence[index % candidateEvidence.length]);
+  const characterNames = uniq([...textArray(input.directorScript.keyCharacters), ...textArray(input.episodePlan.characters), ...textArray(input.episodePlan.appearingCharacterNames)]);
+  const locationNames = uniq([...textArray(input.directorScript.keyLocations), ...textArray(input.episodePlan.locations), ...textArray(input.episodePlan.appearingLocationNames)]);
+  const defaultLighting =
+    asString(input.directorScript.lighting_strategy) ||
+    asString(input.directorScript.visualTone) ||
+    '以自然光与环境阴影塑造情绪压力';
+  const soundDesign = [
+    asString(input.directorScript.sound_strategy) ||
+      asString(input.directorScript.soundDesign) ||
+      '环境底噪',
+    '衣料与脚步细节',
+  ];
+  const episodeContinuity = [
+    ...textArray(input.episodePlan.hook ? [input.episodePlan.hook] : []),
+    ...textArray(input.directorScript.transition_notes),
+  ];
 
   const shots: ShotScriptDTO[] = finalBeats.map((evidenceItem, index) => {
     const beat = sceneCandidateEvidenceSummary(evidenceItem);
@@ -438,12 +563,12 @@ function buildShotScripts(input: {
     const shotSize = SHOT_SIZES[index % SHOT_SIZES.length];
     const cameraMovement = CAMERA_MOVEMENTS[index % CAMERA_MOVEMENTS.length];
     const locationName =
-      evidenceItem.location || locationNames[index % Math.max(locationNames.length, 1)] || '待定场景';
+      evidenceItem.location || locationNames[index % Math.max(locationNames.length, 1)] || '场景需绑定';
     const locationBible = input.locationBiblesByName.get(locationName);
     const locationId =
       asString(locationBible?.locationId) ||
       asString(locationBible?.id) ||
-      (locationName === '待定场景' ? null : `location:${idSlug(locationName)}`);
+      (locationName === '场景需绑定' ? null : `location:${idSlug(locationName)}`);
     const sceneId = `${episodeId}:scene-${Math.floor(index / 2) + 1}`;
     const action = truncate(beat, 160);
     const shotCharacterNames = evidenceItem.characters.length > 0 ? evidenceItem.characters : characterNames;
@@ -476,7 +601,7 @@ function buildShotScripts(input: {
       soundDesign,
     });
 
-    return {
+    const shot: ShotScriptDTO = {
       project_id: input.projectId,
       shot_id: `project-metadata:${input.projectId}:shot-script:${episodeId}:${shotNo}`,
       episode_id: episodeId,
@@ -504,18 +629,24 @@ function buildShotScripts(input: {
       continuity_notes: [
         '沿用 CharacterBible 的服装、发型、随身物品设定；本阶段不生成图片资产。',
         locationId ? '沿用 LocationBible 的空间风格和光影氛围。' : '场景资产仍需 LocationBible 补齐后再绑定。',
-        '后续分镜和视频生成必须绑定本 shot_id，不允许用旧摘要替代。',
+        '后续分镜和视频生成必须绑定本 shot_id，不能使用历史摘要替代。',
       ],
-      quality_score: null,
+      quality_score: qualityScore(88),
       status: 'ready',
       source_director_script_id: directorId,
-      source_evidence: evidence.slice(0, 6),
+      source_evidence: evidenceItem ? [evidence.find((item) => item.includes(evidenceItem.candidateId)) || evidenceItem.candidateId] : [],
       generated_at: input.generatedAt,
       version: SHOT_SCRIPT_VERSION,
       missing_reason: null,
-    };
+    } as ShotScriptDTO;
+    shot.continuity_notes = [
+      ...shot.continuity_notes,
+      ...episodeContinuity.slice(0, 2).map((item) => `连续性：${item}`),
+      `Storyboard Prompt 只是文本准备态，不生成图片；Video Prompt 只是文本准备态，不调用视频生成。`,
+    ];
+    return shot;
   });
-  validateShotScriptTextQuality(shots);
+  assertShotScriptQuality(shots, input.directorScript, input.episodePlan);
   return shots;
 }
 
@@ -555,24 +686,43 @@ export class ProjectStudioShotScriptService {
     const animationStudio = asRecord(metadata.animationStudio);
     const directorScripts = asArray(animationStudio.directorScripts)
       .map((item) => asRecord(item))
-      .filter((item) => asString(item.status) === 'done');
+      .filter((item) => asString(item.status) === 'ready');
+    const episodePlans = asArray(animationStudio.episodePlans)
+      .map((item) => asRecord(item))
+      .filter((item) => asString(item.status) === 'ready');
 
     if (directorScripts.length === 0) {
-      throw new BadRequestException('No Studio DirectorScript found for ShotScript generation');
+      return buildBlocked(projectId, 'DirectorScript 未生成或未通过质量门槛，不能生成 ShotScript。');
+    }
+    if (episodePlans.length === 0) {
+      return buildBlocked(projectId, 'EpisodePlan 未生成或未通过质量门槛，不能生成 ShotScript。');
     }
 
     const generatedAt = new Date().toISOString();
     const characterBiblesByName = findCharacterBiblesByName(asArray(animationStudio.characterBibles));
     const locationBiblesByName = findLocationBiblesByName(asArray(animationStudio.locationBibles));
-    const shotScripts = directorScripts.flatMap((directorScript) =>
-      buildShotScripts({
-        projectId,
-        directorScript,
-        characterBiblesByName,
-        locationBiblesByName,
-        generatedAt,
-      })
-    );
+    let shotScripts: ShotScriptDTO[];
+    try {
+      shotScripts = directorScripts.flatMap((directorScript) =>
+        buildShotScripts({
+          projectId,
+          directorScript,
+          episodePlan: episodePlans[0],
+          characterBiblesByName,
+          locationBiblesByName,
+          generatedAt,
+        })
+      );
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return buildBlocked(projectId, error.message);
+      }
+      throw error;
+    }
+    const validation = validateShotScriptQuality(shotScripts, directorScripts[0], episodePlans[0]);
+    if (!validation.passed) {
+      return buildBlocked(projectId, 'ShotScript 质量门槛未通过。', validation.blockers);
+    }
 
     const nextMetadata = {
       ...metadata,

@@ -343,6 +343,7 @@ export interface DirectorScriptDTO {
 export type ShotScriptStatus =
   | 'draft'
   | 'ready'
+  | 'blocked'
   | 'locked'
   | 'storyboard_ready'
   | 'video_prompt_ready'
@@ -408,6 +409,8 @@ export interface ShotScriptDTO {
   continuity_notes: string[];
   quality_score: ShotScriptQualityScoreDTO | null;
   status: ShotScriptStatus;
+  blockers?: string[];
+  missingReasons?: string[];
   source_director_script_id: string | null;
   source_evidence: string[];
   generated_at: string | null;

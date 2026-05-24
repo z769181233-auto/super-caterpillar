@@ -1,6 +1,7 @@
 import { ProjectStudioDirectorScriptService } from './project-studio-director-script.service';
 import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
 import { ProjectProductionStateService } from './project-production-state.service';
+import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
 
 function createMutablePrismaMock() {
   let metadata: Record<string, any> = {
@@ -30,10 +31,10 @@ function createMutablePrismaMock() {
         season_arc: '第一集建立秘密读书、搜查逼近和主角顺势脱身的核心矛盾。',
         continuity_rules: ['薛知盈必须保持秘密读书不暴露', '王嬷嬷代表家族规训压力'],
         source_evidence: [
-          'scene-candidate:chapter-1:scene-candidate:1 characters:薛知盈,春桃 location:静水院 sourceBlocks:1 text:薛知盈躲在静水院窗下翻开律法书，低声对春桃说：“若今日还不懂规矩，我便永远只能任人安排。”',
-          'scene-candidate:chapter-1:scene-candidate:2 characters:王嬷嬷,春桃,薛知盈 location:静水院 sourceBlocks:2 text:王嬷嬷的脚步声逼近门口，春桃慌忙替薛知盈收起书页，门闩轻轻一响。',
-          'scene-candidate:chapter-1:scene-candidate:3 characters:王嬷嬷,薛知盈 location:静水院 sourceBlocks:3 text:王嬷嬷推门进来，笑着劝她：“表姑娘，今日别再闹了，夫人已经等着回话。”',
-          'scene-candidate:chapter-1:scene-candidate:4 characters:薛知盈,王嬷嬷 location:云墨斋 sourceBlocks:4 text:薛知盈把书藏进云墨斋旧匣，抬头迎上王嬷嬷的目光，决定先顺势脱身。',
+          'scene-candidate:chapter-1:scene-candidate:1 | confidence:high | sourceBlocks:1 | location:静水院 | characters:薛知盈、春桃 | dialogueBlocks:1 | actionBlocks:1 | text:薛知盈躲在静水院窗下翻开律法书，低声对春桃说：“若今日还不懂规矩，我便永远只能任人安排。”',
+          'scene-candidate:chapter-1:scene-candidate:2 | confidence:high | sourceBlocks:2 | location:静水院 | characters:王嬷嬷、春桃、薛知盈 | dialogueBlocks:2 | actionBlocks:2 | text:王嬷嬷的脚步声逼近门口，春桃慌忙替薛知盈收起书页，门闩轻轻一响。',
+          'scene-candidate:chapter-1:scene-candidate:3 | confidence:high | sourceBlocks:3 | location:静水院 | characters:王嬷嬷、薛知盈 | dialogueBlocks:3 | actionBlocks:3 | text:王嬷嬷推门进来，笑着劝她：“表姑娘，今日别再闹了，夫人已经等着回话。”',
+          'scene-candidate:chapter-1:scene-candidate:4 | confidence:medium | sourceBlocks:4 | location:云墨斋 | characters:薛知盈、王嬷嬷 | dialogueBlocks:4 | actionBlocks:4 | text:薛知盈把书藏进云墨斋旧匣，抬头迎上王嬷嬷的目光，决定先顺势脱身。',
         ],
         quality_score: 88,
         status: 'ready',
@@ -226,10 +227,11 @@ function createMutablePrismaMock() {
 }
 
 describe('Studio text production pipeline acceptance', () => {
-  it('stops the Phase 1B-B text pipeline at production-ready EpisodePlan and DirectorScript', async () => {
+  it('turns fixed novel scene candidates into Phase 1B-C ready ShotScript text without storyboard or video generation', async () => {
     const prisma = createMutablePrismaMock();
     const episodePlanService = new ProjectStudioEpisodePlanService(prisma as any);
     const directorScriptService = new ProjectStudioDirectorScriptService(prisma as any);
+    const shotScriptService = new ProjectStudioShotScriptService(prisma as any);
     const productionStateService = new ProjectProductionStateService(prisma as any);
 
     const episodePlans = await episodePlanService.generateEpisodePlans(
@@ -237,6 +239,10 @@ describe('Studio text production pipeline acceptance', () => {
       'org-1'
     );
     const directorScripts = await directorScriptService.generateDirectorScripts(
+      'project-fixed-sample',
+      'org-1'
+    );
+    const shotScripts = await shotScriptService.generateShotScripts(
       'project-fixed-sample',
       'org-1'
     );
@@ -275,6 +281,12 @@ describe('Studio text production pipeline acceptance', () => {
     );
     expect(directorScripts[0].directorNotes.join('\n')).toContain('本轮不生成 ShotScript');
     expect(directorScripts[0].source_evidence?.length).toBeGreaterThanOrEqual(3);
+    expect(shotScripts.length).toBeGreaterThanOrEqual(8);
+    expect(shotScripts.length).toBeLessThanOrEqual(20);
+    expect(shotScripts.every((shot) => shot.status === 'ready')).toBe(true);
+    expect(shotScripts[0].storyboard_prompt).toContain('本阶段不生成图片');
+    expect(shotScripts[0].video_prompt).toContain('本阶段不调用视频生成');
+    expect(shotScripts[0].quality_score?.overall).toBeGreaterThanOrEqual(70);
 
     const persistedProject = await prisma.project.findFirst();
     const animationStudio = persistedProject.metadata.animationStudio;
@@ -282,12 +294,16 @@ describe('Studio text production pipeline acceptance', () => {
     expect(animationStudio.episodePlans[0].status).toBe('ready');
     expect(animationStudio.directorScripts).toHaveLength(1);
     expect(animationStudio.directorScripts[0].status).toBe('ready');
-    expect(animationStudio.shotScripts).toBeUndefined();
+    expect(animationStudio.shotScripts).toHaveLength(shotScripts.length);
+    expect(animationStudio.storyboardAssets).toBeUndefined();
+    expect(animationStudio.videoPrompts).toBeUndefined();
 
     const productionState = await productionStateService.getProductionState('project-fixed-sample', 'org-1');
     expect(productionState.stages.find((stage) => stage.key === 'episodes_ready')?.status).toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'director_script_ready')?.status).toBe('done');
-    expect(productionState.stages.find((stage) => stage.key === 'shot_script_ready')?.status).not.toBe('done');
-    expect(prisma.project.update).toHaveBeenCalledTimes(2);
+    expect(productionState.stages.find((stage) => stage.key === 'shot_script_ready')?.status).toBe('done');
+    expect(productionState.stages.find((stage) => stage.key === 'storyboard_ready')?.status).not.toBe('done');
+    expect(productionState.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).not.toBe('done');
+    expect(prisma.project.update).toHaveBeenCalledTimes(3);
   });
 });

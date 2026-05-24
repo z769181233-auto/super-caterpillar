@@ -75,6 +75,7 @@ export function formatShotScriptQualityGate(state: ProductionStateDTO): string[]
     `角色绑定率：${formatPercent(gate.characterBindingRate)}/${formatPercent(gate.minCharacterBindingRate)}`,
     `场景绑定率：${formatPercent(gate.locationBindingRate)}/${formatPercent(gate.minLocationBindingRate)}`,
     `证据绑定率：${formatPercent(gate.evidenceBindingRate)}/${formatPercent(gate.minEvidenceBindingRate)}`,
+    `连续性备注：Phase 1B-C 要求 >= 80%，详情见 ShotScript 卡片`,
     `占位文本：${gate.hasPlaceholderText ? '存在' : '未发现'}`,
     `阻断原因：${gate.reasons.length ? gate.reasons.join('；') : '无'}`,
     `下一步：${gate.nextAction || '无'}`,
