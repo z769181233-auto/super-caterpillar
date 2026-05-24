@@ -35,6 +35,13 @@ export class StudioApiError extends Error {
   }
 }
 
+function productionStateErrorMessage(status: number): string {
+  if (status === 401) return '登录态已失效，请先登录。';
+  if (status === 403) return '当前账号可能没有访问该项目的权限。';
+  if (status === 0) return 'API 服务可能未启动。';
+  return '暂时无法读取制作状态。';
+}
+
 export async function getStudioProductionState(projectId: string): Promise<ProductionStateDTO> {
   const response = await fetch(`/api/projects/${projectId}/production-state`, {
     cache: 'no-store',
@@ -44,15 +51,15 @@ export async function getStudioProductionState(projectId: string): Promise<Produ
   try {
     result = (await response.json()) as ApiEnvelope<ProductionStateDTO>;
   } catch {
-    throw new StudioApiError('暂时无法读取制作状态。', {
+    throw new StudioApiError(productionStateErrorMessage(response.status), {
       status: response.status,
       detail: `ProductionState API returned non-JSON response with status ${response.status}.`,
     });
   }
 
   if (!response.ok || !result.success || !result.data) {
-    const detail = result.error?.message || 'Failed to fetch Studio production state';
-    throw new StudioApiError('暂时无法读取制作状态。', {
+    const detail = extractStudioApiErrorMessage(result, 'Failed to fetch Studio production state');
+    throw new StudioApiError(productionStateErrorMessage(response.status), {
       status: response.status,
       detail,
     });

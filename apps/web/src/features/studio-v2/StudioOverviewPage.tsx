@@ -1,18 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-import type { ProductionStateDTO } from '@scu/shared-types';
+import React, { useEffect, useMemo, useState } from 'react';
+import type { ProductionStateDTO, ProductionStageDTO } from '@scu/shared-types';
 import { getStudioProductionState, StudioApiError } from './api';
 import { StudioLayout } from './StudioLayout';
 import {
-  formatLegacySummary,
-  formatSceneCandidateCoverage,
-  formatShotScriptQualityGate,
-  formatTextPipelineSummary,
-  getDoneStages,
-  getMissingOrBlockedStages,
-  getRequiredEmptyStateLabels,
+  getFirstTextPipelineBlocker,
+  isTextPipelineReady,
 } from './studio-state-summary';
 
 interface StudioOverviewPageProps {
@@ -20,19 +15,71 @@ interface StudioOverviewPageProps {
   projectId: string;
 }
 
-function card(children: React.ReactNode) {
-  return (
-    <section
-      style={{
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--r-lg)',
-        background: 'var(--bg-panel)',
-        padding: '1.5rem',
-      }}
-    >
-      {children}
-    </section>
-  );
+const TEXT_STAGES = [
+  { key: 'story_bible_ready', label: 'StoryBible' },
+  { key: 'episodes_ready', label: 'EpisodePlan' },
+  { key: 'director_script_ready', label: 'DirectorScript' },
+  { key: 'shot_script_ready', label: 'ShotScript' },
+] as const;
+
+function getStage(state: ProductionStateDTO | null, key: string): ProductionStageDTO | null {
+  return state?.stages.find((stage) => stage.key === key) || null;
+}
+
+function getEvidenceValue(stage: ProductionStageDTO | null, name: string): string | null {
+  const prefix = `${name}:`;
+  const line = stage?.evidence.find((item) => item.startsWith(prefix));
+  return line ? line.slice(prefix.length) : null;
+}
+
+function statusLabel(status: string | undefined): string {
+  if (status === 'done') return 'READY';
+  if (status === 'blocked') return 'BLOCKED';
+  if (status === 'missing') return 'MISSING';
+  if (status === 'failed') return 'FAILED';
+  return status ? status.toUpperCase() : 'NOT STARTED';
+}
+
+function statusColor(status: string | undefined): string {
+  if (status === 'done') return 'var(--accent)';
+  if (status === 'blocked' || status === 'failed') return 'var(--hsl-error)';
+  return 'var(--text-secondary)';
+}
+
+function getErrorCopy(status: number | null): { title: string; body: string; primaryAction: string } {
+  if (status === 401) {
+    return {
+      title: '无法读取项目制作状态',
+      body: '当前登录态已失效或尚未登录。请先登录后再回到 Studio。',
+      primaryAction: '去登录',
+    };
+  }
+  if (status === 403) {
+    return {
+      title: '无法读取项目制作状态',
+      body: '当前账号可能没有访问该项目的权限，或登录态已失效。',
+      primaryAction: '去登录',
+    };
+  }
+  return {
+    title: '无法读取项目制作状态',
+    body: '可能是未登录、没有项目权限、API 服务未启动，或本地代理配置异常。',
+    primaryAction: '去登录',
+  };
+}
+
+function getNextAction(state: ProductionStateDTO | null): string {
+  if (!state) return '先恢复制作状态读取，然后继续文本链路。';
+  if (!state.legacyDataSummary.hasStorySource && !state.legacyDataSummary.hasNovelSource) {
+    return '导入小说，作为 StoryBible、EpisodePlan、DirectorScript 和 ShotScript 的来源。';
+  }
+  const blocker = getFirstTextPipelineBlocker(state);
+  if (!blocker) return '文本链路已完成。下一阶段只能先做视觉资产方案设计。';
+  if (blocker.key === 'story_bible_ready') return '生成或修复 StoryBible。';
+  if (blocker.key === 'episodes_ready') return '生成或修复第一集 EpisodePlan。';
+  if (blocker.key === 'director_script_ready') return '生成或修复第一集 DirectorScript。';
+  if (blocker.key === 'shot_script_ready') return '生成或修复第一集 ShotScript。';
+  return blocker.nextAction || '处理当前阻断项。';
 }
 
 export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProps) {
@@ -46,12 +93,11 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
     let mounted = true;
     getStudioProductionState(projectId)
       .then((nextState) => {
-        if (mounted) {
-          setState(nextState);
-          setError(null);
-          setErrorDetail(null);
-          setErrorStatus(null);
-        }
+        if (!mounted) return;
+        setState(nextState);
+        setError(null);
+        setErrorDetail(null);
+        setErrorStatus(null);
       })
       .catch((err: Error) => {
         if (!mounted) return;
@@ -66,13 +112,23 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
     };
   }, [projectId, reloadKey]);
 
-  const doneStages = state ? getDoneStages(state) : [];
-  const missingStages = state ? getMissingOrBlockedStages(state) : [];
-  const requiredEmptyStates = state ? getRequiredEmptyStateLabels(state) : [];
   const importHref = `/${locale}/projects/${projectId}/import-novel`;
   const demoHref = `/${locale}/projects/studio-phase-1b-text-smoke/studio`;
+  const loginHref = `/${locale}/login`;
+  const projectHref = `/${locale}/projects/${projectId}`;
   const hasStorySource = Boolean(state?.legacyDataSummary.hasStorySource || state?.legacyDataSummary.hasNovelSource);
-  const stageByKey = (key: string) => state?.stages.find((stage) => stage.key === key);
+  const textReady = state ? isTextPipelineReady(state) : false;
+  const shotCount = getEvidenceValue(getStage(state, 'shot_script_ready'), 'Project.metadata.animationStudio.shotScripts') || '0';
+  const errorCopy = getErrorCopy(errorStatus);
+  const nextAction = getNextAction(state);
+  const visualSummary = useMemo(
+    () => [
+      { label: 'Storyboard', status: 'LOCKED / MISSING', body: '未生成 StoryboardAsset。' },
+      { label: 'Image', status: 'LOCKED / NOT STARTED', body: '没有图片生成入口。' },
+      { label: 'Video', status: 'LOCKED / NOT STARTED', body: '没有视频生成入口。' },
+    ],
+    []
+  );
 
   return (
     <StudioLayout
@@ -82,22 +138,17 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
       stateError={error}
       onRetryState={() => setReloadKey((value) => value + 1)}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <section
-          style={{
-            border: '1px solid var(--border-subtle)',
-            borderRadius: 'var(--r-lg)',
-            background: 'var(--bg-panel)',
-            padding: '1.5rem',
-          }}
-        >
-          <p style={{ color: 'var(--text-secondary)', margin: '0 0 0.5rem' }}>Studio v2 文本生产链路</p>
-          <h1 style={{ margin: 0, fontSize: '2.25rem' }}>动漫视频制作工作台</h1>
-          <p style={{ color: 'var(--text-secondary)', maxWidth: '48rem' }}>
-            从小说或原创剧本开始，自动生成动漫制作资料。当前阶段只封板 StoryBible、EpisodePlan、DirectorScript 和 ShotScript，
-            不生成分镜图、图片或视频。
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <section style={heroStyle()}>
+          <div>
+            <p style={eyebrowStyle()}>Studio v2 · 文本生产链路</p>
+            <h1 style={{ fontSize: '2.6rem', margin: 0 }}>动漫视频制作工作台</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.7, maxWidth: '54rem' }}>
+              从小说或原创剧本开始，自动生成动漫制作资料。当前阶段只封板 StoryBible、EpisodePlan、DirectorScript 和 ShotScript，
+              不生成分镜图、图片或视频。
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
             <Link href={importHref} style={primaryButtonStyle()}>
               导入小说
             </Link>
@@ -105,269 +156,221 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
               AI 原创剧本 · 即将支持
             </button>
             <Link href={demoHref} style={secondaryButtonStyle()}>
-              查看演示项目 / 使用演示数据
+              使用演示项目 / 查看演示数据
             </Link>
           </div>
         </section>
 
-        {error &&
-          card(
-            <>
-              <h2 style={{ marginTop: 0 }}>暂时无法读取制作状态</h2>
-              <p style={{ color: 'var(--text-secondary)' }}>请确认 API 服务已启动，或刷新页面重试。</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-                <button type="button" onClick={() => setReloadKey((value) => value + 1)} style={{ padding: '0.7rem 1rem' }}>
-                  Retry
-                </button>
-                <span style={{ color: 'var(--text-secondary)' }}>API base URL：/api</span>
-                {errorStatus ? <span style={{ color: 'var(--text-secondary)' }}>HTTP status：{errorStatus}</span> : null}
-              </div>
-              <details style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
-                <summary>错误详情</summary>
-                <pre style={{ whiteSpace: 'pre-wrap' }}>{errorDetail || error}</pre>
-              </details>
-            </>
-          )}
-
-        {state && !hasStorySource
-          ? card(
-              <>
-                <h2 style={{ marginTop: 0 }}>还没有小说或剧本来源</h2>
-                <p style={{ color: 'var(--text-secondary)' }}>
-                  请先导入小说，系统会生成 StoryBible、EpisodePlan、DirectorScript 和 ShotScript。
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <Link href={importHref} style={primaryButtonStyle()}>
-                    导入小说
-                  </Link>
-                  <button type="button" disabled style={disabledButtonStyle()}>
-                    AI 原创剧本 · 即将支持
-                  </button>
-                </div>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>
-                  当前未生成任何视觉资产。Storyboard / Image / Video 仍未开始。
-                </p>
-              </>
-            )
-          : null}
-
-        {state
-          ? card(
-              <>
-                <h2 style={{ marginTop: 0 }}>制作流程</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.75rem' }}>
-                  <FlowCard label="StoryBible" status={stageByKey('story_bible_ready')?.status || 'missing'} />
-                  <FlowCard label="EpisodePlan" status={stageByKey('episodes_ready')?.status || 'missing'} />
-                  <FlowCard label="DirectorScript" status={stageByKey('director_script_ready')?.status || 'missing'} />
-                  <FlowCard label="ShotScript" status={stageByKey('shot_script_ready')?.status || 'missing'} />
-                  <FlowCard label="Storyboard" status="locked" detail="LOCKED / MISSING" />
-                  <FlowCard label="Image" status="locked" detail="LOCKED / NOT STARTED" />
-                  <FlowCard label="VideoPrompt" status="locked" detail="LOCKED / NOT STARTED" />
-                  <FlowCard label="Video" status="locked" detail="LOCKED / NOT STARTED" />
-                </div>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>
-                  ShotScript ready 后，storyboard_prompt 仍只是文本准备态，不生成图片；video_prompt 仍只是文本准备态，不调用视频生成；未创建 worker/job。
-                </p>
-              </>
-            )
-          : null}
-
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>生产状态总览</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              当前阶段：<strong style={{ color: 'var(--text-primary)' }}>{state?.currentStage || '读取中'}</strong>
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
-              <div>
-                <h3>已完成阶段</h3>
-                <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-                  {(doneStages.length ? doneStages.map((item) => item.label) : ['暂无']).map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3>缺失 / 阻塞阶段</h3>
-                <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-                  {(missingStages.length ? missingStages.map((item) => `${item.label}：${item.missingReason || item.status}`) : ['暂无']).map(
-                    (item) => (
-                      <li key={item}>{item}</li>
-                    )
-                  )}
-                </ul>
-              </div>
-              <div>
-                <h3>下一步动作</h3>
-                <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-                  {(state?.nextActions?.length ? state.nextActions : ['等待生产状态']).map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
+        {error ? (
+          <section style={cardStyle('var(--bg-panel)')}>
+            <p style={eyebrowStyle()}>需要处理</p>
+            <h2 style={{ margin: 0 }}>{errorCopy.title}</h2>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{errorCopy.body}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <Link href={loginHref} style={primaryButtonStyle()}>
+                {errorCopy.primaryAction}
+              </Link>
+              <button type="button" onClick={() => setReloadKey((value) => value + 1)} style={buttonStyle()}>
+                刷新页面
+              </button>
+              <Link href={projectHref} style={secondaryButtonStyle()}>
+                返回项目页
+              </Link>
             </div>
-          </>
-        )}
+            <details style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
+              <summary>技术详情</summary>
+              <dl style={{ display: 'grid', gap: '0.35rem', marginBottom: 0 }}>
+                <DetailRow label="HTTP status" value={errorStatus ? String(errorStatus) : '无响应'} />
+                <DetailRow label="API base URL" value="/api" />
+                <DetailRow label="projectId" value={projectId} />
+                <DetailRow label="error message" value={errorDetail || error} />
+              </dl>
+            </details>
+          </section>
+        ) : null}
 
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>空态确认</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              本轮不伪造结果：没有 StoryBible、EpisodePlan、DirectorScript、ShotScript 时必须显示未生成。
+        {state && !hasStorySource ? (
+          <section style={cardStyle('var(--bg-panel)')}>
+            <p style={eyebrowStyle()}>开始制作</p>
+            <h2 style={{ margin: 0 }}>还没有小说或剧本来源</h2>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+              请先导入小说。系统会自动分析并生成故事圣经、剧集规划、导演剧本和镜头台本。
             </p>
-            <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-              {(requiredEmptyStates.length ? requiredEmptyStates : ['状态读取中']).map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </>
-        )}
-
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>文本生产链路封板</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              Phase 1B-D 只验收 StoryBible → EpisodePlan → DirectorScript → ShotScript。ShotScript ready 不代表分镜、图片、视频或 worker job 已生成。
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <Link href={importHref} style={primaryButtonStyle()}>
+                导入小说
+              </Link>
+              <button type="button" disabled style={disabledButtonStyle()}>
+                AI 原创剧本 · 即将支持
+              </button>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>
+              Storyboard / Image / Video 尚未开始，不会生成图片或视频。
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
-              {(state ? formatTextPipelineSummary(state) : ['状态读取中']).map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--r-md)',
-                    color: 'var(--text-secondary)',
-                    padding: '0.75rem',
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+          </section>
+        ) : null}
 
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>旧数据兼容摘要</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
-              {(state ? formatLegacySummary(state) : ['状态读取中']).map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--r-md)',
-                    padding: '0.75rem',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
+        <section style={cardStyle('var(--bg-panel)')}>
+          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+            <div>
+              <p style={eyebrowStyle()}>制作进度</p>
+              <h2 style={{ margin: 0 }}>{textReady ? '文本链路已完成' : '文本链路进行中'}</h2>
             </div>
-          </>
-        )}
-
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>小说分析质量门禁</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              这里只读展示 scene candidate 覆盖率；不足时会阻断 EpisodePlan / DirectorScript / ShotScript，避免把摘要伪装成正式视频剧本。
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
-              {(state ? formatSceneCandidateCoverage(state) : ['状态读取中']).map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--r-md)',
-                    padding: '0.75rem',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        {card(
-          <>
-            <h2 style={{ marginTop: 0 }}>镜头台本质量门禁</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>
-              这里显示 ShotScript 写入前质量门槛。若不能生成镜头台本，原因会直接显示在这里，不需要只看 API 报错。
-            </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
-              {(state ? formatShotScriptQualityGate(state) : ['状态读取中']).map((item) => (
-                <div
-                  key={item}
-                  style={{
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--r-md)',
-                    padding: '0.75rem',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+            <div style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>下一步：{nextAction}</div>
+          </div>
+          <div style={flowGridStyle()}>
+            {TEXT_STAGES.map((item) => {
+              const stage = getStage(state, item.key);
+              const quality = getEvidenceValue(stage, 'quality_score');
+              const isShot = item.key === 'shot_script_ready';
+              return (
+                <FlowCard
+                  key={item.key}
+                  label={item.label}
+                  status={statusLabel(stage?.status)}
+                  statusColor={statusColor(stage?.status)}
+                  detail={isShot ? `shot count: ${shotCount}` : quality ? `quality score: ${quality}` : 'quality score: --'}
+                />
+              );
+            })}
+            {visualSummary.map((item) => (
+              <FlowCard key={item.label} label={item.label} status={item.status} statusColor="var(--text-secondary)" detail={item.body} />
+            ))}
+          </div>
+          <div style={noticeStyle()}>
+            ShotScript ready 只代表镜头台本文本 ready。storyboard_prompt 是文本准备态，不生成图片；video_prompt 是文本准备态，不调用视频生成。
+          </div>
+        </section>
       </div>
     </StudioLayout>
   );
 }
 
-function primaryButtonStyle() {
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '120px minmax(0, 1fr)', gap: '0.75rem' }}>
+      <dt>{label}</dt>
+      <dd style={{ margin: 0, wordBreak: 'break-word' }}>{value}</dd>
+    </div>
+  );
+}
+
+function FlowCard({ label, status, statusColor, detail }: { label: string; status: string; statusColor: string; detail: string }) {
+  return (
+    <article style={flowCardStyle()}>
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.86rem' }}>{label}</div>
+      <strong style={{ color: statusColor }}>{status}</strong>
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.45 }}>{detail}</div>
+    </article>
+  );
+}
+
+function heroStyle(): React.CSSProperties {
+  return {
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-lg)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1.25rem',
+    padding: '2rem',
+  };
+}
+
+function cardStyle(background: string): React.CSSProperties {
+  return {
+    background,
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-lg)',
+    padding: '1.5rem',
+  };
+}
+
+function eyebrowStyle(): React.CSSProperties {
+  return {
+    color: 'var(--text-secondary)',
+    fontSize: '0.82rem',
+    fontWeight: 800,
+    letterSpacing: 0,
+    margin: '0 0 0.45rem',
+    textTransform: 'uppercase',
+  };
+}
+
+function primaryButtonStyle(): React.CSSProperties {
   return {
     background: 'var(--text-primary)',
     border: '1px solid var(--text-primary)',
     borderRadius: 'var(--r-md)',
     color: 'var(--bg-surface)',
     fontWeight: 800,
-    padding: '0.8rem 1rem',
+    padding: '0.85rem 1.1rem',
     textDecoration: 'none',
   };
 }
 
-function secondaryButtonStyle() {
+function secondaryButtonStyle(): React.CSSProperties {
   return {
     border: '1px solid var(--border-subtle)',
     borderRadius: 'var(--r-md)',
     color: 'var(--text-primary)',
     fontWeight: 700,
-    padding: '0.8rem 1rem',
+    padding: '0.85rem 1.1rem',
     textDecoration: 'none',
   };
 }
 
-function disabledButtonStyle() {
+function buttonStyle(): React.CSSProperties {
+  return {
+    background: 'transparent',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 700,
+    padding: '0.85rem 1.1rem',
+  };
+}
+
+function disabledButtonStyle(): React.CSSProperties {
   return {
     border: '1px solid var(--border-subtle)',
     borderRadius: 'var(--r-md)',
     color: 'var(--text-secondary)',
     cursor: 'not-allowed',
     opacity: 0.7,
-    padding: '0.8rem 1rem',
+    padding: '0.85rem 1.1rem',
   };
 }
 
-function FlowCard({ label, status, detail }: { label: string; status: string; detail?: string }) {
-  const normalized = status === 'done' ? 'READY' : status === 'locked' ? detail || 'LOCKED' : status.toUpperCase();
-  const isReady = normalized === 'READY';
-  return (
-    <div
-      style={{
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--r-md)',
-        background: isReady ? 'var(--bg-card)' : 'transparent',
-        padding: '0.9rem',
-      }}
-    >
-      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{label}</div>
-      <strong>{normalized}</strong>
-    </div>
-  );
+function flowGridStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.85rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    marginTop: '1.25rem',
+  };
+}
+
+function flowCardStyle(): React.CSSProperties {
+  return {
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    display: 'grid',
+    gap: '0.35rem',
+    minHeight: '112px',
+    padding: '1rem',
+  };
+}
+
+function noticeStyle(): React.CSSProperties {
+  return {
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-secondary)',
+    lineHeight: 1.65,
+    marginTop: '1rem',
+    padding: '1rem',
+  };
 }

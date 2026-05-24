@@ -8,6 +8,8 @@ test('buildStudioV2Nav returns locale-aware Studio v2 paths', () => {
 
   assert.equal(byId.get('overview'), '/zh/projects/project-1/studio');
   assert.equal(byId.get('source'), '/zh/projects/project-1/studio/source');
+  assert.equal(nav.find((item) => item.id === 'overview')?.label, '开始 / 总览');
+  assert.equal(nav.find((item) => item.id === 'source')?.label, '1. 导入小说 / 剧本来源');
   assert.equal(byId.get('shots'), '/zh/projects/project-1/studio/episodes/episode-9/shots');
   assert.equal(byId.get('storyboards'), '/zh/projects/project-1/studio/episodes/episode-9/storyboards');
   assert.equal(byId.get('images'), '/zh/projects/project-1/studio/episodes/episode-9/storyboards');
@@ -15,4 +17,8 @@ test('buildStudioV2Nav returns locale-aware Studio v2 paths', () => {
   assert.equal(nav.find((item) => item.id === 'storyboards')?.locked, true);
   assert.equal(nav.find((item) => item.id === 'images')?.locked, true);
   assert.equal(nav.find((item) => item.id === 'videos')?.locked, true);
+  assert.deepEqual(
+    nav.filter((item) => item.group === 'assets').map((item) => item.id),
+    ['characters', 'locations', 'costumes', 'props']
+  );
 });
