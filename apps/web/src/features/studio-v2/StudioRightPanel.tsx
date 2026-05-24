@@ -14,6 +14,9 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
   const legacy = state?.legacyDataSummary;
   const coverage = legacy?.sceneCandidateCoverage;
   const shotScriptGate = state?.shotScriptQualityGate;
+  const shotStage = state?.stages.find((stage) => stage.key === 'shot_script_ready');
+  const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
+  const videoPromptStage = state?.stages.find((stage) => stage.key === 'video_prompt_ready');
   const episodeStage = state?.stages.find((stage) => stage.key === 'episodes_ready');
   const directorStage = state?.stages.find((stage) => stage.key === 'director_script_ready');
   const canContinue = Boolean(state && state.riskFlags.length === 0);
@@ -97,6 +100,7 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
       <section>
         {panelTitle('镜头台本门槛')}
         <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+          <div>ShotScript：{shotStage?.status || '--'}</div>
           <div>状态：{shotScriptGate?.status || '--'}</div>
           <div>
             镜头候选：
@@ -115,6 +119,9 @@ export function StudioRightPanel({ state }: StudioRightPanelProps) {
             {shotScriptGate?.reasons.length ? shotScriptGate.reasons.join('；') : '无'}
           </div>
           <div>下一步：{shotScriptGate?.nextAction || '无'}</div>
+          <div>Storyboard：{storyboardStage?.status || '--'}</div>
+          <div>VideoPrompt：{videoPromptStage?.status || '--'}</div>
+          <div>边界：ShotScript ready 不会自动生成分镜、图片、视频或 worker job</div>
         </div>
       </section>
     </aside>

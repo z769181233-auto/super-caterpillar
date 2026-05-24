@@ -89,7 +89,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
         }}
       >
         <p style={{ color: 'var(--text-secondary)', margin: '0 0 0.5rem' }}>
-          Phase 2F：只生成 ShotScript，不接分镜图/图片/视频
+          Phase 1B-C：只生成第一集 8-20 个 ShotScript，不接分镜图/图片/视频/worker
         </p>
         <div
           style={{
@@ -102,7 +102,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
           <div>
             <h1 style={{ margin: 0 }}>镜头台本 ShotScript</h1>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              从已生成的 DirectorScript 拆出镜头级结构：shot_id、时长、景别、运镜、角色动作、对白、旁白、声音、光影、情绪、分镜提示词和视频提示词草案。
+              从 ready DirectorScript 拆出镜头级结构：shot_id、时长、景别、运镜、角色动作、对白、旁白、声音、光影、情绪、分镜提示词和视频提示词文本草案。
             </p>
           </div>
           <button
@@ -138,6 +138,8 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
               body={[
                 `状态：${state.shotScriptQualityGate.status}`,
                 `镜头候选：${state.shotScriptQualityGate.candidateShotCount}/${state.shotScriptQualityGate.minShotCount}`,
+                `对白/旁白覆盖：${formatPercent(state.shotScriptQualityGate.dialogueExtractionRate)}`,
+                `source evidence 覆盖：${formatPercent(state.shotScriptQualityGate.evidenceBindingRate)}`,
                 state.shotScriptQualityGate.reasons.length
                   ? `原因：${state.shotScriptQualityGate.reasons.join('；')}`
                   : null,
@@ -165,7 +167,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
         <Callout
           tone="info"
           title="边界说明"
-          body="本页只生成镜头级结构化文本和提示词草案。StoryboardAsset、分镜图、图片资产、视频提示词正式层和镜头视频仍未生成。"
+          body="本页只生成镜头级结构化文本和提示词草案。storyboard_prompt 是分镜提示词文本，不生成图片；video_prompt 是视频提示词文本草案，不调用视频生成；不会启动 worker 或新增 job。"
         />
 
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
@@ -196,8 +198,18 @@ function ShotScriptCard({ shotScript }: { shotScript: ShotScriptDTO }) {
       </h2>
       <div style={{ display: 'grid', gap: '0.85rem' }}>
         <InfoRow label="Shot ID" value={shotScript.shot_id} />
+        <InfoRow label="状态" value={shotScript.status} />
         <InfoRow label="集 ID / 场 ID" value={`${shotScript.episode_id} / ${shotScript.scene_id}`} />
         <InfoRow label="场景资产" value={shotScript.location_id || '未绑定 LocationBible'} />
+        <InfoRow
+          label="主角色绑定"
+          value={[
+            `character_id: ${shotScript.character_id || '未绑定'}`,
+            `costume_id: ${shotScript.costume_id || '未绑定'}`,
+            `expression: ${shotScript.expression || '未生成'}`,
+            `position: ${shotScript.position || '未生成'}`,
+          ].join('\n')}
+        />
         <InfoRow
           label="角色资产"
           value={
@@ -232,8 +244,8 @@ function ShotScriptCard({ shotScript }: { shotScript: ShotScriptDTO }) {
         <InfoRow label="情绪" value={shotScript.emotion} />
         <InfoRow label="画面目标" value={shotScript.visual_goal} />
         <InfoRow label="剧情功能" value={shotScript.plot_function} />
-        <InfoRow label="Storyboard Prompt" value={shotScript.storyboard_prompt || '未生成'} />
-        <InfoRow label="Video Prompt" value={shotScript.video_prompt || '未生成'} />
+        <InfoRow label="Storyboard Prompt 文本准备态" value={shotScript.storyboard_prompt || '未生成'} />
+        <InfoRow label="Video Prompt 文本准备态" value={shotScript.video_prompt || '未生成'} />
         <InfoRow
           label="连续性备注"
           value={
@@ -242,12 +254,45 @@ function ShotScriptCard({ shotScript }: { shotScript: ShotScriptDTO }) {
               : '未生成'
           }
         />
-        <InfoRow label="质量评分" value={shotScript.quality_score ? '已生成' : '未生成'} />
+        <InfoRow
+          label="来源证据"
+          value={shotScript.source_evidence.length > 0 ? shotScript.source_evidence.join('\n') : '未绑定'}
+        />
+        <InfoRow label="质量评分" value={formatQualityScore(shotScript.quality_score)} />
+        <InfoRow
+          label="阻断原因"
+          value={formatBlockers(shotScript)}
+        />
         <InfoRow label="来源 DirectorScript" value={shotScript.source_director_script_id || '未绑定'} />
         <InfoRow label="协议版本" value={shotScript.version || '未生成'} />
       </div>
     </article>
   );
+}
+
+function formatPercent(value: number | null): string {
+  return value === null ? '未评估' : `${Math.round(value * 100)}%`;
+}
+
+function formatQualityScore(score: ShotScriptDTO['quality_score']): string {
+  if (!score) return '未生成';
+  return [
+    `overall: ${score.overall ?? '未评估'}`,
+    `story_clarity: ${score.story_clarity ?? '未评估'}`,
+    `character_consistency: ${score.character_consistency ?? '未评估'}`,
+    `location_consistency: ${score.location_consistency ?? '未评估'}`,
+    `cinematic_quality: ${score.cinematic_quality ?? '未评估'}`,
+    `publish_readiness: ${score.publish_readiness ?? '未评估'}`,
+    `needs_revision: ${score.needs_revision ? '是' : '否'}`,
+  ].join('\n');
+}
+
+function formatBlockers(shotScript: ShotScriptDTO): string {
+  const blockers = [
+    ...((shotScript as ShotScriptDTO & { blockers?: string[] }).blockers || []),
+    ...((shotScript as ShotScriptDTO & { missingReasons?: string[] }).missingReasons || []),
+  ];
+  return blockers.length > 0 ? Array.from(new Set(blockers)).join('\n') : '无';
 }
 
 function Callout({ tone, title, body }: { tone: 'error' | 'warn' | 'info'; title: string; body: string }) {

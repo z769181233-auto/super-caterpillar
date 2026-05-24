@@ -14,6 +14,9 @@ const SHOT_SCRIPT_QUALITY_GATE_PATTERNS = [
   /character_binding_rate \d+%\/\d+%/i,
   /location_binding_rate \d+%\/\d+%/i,
   /evidence_binding_rate \d+%\/\d+%/i,
+  /evidence_coverage_rate \d+%\/\d+%/i,
+  /continuity_coverage_rate \d+%\/\d+%/i,
+  /overall_quality_score \d+\/\d+/i,
   /placeholder_text_in_shots/i,
 ];
 
@@ -89,8 +92,8 @@ export function formatStudioGenerationError(errorMessage: string, targetLabel: s
   if (isShotScriptQualityGateBlocker) {
     return [
       `${targetLabel}已被镜头台本文本质量门槛阻断，不是页面卡住。`,
-      '原因：当前候选镜头还不满足写入标准，可能存在镜头数不足、对白抽取不足、角色/场景/source evidence 未完整绑定，或占位/旧摘要文本泄漏。',
-      '下一步：修复 sceneCandidates、对白/动作块抽取、CharacterBible 和 LocationBible 后，再重新生成镜头台本。',
+      '原因：当前候选镜头还不满足写入标准，可能存在镜头数不足、必填字段不完整、source evidence/continuity notes 覆盖不足、质量分不足，或占位/旧摘要文本泄漏。',
+      '下一步：修复 DirectorScript scene beats、sceneCandidates、source evidence、CharacterBible 和 LocationBible 后，再重新生成镜头台本。',
       '原始接口原因：',
       normalized,
     ].join('\n');
