@@ -11,8 +11,10 @@ import {
 } from '@scu/shared-types';
 import { PrismaService } from '../prisma/prisma.service';
 import { filterStableSceneCandidateEvidence } from './project-studio-scene-candidate-evidence';
+import { validateCharacterBibleQuality } from './project-studio-character-bible.service';
 import { validateDirectorScriptQuality } from './project-studio-director-script.service';
 import { validateEpisodePlanQuality } from './project-studio-episode-plan.service';
+import { validateLocationBibleQuality } from './project-studio-location-bible.service';
 import { validateShotScriptQuality } from './project-studio-shot-script.service';
 import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 import { validateStoryboardAssetQuality } from './project-studio-storyboard-asset.service';
@@ -811,11 +813,9 @@ export class ProjectProductionStateService {
     const characterBibleCount = Array.isArray(studioCharacterBibles)
       ? studioCharacterBibles.length
       : 0;
-    const hasStudioCharacterBibles = characterBibleCount > 0;
     const locationBibleCount = Array.isArray(studioLocationBibles)
       ? studioLocationBibles.length
       : 0;
-    const hasStudioLocationBibles = locationBibleCount > 0;
     const episodePlanCount = Array.isArray(studioEpisodePlans) ? studioEpisodePlans.length : 0;
     const directorScriptCount = Array.isArray(studioDirectorScripts) ? studioDirectorScripts.length : 0;
     const shotScriptCount = Array.isArray(studioShotScripts) ? studioShotScripts.length : 0;
@@ -839,6 +839,21 @@ export class ProjectProductionStateService {
     );
     const hasStudioStoryboardAssets =
       hasStudioReadyShotScripts && storyboardAssetCount > 0 && storyboardAssetQuality.passed;
+    const characterBibleQuality = validateCharacterBibleQuality(
+      studioCharacterBibles,
+      studioShotScripts,
+      studioStoryBible
+    );
+    const locationBibleQuality = validateLocationBibleQuality(
+      studioLocationBibles,
+      studioShotScripts,
+      studioStoryboardAssets,
+      studioStoryBible
+    );
+    const hasStudioCharacterBibles =
+      hasStudioStoryBible && characterBibleCount > 0 && characterBibleQuality.passed;
+    const hasStudioLocationBibles =
+      hasStudioStoryBible && locationBibleCount > 0 && locationBibleQuality.passed;
     const studioStoryboardImageAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.filter((asset) => {
           const record = asRecord(asset);
@@ -934,21 +949,42 @@ export class ProjectProductionStateService {
       ),
       stage(
         'characters_ready',
-        hasStudioCharacterBibles ? 'done' : 'missing',
+        hasStudioCharacterBibles ? 'done' : characterBibleCount > 0 ? 'blocked' : 'missing',
         hasStudioCharacterBibles
-          ? [`Project.metadata.animationStudio.characterBibles:${characterBibleCount}`]
-          : [],
-        hasStudioCharacterBibles ? null : '角色资产未生成；不能把旧角色摘要伪装成角色资产',
-        hasStudioCharacterBibles ? '进入场景资产生成阶段' : 'Phase 2B 生成 CharacterBible'
+          ? [
+              `Project.metadata.animationStudio.characterBibles:${characterBibleCount}`,
+              `shotCharacterCoverage:${characterBibleQuality.shotCharacterCoverageRate === null ? 'n/a' : formatRate(characterBibleQuality.shotCharacterCoverageRate)}`,
+              `sourceEvidenceCoverage:${formatRate(characterBibleQuality.evidenceCoverageRate)}`,
+            ]
+          : characterBibleCount > 0
+            ? characterBibleQuality.blockers
+            : [],
+        hasStudioCharacterBibles
+          ? null
+          : characterBibleCount > 0
+            ? `角色资产一致性质量门槛未通过：${characterBibleQuality.blockers.join('；') || '字段不足'}`
+            : '角色资产未生成；不能把旧角色摘要伪装成角色资产',
+        hasStudioCharacterBibles ? '进入场景资产一致性检查' : 'Phase 2B 生成或修复 CharacterBible'
       ),
       stage(
         'locations_ready',
-        hasStudioLocationBibles ? 'done' : 'missing',
+        hasStudioLocationBibles ? 'done' : locationBibleCount > 0 ? 'blocked' : 'missing',
         hasStudioLocationBibles
-          ? [`Project.metadata.animationStudio.locationBibles:${locationBibleCount}`]
-          : [],
-        hasStudioLocationBibles ? null : '当前没有 LocationBible；不能把旧 location 文本伪装成场景资产',
-        hasStudioLocationBibles ? '进入剧集规划生成阶段' : 'Phase 2C 生成 LocationBible'
+          ? [
+              `Project.metadata.animationStudio.locationBibles:${locationBibleCount}`,
+              `shotLocationCoverage:${locationBibleQuality.shotLocationCoverageRate === null ? 'n/a' : formatRate(locationBibleQuality.shotLocationCoverageRate)}`,
+              `storyboardLocationCoverage:${locationBibleQuality.storyboardLocationCoverageRate === null ? 'n/a' : formatRate(locationBibleQuality.storyboardLocationCoverageRate)}`,
+              `sourceEvidenceCoverage:${formatRate(locationBibleQuality.evidenceCoverageRate)}`,
+            ]
+          : locationBibleCount > 0
+            ? locationBibleQuality.blockers
+            : [],
+        hasStudioLocationBibles
+          ? null
+          : locationBibleCount > 0
+            ? `场景资产一致性质量门槛未通过：${locationBibleQuality.blockers.join('；') || '字段不足'}`
+            : '当前没有 LocationBible；不能把旧 location 文本伪装成场景资产',
+        hasStudioLocationBibles ? '进入剧集规划生成阶段' : 'Phase 2B 生成或修复 LocationBible'
       ),
       stage(
         'episodes_ready',

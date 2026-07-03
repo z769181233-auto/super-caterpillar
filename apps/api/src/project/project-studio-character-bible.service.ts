@@ -7,6 +7,15 @@ type JsonRecord = Record<string, unknown>;
 
 const CHARACTER_BIBLE_VERSION = 'studio-character-bible-v1';
 const SAMPLE_CHARACTER_NAMES = ['薛知盈', '萧昀祈', '春桃', '王嬷嬷'];
+const PLACEHOLDER_TEXT_PATTERN = /待识别|待生成|旧摘要|未确认|待补充/;
+
+export interface CharacterBibleQualityValidationResult {
+  passed: boolean;
+  blockers: string[];
+  characterCount: number;
+  shotCharacterCoverageRate: number | null;
+  evidenceCoverageRate: number;
+}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -26,6 +35,42 @@ function truncate(value: string, maxLength: number): string {
 
 function uniq(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function stableId(prefix: string, value: string): string {
+  if (value.startsWith(`${prefix}-`) || value.startsWith(`${prefix}:`)) return value;
+  const normalized = encodeURIComponent(value.trim().toLowerCase()).replace(/%/g, '').slice(0, 36);
+  return `${prefix}:${normalized || 'unknown'}`;
+}
+
+function shotCharacterNames(shotScripts: unknown): string[] {
+  return uniq(
+    asArray(shotScripts).flatMap((shot) =>
+      asArray(asRecord(shot).characters).map((character) => {
+        const record = asRecord(character);
+        return asString(record.character_name) || asString(record.name) || asString(record.character_id);
+      })
+    ).filter(Boolean) as string[]
+  );
+}
+
+function linkedShotIdsForCharacter(name: string, characterId: string, shotScripts: unknown): string[] {
+  return uniq(
+    asArray(shotScripts)
+      .map((shot) => {
+        const shotRecord = asRecord(shot);
+        const matched = asArray(shotRecord.characters).some((character) => {
+          const record = asRecord(character);
+          return (
+            asString(record.character_name) === name ||
+            asString(record.name) === name ||
+            asString(record.character_id) === characterId
+          );
+        });
+        return matched ? asString(shotRecord.shot_id) : null;
+      })
+      .filter(Boolean) as string[]
+  );
 }
 
 function buildMissing(projectId: string, reason: string): CharacterBibleDTO[] {
@@ -114,16 +159,23 @@ function inferAppearance(name: string, context: string): string {
   return '外貌待后续美术设定补充';
 }
 
-function buildCharacter(projectId: string, name: string, text: string, generatedAt: string): CharacterBibleDTO {
+function buildCharacter(
+  projectId: string,
+  name: string,
+  text: string,
+  generatedAt: string,
+  shotScripts: unknown = []
+): CharacterBibleDTO {
   const context = findContext(text, name);
   const identity = inferIdentity(name, context);
   const personality = inferPersonality(name, context);
   const appearance = inferAppearance(name, context);
+  const characterId = stableId('character', name);
 
   return {
     id: `project-metadata:${projectId}:character-bible:${encodeURIComponent(name)}`,
     projectId,
-    characterId: null,
+    characterId,
     name,
     status: 'done',
     identity,
@@ -139,12 +191,68 @@ function buildCharacter(projectId: string, name: string, text: string, generated
     propPrompt: `${name} 随身物品：从剧情上下文提取；暂未绑定具体道具资产。`,
     voiceStyle: '台词口吻待 DirectorScript 阶段结合对白细化',
     linkedEpisodeIds: [],
-    linkedShotIds: [],
+    linkedShotIds: linkedShotIdsForCharacter(name, characterId, shotScripts),
     assetIds: [],
     sourceEvidence: [context],
     generatedAt,
     version: CHARACTER_BIBLE_VERSION,
     missingReason: null,
+  };
+}
+
+export function validateCharacterBibleQuality(
+  characterBibles: unknown,
+  shotScripts: unknown,
+  storyBible?: unknown
+): CharacterBibleQualityValidationResult {
+  const characters = asArray(characterBibles)
+    .map((item) => asRecord(item))
+    .filter((item) => asString(item.status) === 'done');
+  const blockers: string[] = [];
+  const storyBibleRecord = asRecord(storyBible);
+  const hasStoryBible = Object.keys(storyBibleRecord).length === 0 || ['ready', 'done'].includes(String(storyBibleRecord.status || '').toLowerCase());
+  const requiredShotCharacterNames = shotCharacterNames(shotScripts);
+  const characterNames = new Set(characters.map((character) => asString(character.name)).filter(Boolean) as string[]);
+  const coveredShotCharacters = requiredShotCharacterNames.filter((name) => characterNames.has(name));
+  const shotCharacterCoverageRate =
+    requiredShotCharacterNames.length > 0
+      ? coveredShotCharacters.length / requiredShotCharacterNames.length
+      : null;
+  const evidenceCoverageRate =
+    characters.length > 0
+      ? characters.filter((character) => asArray(character.sourceEvidence).length > 0).length / characters.length
+      : 0;
+
+  if (!hasStoryBible) blockers.push('StoryBible 必须 ready。');
+  if (characters.length < 2) blockers.push(`CharacterBible 数量不足：${characters.length}/2`);
+  for (const character of characters) {
+    const name = asString(character.name) || '未命名角色';
+    if (!asString(character.characterId)) blockers.push(`${name} 缺少稳定 characterId。`);
+    if (!asString(character.identity)) blockers.push(`${name} 缺少 identity。`);
+    if (!asString(character.appearance)) blockers.push(`${name} 缺少 appearance。`);
+    if (!asString(character.profilePrompt)) blockers.push(`${name} 缺少 profilePrompt。`);
+    if (!asString(character.expressionPrompt)) blockers.push(`${name} 缺少 expressionPrompt。`);
+    if (!asString(character.costumePrompt)) blockers.push(`${name} 缺少 costumePrompt。`);
+    if (asArray(character.sourceEvidence).length === 0) blockers.push(`${name} 缺少 sourceEvidence。`);
+    if (asArray(character.assetIds).length > 0) blockers.push(`${name} 不应在 Phase 2B 绑定图片 assetIds。`);
+    if (PLACEHOLDER_TEXT_PATTERN.test(Object.values(character).join(' '))) {
+      blockers.push(`${name} 含有占位文本。`);
+    }
+  }
+  if (shotCharacterCoverageRate !== null && shotCharacterCoverageRate < 0.9) {
+    blockers.push(`ShotScript 角色覆盖率不足：${Math.round(shotCharacterCoverageRate * 100)}%/90%`);
+  }
+  const mainCharacters = characters.filter((character) => asArray(character.linkedShotIds).length > 0);
+  if (requiredShotCharacterNames.length > 0 && mainCharacters.length === 0) {
+    blockers.push('主要角色 linkedShotIds 为空。');
+  }
+
+  return {
+    passed: blockers.length === 0,
+    blockers,
+    characterCount: characters.length,
+    shotCharacterCoverageRate,
+    evidenceCoverageRate,
   };
 }
 
@@ -215,7 +323,9 @@ export class ProjectStudioCharacterBibleService {
       throw new BadRequestException('No StorySource or legacy novel source found');
     }
 
-    const existingStoryBible = asRecord(asRecord(asRecord(project.metadata).animationStudio).storyBible);
+    const metadata = asRecord(project.metadata);
+    const animationStudio = asRecord(metadata.animationStudio);
+    const existingStoryBible = asRecord(animationStudio.storyBible);
     const storyBibleText = Object.values(existingStoryBible)
       .filter((value) => typeof value === 'string')
       .join(' ');
@@ -229,12 +339,11 @@ export class ProjectStudioCharacterBibleService {
       .filter(Boolean)
       .join(' ');
 
-    const names = extractCharacterNames(sourceText);
+    const shotScripts = asArray(animationStudio.shotScripts);
+    const names = uniq([...extractCharacterNames(sourceText), ...shotCharacterNames(shotScripts)]);
     const generatedAt = new Date().toISOString();
-    const characterBibles = names.map((name) => buildCharacter(projectId, name, sourceText, generatedAt));
+    const characterBibles = names.map((name) => buildCharacter(projectId, name, sourceText, generatedAt, shotScripts));
 
-    const metadata = asRecord(project.metadata);
-    const animationStudio = asRecord(metadata.animationStudio);
     const nextMetadata = {
       ...metadata,
       animationStudio: {
