@@ -80,6 +80,35 @@ export function getShotScriptGenerationGate(
   };
 }
 
+export function getStoryboardAssetGenerationGate(
+  state: ProductionStateDTO | null,
+  hasExistingStoryboardAssets: boolean
+): StudioGenerationGateResult {
+  if (hasExistingStoryboardAssets) return { canGenerate: true, reason: null };
+  if (!state) {
+    return {
+      canGenerate: false,
+      reason: '正在读取生产状态，暂不能生成 StoryboardAsset 文本绑定。',
+    };
+  }
+
+  const shotScriptStage = state.stages.find((stage) => stage.key === 'shot_script_ready');
+  if (shotScriptStage?.status === 'done') {
+    return { canGenerate: true, reason: null };
+  }
+
+  return {
+    canGenerate: false,
+    reason: [
+      'StoryboardAsset 需要先完成 ready 状态的 ShotScript。',
+      shotScriptStage?.missingReason ? `原因：${shotScriptStage.missingReason}` : null,
+      shotScriptStage?.nextAction ? `下一步：${shotScriptStage.nextAction}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+}
+
 export function formatStudioGenerationError(errorMessage: string, targetLabel: string): string {
   const normalized = errorMessage.trim();
   if (!normalized) {
