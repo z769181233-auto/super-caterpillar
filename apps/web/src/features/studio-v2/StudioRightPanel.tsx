@@ -48,6 +48,8 @@ function blockerText(state: ProductionStateDTO | null, hasError: boolean): strin
 export function StudioRightPanel({ locale, projectId, state, stateError = null, onRetryState }: StudioRightPanelProps) {
   const textPipelineStages = state ? getTextPipelineStages(state) : [];
   const textReady = state ? isTextPipelineReady(state) : false;
+  const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
+  const storyboardReady = storyboardStage?.status === 'done';
   const importHref = `/${locale}/projects/${projectId}/import-novel`;
   const projectHref = `/${locale}/projects/${projectId}`;
   const hasError = Boolean(stateError);
@@ -57,7 +59,8 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
       <section style={sectionStyle()}>
         <h3 style={titleStyle()}>当前状态</h3>
         <StatusLine label="文本链路" value={textReady ? '完成' : hasError ? '不可用' : '未完成'} strong />
-        <StatusLine label="视觉链路" value="未开始" />
+        <StatusLine label="分镜文本层" value={storyboardReady ? 'READY' : '未开始'} />
+        <StatusLine label="图片/视频链路" value="未开始" />
       </section>
 
       <section style={sectionStyle()}>
@@ -87,7 +90,7 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
       <section style={sectionStyle()}>
         <h3 style={titleStyle()}>风险</h3>
         <ul style={compactListStyle()}>
-          <li>未生成 StoryboardAsset</li>
+          <li>{storyboardReady ? 'StoryboardAsset 只是文本绑定，未生成图片' : '未生成 StoryboardAsset 文本绑定'}</li>
           <li>未生成 Image</li>
           <li>未生成 Video</li>
           <li>未启动 worker/job</li>

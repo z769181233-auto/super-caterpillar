@@ -119,15 +119,25 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
   const hasStorySource = Boolean(state?.legacyDataSummary.hasStorySource || state?.legacyDataSummary.hasNovelSource);
   const textReady = state ? isTextPipelineReady(state) : false;
   const shotCount = getEvidenceValue(getStage(state, 'shot_script_ready'), 'Project.metadata.animationStudio.shotScripts') || '0';
+  const storyboardStage = getStage(state, 'storyboard_ready');
+  const storyboardAssetCount =
+    getEvidenceValue(storyboardStage, 'Project.metadata.animationStudio.storyboardAssets') || '0';
   const errorCopy = getErrorCopy(errorStatus);
   const nextAction = getNextAction(state);
   const visualSummary = useMemo(
     () => [
-      { label: 'Storyboard', status: 'LOCKED / MISSING', body: '未生成 StoryboardAsset。' },
+      {
+        label: 'StoryboardAsset',
+        status: storyboardStage?.status === 'done' ? 'READY / TEXT' : 'LOCKED / MISSING',
+        body:
+          storyboardStage?.status === 'done'
+            ? `文本分镜资产 ${storyboardAssetCount} 个；assetUrl 为空，不生成图片。`
+            : '未生成 StoryboardAsset 文本绑定。',
+      },
       { label: 'Image', status: 'LOCKED / NOT STARTED', body: '没有图片生成入口。' },
       { label: 'Video', status: 'LOCKED / NOT STARTED', body: '没有视频生成入口。' },
     ],
-    []
+    [storyboardAssetCount, storyboardStage?.status]
   );
 
   return (
@@ -238,7 +248,7 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
             ))}
           </div>
           <div style={noticeStyle()}>
-            ShotScript ready 只代表镜头台本文本 ready。storyboard_prompt 是文本准备态，不生成图片；video_prompt 是文本准备态，不调用视频生成。
+            ShotScript ready 只代表镜头台本文本 ready。StoryboardAsset ready 只代表文本分镜绑定 ready；storyboard_prompt 不生成图片，video_prompt 不调用视频生成。
           </div>
         </section>
       </div>

@@ -9,6 +9,7 @@ import { ProjectStudioDirectorScriptService } from './project-studio-director-sc
 import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
 import { ProjectStudioLocationBibleService } from './project-studio-location-bible.service';
 import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
+import { ProjectStudioStoryboardAssetService } from './project-studio-storyboard-asset.service';
 import { ProjectStudioStoryBibleService } from './project-studio-story-bible.service';
 import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
 import { ProjectVideoScriptService } from './project-video-script.service';
@@ -51,6 +52,7 @@ import { ProjectResolver } from '../common/project-resolver';
     ProjectStudioEpisodePlanService,
     ProjectStudioLocationBibleService,
     ProjectStudioShotScriptService,
+    ProjectStudioStoryboardAssetService,
     ProjectStudioStoryBibleService,
     ProjectStudioVideoPromptService,
     ProjectVideoScriptService,
@@ -68,6 +70,7 @@ import { ProjectResolver } from '../common/project-resolver';
     ProjectStudioEpisodePlanService,
     ProjectStudioLocationBibleService,
     ProjectStudioShotScriptService,
+    ProjectStudioStoryboardAssetService,
     ProjectStudioStoryBibleService,
     ProjectStudioVideoPromptService,
     ProjectVideoScriptService,

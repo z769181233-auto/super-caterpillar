@@ -15,6 +15,7 @@ import { validateDirectorScriptQuality } from './project-studio-director-script.
 import { validateEpisodePlanQuality } from './project-studio-episode-plan.service';
 import { validateShotScriptQuality } from './project-studio-shot-script.service';
 import { validateStoryBibleQuality } from './project-studio-story-bible.service';
+import { validateStoryboardAssetQuality } from './project-studio-storyboard-asset.service';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   imported: '已导入故事来源',
@@ -832,7 +833,12 @@ export class ProjectProductionStateService {
     const storyboardAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.length
       : 0;
-    const hasStudioStoryboardAssets = storyboardAssetCount > 0;
+    const storyboardAssetQuality = validateStoryboardAssetQuality(
+      studioStoryboardAssets,
+      studioShotScripts
+    );
+    const hasStudioStoryboardAssets =
+      hasStudioReadyShotScripts && storyboardAssetCount > 0 && storyboardAssetQuality.passed;
     const studioStoryboardImageAssetCount = Array.isArray(studioStoryboardAssets)
       ? studioStoryboardAssets.filter((asset) => {
           const record = asRecord(asset);
@@ -1020,19 +1026,32 @@ export class ProjectProductionStateService {
       ),
       stage(
         'storyboard_ready',
-        hasStudioStoryboardAssets ? 'done' : storyboardImageShotCount > 0 ? 'blocked' : 'missing',
+        hasStudioStoryboardAssets
+          ? 'done'
+          : storyboardAssetCount > 0 || storyboardImageShotCount > 0
+            ? 'blocked'
+            : 'missing',
         hasStudioStoryboardAssets
           ? [
               `Project.metadata.animationStudio.storyboardAssets:${storyboardAssetCount}`,
-              `Studio image storyboard assets:${studioStoryboardImageAssetCount}`,
+              `text_binding:${storyboardAssetQuality.textBindingCount}`,
+              `shotCoverage:${Math.round(storyboardAssetQuality.shotCoverageRate * 100)}%`,
+              `promptCoverage:${Math.round(storyboardAssetQuality.promptCoverageRate * 100)}%`,
+              `continuityCoverage:${Math.round(storyboardAssetQuality.continuityCoverageRate * 100)}%`,
             ]
+          : storyboardAssetCount > 0
+            ? storyboardAssetQuality.blockers
           : storyboardImageShotCount > 0
             ? [`旧分镜/图片资产镜头数：${storyboardImageShotCount}`]
             : [],
         hasStudioStoryboardAssets
           ? null
-          : '当前没有 StoryboardAsset 协议；旧图片只作为兼容资产',
-        hasStudioStoryboardAssets ? '进入视频提示词生成阶段' : 'Phase 2G 生成 StoryboardAsset 文本绑定'
+          : storyboardAssetCount > 0
+            ? `StoryboardAsset 文本绑定质量门槛未通过：${storyboardAssetQuality.blockers.join('；') || '字段不足'}`
+            : '当前没有 StoryboardAsset 文本绑定；旧图片只作为兼容资产',
+        hasStudioStoryboardAssets
+          ? 'StoryboardAsset 文本绑定已完成；图片、视频与 worker 仍保持锁定'
+          : 'Phase 2A 生成 StoryboardAsset 文本绑定'
       ),
       stage(
         'video_prompt_ready',

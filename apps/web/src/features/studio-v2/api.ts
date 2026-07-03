@@ -7,6 +7,7 @@ import type {
   LocationBibleDTO,
   ProductionStateDTO,
   ShotScriptDTO,
+  StoryboardAssetDTO,
   StoryBibleDTO,
   StorySourceCompatibilityDTO,
   VideoPromptDTO,
@@ -262,6 +263,39 @@ export async function generateStudioShotScripts(projectId: string): Promise<Shot
   if (!response.ok || !result.success || !result.data) {
     throw new Error(
       extractStudioApiErrorMessage(result, 'Failed to generate Studio ShotScript')
+    );
+  }
+
+  return result.data;
+}
+
+export async function getStudioStoryboardAssets(projectId: string): Promise<StoryboardAssetDTO[]> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-assets`, {
+    cache: 'no-store',
+    credentials: 'include',
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardAssetDTO[]>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to fetch Studio StoryboardAsset');
+  }
+
+  return result.data;
+}
+
+export async function generateStudioStoryboardAssets(
+  projectId: string
+): Promise<StoryboardAssetDTO[]> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-assets/generate`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardAssetDTO[]>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(
+      extractStudioApiErrorMessage(result, 'Failed to generate Studio StoryboardAsset')
     );
   }
 

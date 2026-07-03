@@ -251,6 +251,34 @@ function readyShotScript(shotNo: number, overrides: Record<string, any> = {}) {
   };
 }
 
+function readyStoryboardAsset(shotNo: number, overrides: Record<string, any> = {}) {
+  return {
+    id: `storyboard-asset-${shotNo}`,
+    projectId: 'project-1',
+    shotId: `shot-script-${shotNo}`,
+    episodeId: 'episode-1',
+    shotNo,
+    sceneId: `episode-1:scene-${Math.ceil(shotNo / 2)}`,
+    status: 'done',
+    assetKind: 'text_binding',
+    assetUrl: null,
+    assetStorageKey: null,
+    prompt: '分镜构图提示词，本阶段不生成图片。',
+    frameDescription: '文本分镜画面描述。',
+    cameraLanguage: '中景 / 缓慢推进',
+    characters: ['薛知盈'],
+    locationId: 'location-1',
+    sourceShotScriptId: `shot-script-${shotNo}`,
+    sourcePrompt: '分镜构图提示词，本阶段不生成图片。',
+    continuityNotes: ['连续性备注'],
+    locked: true,
+    generatedAt: '2026-05-25T00:00:00.000Z',
+    version: 'studio-storyboard-asset-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
+
 describe('ProjectProductionStateService', () => {
   it('returns missing stages for an empty project without throwing', async () => {
     const prisma = createPrismaMock();
@@ -887,15 +915,9 @@ describe('ProjectProductionStateService', () => {
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
-              storyboardAssets: [
-                {
-                  id: 'storyboard-asset-1',
-                  shotId: 'shot-script-1',
-                  status: 'done',
-                  assetKind: 'text_binding',
-                  assetUrl: null,
-                },
-              ],
+              storyboardAssets: Array.from({ length: 8 }, (_, index) =>
+                readyStoryboardAsset(index + 1)
+              ),
             },
           },
         }),
@@ -909,7 +931,7 @@ describe('ProjectProductionStateService', () => {
       'done'
     );
     expect(state.stages.find((stage) => stage.key === 'storyboard_ready')?.evidence).toContain(
-      'Project.metadata.animationStudio.storyboardAssets:1'
+      'Project.metadata.animationStudio.storyboardAssets:8'
     );
     expect(state.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).toBe(
       'missing'
@@ -935,14 +957,12 @@ describe('ProjectProductionStateService', () => {
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
               storyboardAssets: [
-                {
-                  id: 'storyboard-asset-1',
-                  shotId: 'shot-script-1',
-                  status: 'done',
+                readyStoryboardAsset(1, {
                   assetKind: 'image',
                   assetUrl: '/api/storage/signed/studio/storyboards/project-1/shot-script-1.png',
                   assetStorageKey: 'studio/storyboards/project-1/shot-script-1.png',
-                },
+                }),
+                ...Array.from({ length: 7 }, (_, index) => readyStoryboardAsset(index + 2)),
               ],
             },
           },
@@ -953,11 +973,11 @@ describe('ProjectProductionStateService', () => {
 
     const state = await service.getProductionState('project-1', 'org-1');
 
-    expect(state.stages.find((stage) => stage.key === 'storyboard_ready')?.evidence).toContain(
-      'Studio image storyboard assets:1'
+    expect(state.stages.find((stage) => stage.key === 'storyboard_ready')?.status).toBe(
+      'blocked'
     );
     expect(state.riskFlags.join('\n')).toContain(
-      '真实单镜头 Storyboard 图像资产已生成'
+      'StoryboardAsset 尚未真实生成'
     );
   });
 
@@ -976,13 +996,9 @@ describe('ProjectProductionStateService', () => {
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
-              storyboardAssets: [
-                {
-                  id: 'storyboard-asset-1',
-                  shotId: 'shot-script-1',
-                  status: 'done',
-                },
-              ],
+              storyboardAssets: Array.from({ length: 8 }, (_, index) =>
+                readyStoryboardAsset(index + 1)
+              ),
               videoPrompts: [
                 {
                   id: 'video-prompt-1',
