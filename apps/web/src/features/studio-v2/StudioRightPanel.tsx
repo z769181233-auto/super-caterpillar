@@ -29,7 +29,17 @@ function nextAction(state: ProductionStateDTO | null, hasError: boolean): string
   if (!state) return '等待制作状态读取完成。';
   if (!state.legacyDataSummary.hasStorySource && !state.legacyDataSummary.hasNovelSource) return '导入小说。';
   const blocker = getFirstTextPipelineBlocker(state);
-  if (!blocker) return '文本链路已完成；下一阶段只能进入视觉资产方案设计。';
+  const characterStage = state.stages.find((stage) => stage.key === 'characters_ready');
+  const locationStage = state.stages.find((stage) => stage.key === 'locations_ready');
+  if (!blocker) {
+    if (characterStage?.status === 'blocked' || characterStage?.status === 'missing') {
+      return characterStage.nextAction || '修复 CharacterBible 角色一致性绑定。';
+    }
+    if (locationStage?.status === 'blocked' || locationStage?.status === 'missing') {
+      return locationStage.nextAction || '修复 LocationBible 场景一致性绑定。';
+    }
+    return '文本链路与角色/场景一致性已完成；下一阶段只能进入视觉资产方案设计。';
+  }
   if (blocker.key === 'story_bible_ready') return '修复或生成 StoryBible。';
   if (blocker.key === 'episodes_ready') return '修复或生成 EpisodePlan。';
   if (blocker.key === 'director_script_ready') return '修复或生成 DirectorScript。';
@@ -49,6 +59,8 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
   const textPipelineStages = state ? getTextPipelineStages(state) : [];
   const textReady = state ? isTextPipelineReady(state) : false;
   const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
+  const characterStage = state?.stages.find((stage) => stage.key === 'characters_ready');
+  const locationStage = state?.stages.find((stage) => stage.key === 'locations_ready');
   const storyboardReady = storyboardStage?.status === 'done';
   const importHref = `/${locale}/projects/${projectId}/import-novel`;
   const projectHref = `/${locale}/projects/${projectId}`;
@@ -59,6 +71,8 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
       <section style={sectionStyle()}>
         <h3 style={titleStyle()}>当前状态</h3>
         <StatusLine label="文本链路" value={textReady ? '完成' : hasError ? '不可用' : '未完成'} strong />
+        <StatusLine label="角色一致性" value={statusText(characterStage?.status)} />
+        <StatusLine label="场景一致性" value={statusText(locationStage?.status)} />
         <StatusLine label="分镜文本层" value={storyboardReady ? 'READY' : '未开始'} />
         <StatusLine label="图片/视频链路" value="未开始" />
       </section>

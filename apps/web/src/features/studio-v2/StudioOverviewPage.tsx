@@ -22,6 +22,11 @@ const TEXT_STAGES = [
   { key: 'shot_script_ready', label: 'ShotScript' },
 ] as const;
 
+const CONSISTENCY_STAGES = [
+  { key: 'characters_ready', label: 'CharacterBible' },
+  { key: 'locations_ready', label: 'LocationBible' },
+] as const;
+
 function getStage(state: ProductionStateDTO | null, key: string): ProductionStageDTO | null {
   return state?.stages.find((stage) => stage.key === key) || null;
 }
@@ -240,6 +245,22 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
                   status={statusLabel(stage?.status)}
                   statusColor={statusColor(stage?.status)}
                   detail={isShot ? `shot count: ${shotCount}` : quality ? `quality score: ${quality}` : 'quality score: --'}
+                />
+              );
+            })}
+            {CONSISTENCY_STAGES.map((item) => {
+              const stage = getStage(state, item.key);
+              const coverage =
+                item.key === 'characters_ready'
+                  ? getEvidenceValue(stage, 'shotCharacterCoverage')
+                  : getEvidenceValue(stage, 'shotLocationCoverage');
+              return (
+                <FlowCard
+                  key={item.key}
+                  label={item.label}
+                  status={statusLabel(stage?.status)}
+                  statusColor={statusColor(stage?.status)}
+                  detail={coverage ? `coverage: ${coverage}` : 'visual consistency gate'}
                 />
               );
             })}

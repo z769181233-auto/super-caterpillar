@@ -43,6 +43,12 @@ export function StudioCharacterBiblePage({ locale, projectId }: StudioCharacterB
   );
   const realCharacters = characters.filter((character) => character.status === 'done');
   const isDone = realCharacters.length > 0;
+  const metrics = {
+    count: realCharacters.length,
+    shotCoverage: getEvidenceValue(characterStage, 'shotCharacterCoverage') || '未评估',
+    evidenceCoverage: getEvidenceValue(characterStage, 'sourceEvidenceCoverage') || '未评估',
+    status: characterStage?.status || 'missing',
+  };
 
   async function handleGenerate() {
     setGenerating(true);
@@ -119,11 +125,29 @@ export function StudioCharacterBiblePage({ locale, projectId }: StudioCharacterB
           />
         )}
 
+        {isDone && characterStage?.status === 'blocked' && (
+          <Callout
+            tone="error"
+            title="角色一致性未过关"
+            body={
+              characterStage.missingReason ||
+              '当前 CharacterBible 尚未覆盖 ShotScript 中的角色，不能进入视觉生成。'
+            }
+          />
+        )}
+
         <Callout
           tone="info"
           title="边界说明"
           body="本页只生成结构化角色文字资产。角色图片、设定卡图、三视图图片、表情图和分镜图仍未生成，assetIds 为空是预期结果。"
         />
+
+        <div style={metricsGridStyle()}>
+          <MetricCard label="角色数" value={`${metrics.count}`} />
+          <MetricCard label="状态" value={metrics.status.toUpperCase()} />
+          <MetricCard label="ShotScript 角色覆盖率" value={metrics.shotCoverage} />
+          <MetricCard label="source evidence 覆盖率" value={metrics.evidenceCoverage} />
+        </div>
 
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
           {realCharacters.length > 0 ? (
@@ -151,6 +175,7 @@ function CharacterCard({ character }: { character: CharacterBibleDTO }) {
       <h2 style={{ marginTop: 0 }}>{character.name}</h2>
       <div style={{ display: 'grid', gap: '0.85rem' }}>
         <InfoRow label="基础身份" value={character.identity || '未生成'} />
+        <InfoRow label="稳定 characterId" value={character.characterId || '未绑定'} />
         <InfoRow label="年龄" value={character.age || '未生成'} />
         <InfoRow label="性格" value={character.personality || '未生成'} />
         <InfoRow label="外貌" value={character.appearance || '未生成'} />
@@ -192,6 +217,36 @@ function Callout({ tone, title, body }: { tone: 'error' | 'warn' | 'info'; title
       <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>{body}</p>
     </div>
   );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--r-md)',
+        padding: '1rem',
+      }}
+    >
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{label}</div>
+      <strong style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>{value}</strong>
+    </div>
+  );
+}
+
+function getEvidenceValue(stage: { evidence: string[] } | null, name: string): string | null {
+  const prefix = `${name}:`;
+  const line = stage?.evidence.find((item) => item.startsWith(prefix));
+  return line ? line.slice(prefix.length) : null;
+}
+
+function metricsGridStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.75rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+    marginTop: '1.25rem',
+  };
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
