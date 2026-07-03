@@ -21,15 +21,48 @@ type ApiEnvelope<T> = {
   };
 };
 
+export class StudioApiError extends Error {
+  status: number;
+  apiBaseUrl: string;
+  detail: string;
+
+  constructor(message: string, options: { status: number; apiBaseUrl?: string; detail?: string }) {
+    super(message);
+    this.name = 'StudioApiError';
+    this.status = options.status;
+    this.apiBaseUrl = options.apiBaseUrl || '/api';
+    this.detail = options.detail || message;
+  }
+}
+
+function productionStateErrorMessage(status: number): string {
+  if (status === 401) return '登录态已失效，请先登录。';
+  if (status === 403) return '当前账号可能没有访问该项目的权限。';
+  if (status === 0) return 'API 服务可能未启动。';
+  return '暂时无法读取制作状态。';
+}
+
 export async function getStudioProductionState(projectId: string): Promise<ProductionStateDTO> {
   const response = await fetch(`/api/projects/${projectId}/production-state`, {
     cache: 'no-store',
     credentials: 'include',
   });
-  const result = (await response.json()) as ApiEnvelope<ProductionStateDTO>;
+  let result: ApiEnvelope<ProductionStateDTO>;
+  try {
+    result = (await response.json()) as ApiEnvelope<ProductionStateDTO>;
+  } catch {
+    throw new StudioApiError(productionStateErrorMessage(response.status), {
+      status: response.status,
+      detail: `ProductionState API returned non-JSON response with status ${response.status}.`,
+    });
+  }
 
   if (!response.ok || !result.success || !result.data) {
-    throw new Error(result.error?.message || 'Failed to fetch Studio production state');
+    const detail = extractStudioApiErrorMessage(result, 'Failed to fetch Studio production state');
+    throw new StudioApiError(productionStateErrorMessage(response.status), {
+      status: response.status,
+      detail,
+    });
   }
 
   return result.data;

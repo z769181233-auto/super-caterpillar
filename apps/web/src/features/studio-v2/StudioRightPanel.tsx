@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import type { ProductionStateDTO } from '@scu/shared-types';
 import {
   getFirstTextPipelineBlocker,
@@ -8,157 +9,205 @@ import {
 } from './studio-state-summary';
 
 interface StudioRightPanelProps {
+  locale: string;
+  projectId: string;
   state: ProductionStateDTO | null;
+  stateError?: string | null;
+  onRetryState?: () => void;
 }
 
-function panelTitle(text: string) {
-  return <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{text}</h3>;
+function statusText(status: string | undefined): string {
+  if (status === 'done') return 'READY';
+  if (status === 'blocked') return 'BLOCKED';
+  if (status === 'missing') return 'MISSING';
+  if (status === 'failed') return 'FAILED';
+  return status ? status.toUpperCase() : '未开始';
 }
 
-export function StudioRightPanel({ state }: StudioRightPanelProps) {
-  const legacy = state?.legacyDataSummary;
-  const coverage = legacy?.sceneCandidateCoverage;
-  const shotScriptGate = state?.shotScriptQualityGate;
-  const shotStage = state?.stages.find((stage) => stage.key === 'shot_script_ready');
-  const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
-  const videoPromptStage = state?.stages.find((stage) => stage.key === 'video_prompt_ready');
-  const episodeStage = state?.stages.find((stage) => stage.key === 'episodes_ready');
-  const directorStage = state?.stages.find((stage) => stage.key === 'director_script_ready');
+function nextAction(state: ProductionStateDTO | null, hasError: boolean): string {
+  if (hasError) return '刷新制作状态，或返回项目页确认登录和权限。';
+  if (!state) return '等待制作状态读取完成。';
+  if (!state.legacyDataSummary.hasStorySource && !state.legacyDataSummary.hasNovelSource) return '导入小说。';
+  const blocker = getFirstTextPipelineBlocker(state);
+  if (!blocker) return '文本链路已完成；下一阶段只能进入视觉资产方案设计。';
+  if (blocker.key === 'story_bible_ready') return '修复或生成 StoryBible。';
+  if (blocker.key === 'episodes_ready') return '修复或生成 EpisodePlan。';
+  if (blocker.key === 'director_script_ready') return '修复或生成 DirectorScript。';
+  if (blocker.key === 'shot_script_ready') return '修复或生成 ShotScript。';
+  return blocker.nextAction || '处理当前阻断项。';
+}
+
+function blockerText(state: ProductionStateDTO | null, hasError: boolean): string {
+  if (hasError) return '制作状态读取失败';
+  if (!state) return '读取中';
+  if (!state.legacyDataSummary.hasStorySource && !state.legacyDataSummary.hasNovelSource) return '没有小说或剧本来源';
+  const blocker = getFirstTextPipelineBlocker(state);
+  return blocker ? blocker.label : '无';
+}
+
+export function StudioRightPanel({ locale, projectId, state, stateError = null, onRetryState }: StudioRightPanelProps) {
   const textPipelineStages = state ? getTextPipelineStages(state) : [];
-  const firstTextBlocker = state ? getFirstTextPipelineBlocker(state) : null;
-  const textPipelineReady = state ? isTextPipelineReady(state) : false;
+  const textReady = state ? isTextPipelineReady(state) : false;
+  const importHref = `/${locale}/projects/${projectId}/import-novel`;
+  const projectHref = `/${locale}/projects/${projectId}`;
+  const hasError = Boolean(stateError);
 
   return (
-    <aside
-      style={{
-        position: 'sticky',
-        top: '2rem',
-        border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--r-lg)',
-        background: 'var(--bg-panel)',
-        padding: '1.25rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1.25rem',
-      }}
-    >
-      <section>
-        {panelTitle('质量 / 风险')}
-        <p style={{ color: 'var(--text-secondary)' }}>
-          {state ? `当前阶段：${state.currentStage}` : '正在读取生产状态'}
-        </p>
-        <p style={{ color: textPipelineReady ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-          文本链路是否完成：{textPipelineReady ? '已完成到 ShotScript' : '仍有文本阶段阻断'}
-        </p>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          是否可继续下一步：
-          {firstTextBlocker
-            ? `先处理 ${firstTextBlocker.label}`
-            : '只允许进入下一阶段方案设计，不自动进入视觉生成'}
-        </p>
+    <aside style={panelStyle()}>
+      <section style={sectionStyle()}>
+        <h3 style={titleStyle()}>当前状态</h3>
+        <StatusLine label="文本链路" value={textReady ? '完成' : hasError ? '不可用' : '未完成'} strong />
+        <StatusLine label="视觉链路" value="未开始" />
       </section>
 
-      <section>
-        {panelTitle('文本链路状态')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+      <section style={sectionStyle()}>
+        <h3 style={titleStyle()}>下一步</h3>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.65, marginTop: 0 }}>
+          {nextAction(state, hasError)}
+        </p>
+        <div style={{ display: 'grid', gap: '0.6rem' }}>
+          {state && !state.legacyDataSummary.hasStorySource && !state.legacyDataSummary.hasNovelSource ? (
+            <Link href={importHref} style={primaryActionStyle()}>
+              导入小说
+            </Link>
+          ) : null}
+          {hasError ? (
+            <>
+              <button type="button" onClick={onRetryState} style={buttonStyle()}>
+                刷新制作状态
+              </button>
+              <Link href={projectHref} style={secondaryActionStyle()}>
+                返回项目页
+              </Link>
+            </>
+          ) : null}
+        </div>
+      </section>
+
+      <section style={sectionStyle()}>
+        <h3 style={titleStyle()}>风险</h3>
+        <ul style={compactListStyle()}>
+          <li>未生成 StoryboardAsset</li>
+          <li>未生成 Image</li>
+          <li>未生成 Video</li>
+          <li>未启动 worker/job</li>
+        </ul>
+      </section>
+
+      <section style={sectionStyle()}>
+        <h3 style={titleStyle()}>文本链路</h3>
+        <div style={{ display: 'grid', gap: '0.45rem' }}>
           {textPipelineStages.length ? (
             textPipelineStages.map((stage) => (
-              <div key={stage.key}>
-                {stage.label}：{stage.status}
-              </div>
+              <StatusLine key={stage.key} label={stage.label} value={statusText(stage.status)} />
             ))
           ) : (
-            <div>状态读取中</div>
+            <StatusLine label="状态" value={hasError ? '读取失败' : '读取中'} />
           )}
-          <div>
-            最早阻断：
-            {firstTextBlocker
-              ? `${firstTextBlocker.label} - ${firstTextBlocker.missingReason || firstTextBlocker.status}`
-              : '无'}
-          </div>
-          <div>下一步：{firstTextBlocker?.nextAction || '文本链路封板后只做下一阶段方案设计'}</div>
         </div>
       </section>
 
-      <section>
-        {panelTitle('当前项目风险')}
-        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-          {(state?.riskFlags || ['状态读取中']).map((flag) => (
-            <li key={flag}>{flag}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        {panelTitle('缺失能力')}
-        <ul style={{ color: 'var(--text-secondary)', paddingLeft: '1.2rem' }}>
-          {(state?.missingCapabilities || ['状态读取中']).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        {panelTitle('可用旧资产')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>旧小说：{legacy?.hasNovelSource ? '有' : '无'}</div>
-          <div>章节：{legacy?.novelChapterCount ?? '--'}</div>
-          <div>旧剧集：{legacy?.episodeCount ?? '--'}</div>
-          <div>旧场景：{legacy?.sceneCount ?? '--'}</div>
-          <div>旧镜头：{legacy?.shotCount ?? '--'}</div>
+      <details style={detailsStyle()}>
+        <summary>技术详情</summary>
+        <div style={{ color: 'var(--text-secondary)', display: 'grid', gap: '0.45rem', marginTop: '0.75rem' }}>
+          <div>最早 blocker：{blockerText(state, hasError)}</div>
+          <div>projectId：{projectId}</div>
+          <div>StorySource：{state?.legacyDataSummary.hasStorySource ? '有' : '无'}</div>
+          <div>NovelSource：{state?.legacyDataSummary.hasNovelSource ? '可兼容' : '无'}</div>
+          <div>错误：{stateError || '无'}</div>
         </div>
-      </section>
-
-      <section>
-        {panelTitle('小说分析质量')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>场景候选状态：{coverage?.coverageStatus || '--'}</div>
-          <div>
-            可用场景候选：
-            {coverage ? `${coverage.usableSceneCandidateCount}/${Math.max(1, coverage.chapterCount)}` : '--'}
-          </div>
-          <div>缺失能力：{coverage?.missingCapabilities.length ? coverage.missingCapabilities.join('、') : '无'}</div>
-          <div>阻断原因：{coverage?.blockerReason || '无'}</div>
-        </div>
-      </section>
-
-      <section>
-        {panelTitle('剧集 / 导演门槛')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>EpisodePlan：{episodeStage?.status || '--'}</div>
-          <div>EpisodePlan 阻断：{episodeStage?.missingReason || '无'}</div>
-          <div>DirectorScript：{directorStage?.status || '--'}</div>
-          <div>DirectorScript 阻断：{directorStage?.missingReason || '无'}</div>
-        </div>
-      </section>
-
-      <section>
-        {panelTitle('镜头台本门槛')}
-        <div style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-          <div>ShotScript：{shotStage?.status || '--'}</div>
-          <div>状态：{shotScriptGate?.status || '--'}</div>
-          <div>
-            镜头候选：
-            {shotScriptGate
-              ? `${shotScriptGate.candidateShotCount}/${shotScriptGate.minShotCount}`
-              : '--'}
-          </div>
-          <div>
-            对白抽取率：
-            {shotScriptGate?.dialogueExtractionRate === null || !shotScriptGate
-              ? '--'
-              : `${Math.round(shotScriptGate.dialogueExtractionRate * 100)}%`}
-          </div>
-          <div>
-            阻断原因：
-            {shotScriptGate?.reasons.length ? shotScriptGate.reasons.join('；') : '无'}
-          </div>
-          <div>下一步：{shotScriptGate?.nextAction || '无'}</div>
-          <div>Storyboard：{storyboardStage?.status || '--'}</div>
-          <div>VideoPrompt：{videoPromptStage?.status || '--'}</div>
-          <div>边界：ShotScript ready 不会自动生成分镜、图片、视频、worker 或 job</div>
-        </div>
-      </section>
+      </details>
     </aside>
   );
+}
+
+function StatusLine({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+      <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+      <strong style={{ color: strong ? 'var(--text-primary)' : 'var(--text-secondary)', textAlign: 'right' }}>{value}</strong>
+    </div>
+  );
+}
+
+function panelStyle(): React.CSSProperties {
+  return {
+    background: 'var(--bg-panel)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-lg)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    padding: '1.25rem',
+    position: 'sticky',
+    top: '2rem',
+  };
+}
+
+function sectionStyle(): React.CSSProperties {
+  return {
+    borderBottom: '1px solid var(--border-subtle)',
+    display: 'grid',
+    gap: '0.75rem',
+    paddingBottom: '1rem',
+  };
+}
+
+function titleStyle(): React.CSSProperties {
+  return {
+    fontSize: '1rem',
+    margin: 0,
+  };
+}
+
+function compactListStyle(): React.CSSProperties {
+  return {
+    color: 'var(--text-secondary)',
+    lineHeight: 1.65,
+    margin: 0,
+    paddingLeft: '1.2rem',
+  };
+}
+
+function primaryActionStyle(): React.CSSProperties {
+  return {
+    background: 'var(--text-primary)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--bg-surface)',
+    fontWeight: 800,
+    padding: '0.75rem',
+    textAlign: 'center',
+    textDecoration: 'none',
+  };
+}
+
+function secondaryActionStyle(): React.CSSProperties {
+  return {
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-primary)',
+    fontWeight: 700,
+    padding: '0.75rem',
+    textAlign: 'center',
+    textDecoration: 'none',
+  };
+}
+
+function buttonStyle(): React.CSSProperties {
+  return {
+    background: 'transparent',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 700,
+    padding: '0.75rem',
+  };
+}
+
+function detailsStyle(): React.CSSProperties {
+  return {
+    color: 'var(--text-secondary)',
+    fontSize: '0.9rem',
+  };
 }

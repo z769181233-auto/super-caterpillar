@@ -58,6 +58,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
     () => getShotScriptGenerationGate(state, isDone),
     [state, isDone]
   );
+  const shotMetrics = useMemo(() => calculateShotMetrics(visibleShotScripts), [visibleShotScripts]);
 
   async function handleGenerate() {
     if (!generationGate.canGenerate) {
@@ -103,7 +104,7 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
           <div>
             <h1 style={{ margin: 0 }}>镜头台本 ShotScript</h1>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              从 ready DirectorScript 拆出镜头级结构：shot_id、时长、景别、运镜、角色动作、对白、旁白、声音、光影、情绪、分镜提示词和视频提示词文本草案。
+              从 ready DirectorScript 拆出镜头级结构。列表先展示镜头调度重点，展开后查看对白、声音、光影、提示词和证据绑定。
             </p>
           </div>
           <button
@@ -172,6 +173,13 @@ export function StudioShotScriptPage({ locale, projectId, episodeId }: StudioSho
           body="本页只生成镜头级结构化文本和提示词草案。storyboard_prompt 是分镜提示词文本，不生成图片；video_prompt 是视频提示词文本草案，不调用视频生成；不会启动 worker 或新增 job。"
         />
 
+        <div style={metricsGridStyle()}>
+          <MetricCard label="镜头数" value={`${shotMetrics.shotCount}`} />
+          <MetricCard label="总质量分" value={shotMetrics.qualityScore} />
+          <MetricCard label="source evidence 覆盖率" value={formatPercent(shotMetrics.evidenceCoverage)} />
+          <MetricCard label="continuity notes 覆盖率" value={formatPercent(shotMetrics.continuityCoverage)} />
+        </div>
+
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
           {visibleShotScripts.length > 0 ? (
             visibleShotScripts.map((shotScript) => (
@@ -195,85 +203,124 @@ function ShotScriptCard({ shotScript }: { shotScript: ShotScriptDTO }) {
         padding: '1rem',
       }}
     >
-      <h2 style={{ marginTop: 0 }}>
-        镜头 {shotScript.shot_no} · {shotScript.duration_sec}s · {shotScript.shot_size}
-      </h2>
-      <div style={{ display: 'grid', gap: '0.85rem' }}>
-        <InfoRow label="Shot ID" value={shotScript.shot_id} />
-        <InfoRow label="状态" value={shotScript.status} />
-        <InfoRow label="集 ID / 场 ID" value={`${shotScript.episode_id} / ${shotScript.scene_id}`} />
-        <InfoRow label="场景资产" value={shotScript.location_id || '未绑定 LocationBible'} />
-        <InfoRow
-          label="主角色绑定"
-          value={[
-            `character_id: ${shotScript.character_id || '未绑定'}`,
-            `costume_id: ${shotScript.costume_id || '未绑定'}`,
-            `expression: ${shotScript.expression || '未生成'}`,
-            `position: ${shotScript.position || '未生成'}`,
-          ].join('\n')}
-        />
-        <InfoRow
-          label="角色资产"
-          value={
-            shotScript.characters.length > 0
-              ? shotScript.characters
-                  .map(
-                    (character) =>
-                      `${character.character_name}（${character.expression || '表情待定'} / ${character.position || '站位待定'}）`
-                  )
-                  .join('\n')
-              : '未绑定 CharacterBible'
-          }
-        />
-        <InfoRow label="动作" value={shotScript.action} />
-        <InfoRow label="景别 / 运镜" value={`${shotScript.shot_size} / ${shotScript.camera_movement}`} />
-        <InfoRow
-          label="对白"
-          value={
-            shotScript.dialogue.length > 0
-              ? shotScript.dialogue
-                  .map((line) => `${line.character_name || '旁白'}：${line.text}`)
-                  .join('\n')
-              : '无对白'
-          }
-        />
-        <InfoRow label="旁白" value={shotScript.voiceover || '无旁白'} />
-        <InfoRow
-          label="声音设计"
-          value={shotScript.sound_design.length > 0 ? shotScript.sound_design.join('\n') : '未生成'}
-        />
-        <InfoRow label="光影" value={shotScript.lighting} />
-        <InfoRow label="情绪" value={shotScript.emotion} />
-        <InfoRow label="画面目标" value={shotScript.visual_goal} />
-        <InfoRow label="剧情功能" value={shotScript.plot_function} />
-        <InfoRow label="Storyboard Prompt 文本准备态" value={shotScript.storyboard_prompt || '未生成'} />
-        <InfoRow label="Video Prompt 文本准备态" value={shotScript.video_prompt || '未生成'} />
-        <InfoRow
-          label="连续性备注"
-          value={
-            shotScript.continuity_notes.length > 0
-              ? shotScript.continuity_notes.join('\n')
-              : '未生成'
-          }
-        />
-        <InfoRow
-          label="来源证据"
-          value={shotScript.source_evidence.length > 0 ? shotScript.source_evidence.join('\n') : '未绑定'}
-        />
-        <InfoRow label="质量评分" value={formatQualityScore(shotScript.quality_score)} />
-        <InfoRow
-          label="阻断原因"
-          value={formatBlockers(shotScript)}
-        />
-        <InfoRow label="来源 DirectorScript" value={shotScript.source_director_script_id || '未绑定'} />
-        <InfoRow label="协议版本" value={shotScript.version || '未生成'} />
+      <div style={{ alignItems: 'start', display: 'grid', gap: '0.75rem' }}>
+        <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', gap: '1rem' }}>
+          <h2 style={{ margin: 0 }}>
+            镜头 {shotScript.shot_no} · {shotScript.duration_sec}s
+          </h2>
+          <strong style={{ color: 'var(--accent)' }}>{shotScript.status.toUpperCase()}</strong>
+        </div>
+        <div style={shotSummaryGridStyle()}>
+          <SummaryItem label="场景" value={shotScript.scene_id || shotScript.location_id || '未绑定'} />
+          <SummaryItem
+            label="角色"
+            value={
+              shotScript.characters.length > 0
+                ? shotScript.characters.map((character) => character.character_name).join('、')
+                : shotScript.character_id || '未绑定'
+            }
+          />
+          <SummaryItem label="动作" value={shotScript.action} />
+          <SummaryItem label="景别" value={shotScript.shot_size} />
+          <SummaryItem label="运镜" value={shotScript.camera_movement} />
+          <SummaryItem label="情绪" value={shotScript.emotion} />
+        </div>
+        <details>
+          <summary style={{ color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 800 }}>展开镜头详情</summary>
+          <div style={{ display: 'grid', gap: '0.85rem', marginTop: '0.85rem' }}>
+            <InfoRow label="Shot ID" value={shotScript.shot_id} />
+            <InfoRow label="集 ID / 场 ID" value={`${shotScript.episode_id} / ${shotScript.scene_id}`} />
+            <InfoRow label="场景资产" value={shotScript.location_id || '未绑定 LocationBible'} />
+            <InfoRow
+              label="主角色绑定"
+              value={[
+                `character_id: ${shotScript.character_id || '未绑定'}`,
+                `costume_id: ${shotScript.costume_id || '未绑定'}`,
+                `expression: ${shotScript.expression || '未生成'}`,
+                `position: ${shotScript.position || '未生成'}`,
+              ].join('\n')}
+            />
+            <InfoRow label="对白" value={formatDialogue(shotScript)} />
+            <InfoRow label="旁白" value={shotScript.voiceover || '无旁白'} />
+            <InfoRow label="声音设计" value={shotScript.sound_design.length > 0 ? shotScript.sound_design.join('\n') : '未生成'} />
+            <InfoRow label="光影" value={shotScript.lighting} />
+            <InfoRow label="画面目标" value={shotScript.visual_goal} />
+            <InfoRow label="剧情功能" value={shotScript.plot_function} />
+            <InfoRow label="Storyboard Prompt 文本准备态" value={shotScript.storyboard_prompt || '未生成'} />
+            <InfoRow label="Video Prompt 文本准备态" value={shotScript.video_prompt || '未生成'} />
+            <InfoRow label="连续性备注" value={shotScript.continuity_notes.length > 0 ? shotScript.continuity_notes.join('\n') : '未生成'} />
+            <InfoRow label="来源证据" value={shotScript.source_evidence.length > 0 ? shotScript.source_evidence.join('\n') : '未绑定'} />
+            <InfoRow label="质量评分" value={formatQualityScore(shotScript.quality_score)} />
+            <InfoRow label="阻断原因" value={formatBlockers(shotScript)} />
+          </div>
+        </details>
       </div>
     </article>
   );
 }
 
+function calculateShotMetrics(shots: ShotScriptDTO[]) {
+  const readyShots = shots.filter((shot) => shot.status === 'ready');
+  const scoredShots = readyShots
+    .map((shot) => shot.quality_score?.overall)
+    .filter((score): score is number => typeof score === 'number' && Number.isFinite(score));
+  return {
+    shotCount: readyShots.length,
+    qualityScore: scoredShots.length > 0 ? `${Math.round(scoredShots.reduce((sum, score) => sum + score, 0) / scoredShots.length)}` : '--',
+    evidenceCoverage: readyShots.length > 0 ? readyShots.filter((shot) => shot.source_evidence.length > 0).length / readyShots.length : null,
+    continuityCoverage: readyShots.length > 0 ? readyShots.filter((shot) => shot.continuity_notes.length > 0).length / readyShots.length : null,
+  };
+}
+
+function formatDialogue(shotScript: ShotScriptDTO): string {
+  return shotScript.dialogue.length > 0
+    ? shotScript.dialogue.map((line) => `${line.character_name || '旁白'}：${line.text}`).join('\n')
+    : '无对白';
+}
+
 function formatPercent(value: number | null): string {
   return value === null ? '未评估' : `${Math.round(value * 100)}%`;
+}
+
+function metricsGridStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.85rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+    marginTop: '1rem',
+  };
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--r-md)',
+        padding: '0.85rem',
+      }}
+    >
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{label}</div>
+      <strong style={{ fontSize: '1.2rem' }}>{value}</strong>
+    </div>
+  );
+}
+
+function shotSummaryGridStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.65rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+  };
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{label}</div>
+      <div style={{ color: 'var(--text-primary)', lineHeight: 1.45 }}>{value}</div>
+    </div>
+  );
 }
 
 function formatQualityScore(score: ShotScriptDTO['quality_score']): string {

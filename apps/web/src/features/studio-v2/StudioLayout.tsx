@@ -9,10 +9,12 @@ interface StudioLayoutProps {
   locale: string;
   projectId: string;
   state: ProductionStateDTO | null;
+  stateError?: string | null;
+  onRetryState?: () => void;
   children: ReactNode;
 }
 
-export function StudioLayout({ locale, projectId, state, children }: StudioLayoutProps) {
+export function StudioLayout({ locale, projectId, state, stateError = null, onRetryState, children }: StudioLayoutProps) {
   return (
     <div
       style={{
@@ -46,7 +48,13 @@ export function StudioLayout({ locale, projectId, state, children }: StudioLayou
           <StudioAssetNav locale={locale} projectId={projectId} />
         </aside>
         <main style={{ minWidth: 0 }}>{children}</main>
-        <StudioRightPanel state={state} />
+        <StudioRightPanel
+          locale={locale}
+          projectId={projectId}
+          state={state}
+          stateError={stateError}
+          onRetryState={onRetryState}
+        />
       </div>
     </div>
   );
