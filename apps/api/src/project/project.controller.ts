@@ -18,6 +18,7 @@ import { ProjectStudioDirectorScriptService } from './project-studio-director-sc
 import { ProjectStudioEpisodePlanService } from './project-studio-episode-plan.service';
 import { ProjectStudioLocationBibleService } from './project-studio-location-bible.service';
 import { ProjectStudioShotScriptService } from './project-studio-shot-script.service';
+import { ProjectStudioStoryboardAssetService } from './project-studio-storyboard-asset.service';
 import { ProjectProductionStateService } from './project-production-state.service';
 import { ProjectStudioStoryBibleService } from './project-studio-story-bible.service';
 import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
@@ -76,6 +77,7 @@ export class ProjectController {
     private readonly projectStudioEpisodePlanService?: ProjectStudioEpisodePlanService,
     private readonly projectStudioDirectorScriptService?: ProjectStudioDirectorScriptService,
     private readonly projectStudioShotScriptService?: ProjectStudioShotScriptService,
+    private readonly projectStudioStoryboardAssetService?: ProjectStudioStoryboardAssetService,
     private readonly projectStudioVideoPromptService?: ProjectStudioVideoPromptService
   ) {}
 
@@ -634,6 +636,58 @@ export class ProjectController {
     }
     await this.projectService.checkOwnership(projectId, user.userId);
     const data = await this.projectStudioShotScriptService.generateShotScripts(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Get(':projectId/storyboard-assets')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioStoryboardAssets(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryboardAssetService) {
+      throw new BadRequestException('Studio StoryboardAsset service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryboardAssetService.getStoryboardAssets(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  @Post(':projectId/storyboard-assets/generate')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async generateStudioStoryboardAssets(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryboardAssetService) {
+      throw new BadRequestException('Studio StoryboardAsset service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryboardAssetService.generateStoryboardAssets(
       projectId,
       organizationId
     );
