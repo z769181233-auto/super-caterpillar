@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { StoryboardAssetDTO } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
+import { validateCharacterBibleQuality } from './project-studio-character-bible.service';
+import { validateLocationBibleQuality } from './project-studio-location-bible.service';
 import { validateShotScriptQuality } from './project-studio-shot-script.service';
+import { validateVideoPromptQuality } from './project-studio-video-prompt.service';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -17,6 +20,24 @@ export interface StoryboardAssetQualityValidationResult {
   promptCoverageRate: number;
   continuityCoverageRate: number;
   imageAssetCount: number;
+}
+
+export interface StoryboardImageReadinessDTO {
+  projectId: string;
+  status: 'ready' | 'blocked';
+  blockers: string[];
+  readyShotCount: number;
+  textBindingCoverageRate: number;
+  characterBindingRate: number;
+  locationBindingRate: number;
+  promptCompletenessRate: number;
+  continuityCoverageRate: number;
+  estimatedCostUnits: number;
+  imageAssetCount: number;
+  willCreateJob: false;
+  willCallProvider: false;
+  willGenerateImage: false;
+  nextAction: string;
 }
 
 function asRecord(value: unknown): JsonRecord {
@@ -260,6 +281,80 @@ export function validateStoryboardAssetQuality(
   };
 }
 
+function buildStoryboardImageReadiness(
+  projectId: string,
+  animationStudio: JsonRecord
+): StoryboardImageReadinessDTO {
+  const storyBible = asRecord(animationStudio.storyBible);
+  const characterBibles = asArray(animationStudio.characterBibles);
+  const locationBibles = asArray(animationStudio.locationBibles);
+  const shotScripts = asArray(animationStudio.shotScripts);
+  const storyboardAssets = asArray(animationStudio.storyboardAssets);
+  const videoPrompts = asArray(animationStudio.videoPrompts);
+  const readyShotScripts = shotScripts
+    .map((item) => asRecord(item))
+    .filter((item) => asString(item.status) === 'ready' && asString(item.shot_id));
+  const storyboardQuality = validateStoryboardAssetQuality(storyboardAssets, shotScripts);
+  const characterQuality = validateCharacterBibleQuality(characterBibles, shotScripts, storyBible);
+  const locationQuality = validateLocationBibleQuality(
+    locationBibles,
+    shotScripts,
+    storyboardAssets,
+    storyBible
+  );
+  const videoPromptQuality = validateVideoPromptQuality(
+    videoPrompts,
+    shotScripts,
+    storyboardAssets,
+    characterBibles,
+    locationBibles
+  );
+  const imageAssetCount = storyboardAssets.filter((asset) => {
+    const record = asRecord(asset);
+    return record.assetKind === 'image' || Boolean(asString(record.assetUrl) || asString(record.assetStorageKey));
+  }).length;
+  const blockers = [
+    ...(!storyBible || Object.keys(storyBible).length === 0 ? ['StoryBible 未生成，不能进入图片准备度检查。'] : []),
+    ...(!storyboardQuality.passed
+      ? storyboardQuality.blockers.map((blocker) => `StoryboardAsset 文本绑定未通过：${blocker}`)
+      : []),
+    ...(!characterQuality.passed
+      ? characterQuality.blockers.map((blocker) => `CharacterBible 未通过：${blocker}`)
+      : []),
+    ...(!locationQuality.passed
+      ? locationQuality.blockers.map((blocker) => `LocationBible 未通过：${blocker}`)
+      : []),
+    ...(!videoPromptQuality.passed
+      ? videoPromptQuality.blockers.map((blocker) => `VideoPrompt 未通过：${blocker}`)
+      : []),
+    ...(imageAssetCount > 0 ? ['已发现图片资产；Phase 2D 第一段只做 readiness，不应生成图片。'] : []),
+  ];
+
+  return {
+    projectId,
+    status: blockers.length === 0 ? 'ready' : 'blocked',
+    blockers,
+    readyShotCount: readyShotScripts.length,
+    textBindingCoverageRate: storyboardQuality.shotCoverageRate,
+    characterBindingRate: characterQuality.shotCharacterCoverageRate ?? 0,
+    locationBindingRate: locationQuality.shotLocationCoverageRate ?? 0,
+    promptCompletenessRate: storyboardQuality.promptCoverageRate,
+    continuityCoverageRate: Math.min(
+      storyboardQuality.continuityCoverageRate,
+      videoPromptQuality.continuityCoverageRate
+    ),
+    estimatedCostUnits: readyShotScripts.length,
+    imageAssetCount,
+    willCreateJob: false,
+    willCallProvider: false,
+    willGenerateImage: false,
+    nextAction:
+      blockers.length === 0
+        ? '图片生成准备度已通过；下一阶段仍需单独审批真实图片生成。'
+        : '先修复 readiness blockers；本阶段不会生成图片。',
+  };
+}
+
 @Injectable()
 export class ProjectStudioStoryboardAssetService {
   constructor(private readonly prisma: PrismaService) {}
@@ -343,5 +438,22 @@ export class ProjectStudioStoryboardAssetService {
     });
 
     return storyboardAssets;
+  }
+
+  async getStoryboardImageReadiness(
+    projectId: string,
+    organizationId: string
+  ): Promise<StoryboardImageReadinessDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    return buildStoryboardImageReadiness(projectId, animationStudio);
   }
 }

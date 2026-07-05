@@ -22,6 +22,24 @@ type ApiEnvelope<T> = {
   };
 };
 
+export interface StoryboardImageReadinessDTO {
+  projectId: string;
+  status: 'ready' | 'blocked';
+  blockers: string[];
+  readyShotCount: number;
+  textBindingCoverageRate: number;
+  characterBindingRate: number;
+  locationBindingRate: number;
+  promptCompletenessRate: number;
+  continuityCoverageRate: number;
+  estimatedCostUnits: number;
+  imageAssetCount: number;
+  willCreateJob: false;
+  willCallProvider: false;
+  willGenerateImage: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -297,6 +315,22 @@ export async function generateStudioStoryboardAssets(
     throw new Error(
       extractStudioApiErrorMessage(result, 'Failed to generate Studio StoryboardAsset')
     );
+  }
+
+  return result.data;
+}
+
+export async function getStudioStoryboardImageReadiness(
+  projectId: string
+): Promise<StoryboardImageReadinessDTO> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-images/readiness`, {
+    cache: 'no-store',
+    credentials: 'include',
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageReadinessDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to fetch Studio storyboard image readiness');
   }
 
   return result.data;

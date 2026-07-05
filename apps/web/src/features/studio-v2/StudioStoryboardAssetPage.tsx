@@ -5,8 +5,10 @@ import type { ProductionStateDTO, StoryboardAssetDTO } from '@scu/shared-types';
 import {
   generateStudioStoryboardAssets,
   getStudioProductionState,
+  getStudioStoryboardImageReadiness,
   getStudioStoryboardAssets,
 } from './api';
+import type { StoryboardImageReadinessDTO } from './api';
 import {
   formatStudioGenerationError,
   getStoryboardAssetGenerationGate,
@@ -26,16 +28,22 @@ export function StudioStoryboardAssetPage({
 }: StudioStoryboardAssetPageProps) {
   const [state, setState] = useState<ProductionStateDTO | null>(null);
   const [assets, setAssets] = useState<StoryboardAssetDTO[]>([]);
+  const [imageReadiness, setImageReadiness] = useState<StoryboardImageReadinessDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([getStudioProductionState(projectId), getStudioStoryboardAssets(projectId)])
-      .then(([nextState, nextAssets]) => {
+    Promise.all([
+      getStudioProductionState(projectId),
+      getStudioStoryboardAssets(projectId),
+      getStudioStoryboardImageReadiness(projectId),
+    ])
+      .then(([nextState, nextAssets, nextImageReadiness]) => {
         if (!mounted) return;
         setState(nextState);
         setAssets(nextAssets);
+        setImageReadiness(nextImageReadiness);
       })
       .catch((err: Error) => {
         if (mounted) setError(err.message);
@@ -76,8 +84,10 @@ export function StudioStoryboardAssetPage({
     try {
       const nextAssets = await generateStudioStoryboardAssets(projectId);
       const nextState = await getStudioProductionState(projectId);
+      const nextImageReadiness = await getStudioStoryboardImageReadiness(projectId);
       setAssets(nextAssets);
       setState(nextState);
+      setImageReadiness(nextImageReadiness);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to generate Studio StoryboardAsset';
@@ -133,6 +143,41 @@ export function StudioStoryboardAssetPage({
           title="视觉生成仍锁定"
           body="StoryboardAsset 只保存文本绑定：assetKind=text_binding、assetUrl 为空、locked=true。不会创建图片、视频、worker 或 job；后续图片分镜必须进入独立视觉资产阶段。"
         />
+
+        <section style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', marginTop: '1rem', padding: '1rem' }}>
+          <div style={cardHeaderStyle()}>
+            <div>
+              <h2 style={{ margin: 0 }}>图片生成准备度</h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>
+                Phase 2D 第一段只检查生成前条件和成本预估，不调用图片模型，不创建 worker/job。
+              </p>
+            </div>
+            <strong style={{ color: imageReadiness?.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+              {imageReadiness?.status === 'ready' ? 'READY / PLAN' : 'BLOCKED'}
+            </strong>
+          </div>
+          <div style={metricsGridStyle()}>
+            <MetricCard label="Ready shots" value={`${imageReadiness?.readyShotCount ?? 0}`} />
+            <MetricCard label="文本分镜覆盖" value={formatPercent(imageReadiness?.textBindingCoverageRate ?? 0)} />
+            <MetricCard label="角色绑定" value={formatPercent(imageReadiness?.characterBindingRate ?? 0)} />
+            <MetricCard label="场景绑定" value={formatPercent(imageReadiness?.locationBindingRate ?? 0)} />
+            <MetricCard label="Prompt 完整度" value={formatPercent(imageReadiness?.promptCompletenessRate ?? 0)} />
+            <MetricCard label="连续性覆盖" value={formatPercent(imageReadiness?.continuityCoverageRate ?? 0)} />
+            <MetricCard label="成本单位预估" value={`${imageReadiness?.estimatedCostUnits ?? 0}`} />
+          </div>
+          {imageReadiness?.blockers.length ? (
+            <Callout tone="warn" title="图片生成仍未开放" body={imageReadiness.blockers.join('\n')} />
+          ) : (
+            <Callout
+              tone="info"
+              title="准备度通过，但仍不生成图片"
+              body={imageReadiness?.nextAction || '下一阶段需要单独审批真实图片生成。'}
+            />
+          )}
+          <button type="button" disabled style={primaryButtonStyle(false)}>
+            生成图片 · 后续阶段开放
+          </button>
+        </section>
 
         <div style={metricsGridStyle()}>
           <MetricCard label="文本分镜数" value={`${metrics.assetCount}`} />
