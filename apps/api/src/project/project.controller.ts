@@ -699,6 +699,32 @@ export class ProjectController {
     };
   }
 
+  @Get(':projectId/storyboard-images/readiness')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioStoryboardImageReadiness(
+    @Param('projectId') projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryboardAssetService) {
+      throw new BadRequestException('Studio StoryboardAsset service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryboardAssetService.getStoryboardImageReadiness(
+      projectId,
+      organizationId
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Get(':projectId/video-prompts')
   @Permissions(ProjectPermissions.PROJECT_READ)
   async getStudioVideoPrompts(
