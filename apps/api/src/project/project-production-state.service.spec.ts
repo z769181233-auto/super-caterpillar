@@ -279,6 +279,101 @@ function readyStoryboardAsset(shotNo: number, overrides: Record<string, any> = {
   };
 }
 
+function readyCharacterBibles(overrides: Record<string, any>[] = []) {
+  const base = [
+    {
+      id: 'character-bible-1',
+      projectId: 'project-1',
+      characterId: 'character-1',
+      name: '薛知盈',
+      status: 'done',
+      identity: '故事核心女性角色',
+      age: '原文未明确',
+      personality: '谨慎、敏感，处境受限但有主动意识',
+      appearance: '古风女性动画角色，发髻与衣裙细节明确',
+      relationshipRole: '主角',
+      profilePrompt: '薛知盈，古风女性动画角色设定卡。',
+      threeViewPrompt: '薛知盈三视图。',
+      expressionPrompt: '薛知盈表情展示。',
+      costumePrompt: '薛知盈服饰细节。',
+      hairAccessoryPrompt: '薛知盈发型头饰。',
+      propPrompt: '随身书册。',
+      voiceStyle: '克制、警觉',
+      linkedEpisodeIds: ['episode-1'],
+      linkedShotIds: ['shot-script-1'],
+      assetIds: [],
+      sourceEvidence: ['StoryBible:薛知盈', 'ShotScript:shot-script-1'],
+      generatedAt: '2026-05-25T00:00:00.000Z',
+      version: 'studio-character-bible-v1',
+      missingReason: null,
+    },
+    {
+      id: 'character-bible-2',
+      projectId: 'project-1',
+      characterId: 'character-2',
+      name: '王嬷嬷',
+      status: 'done',
+      identity: '宅院长辈/管事型角色',
+      age: '原文未明确',
+      personality: '重规矩、强控制感',
+      appearance: '古风宅院长辈角色，服饰稳重',
+      relationshipRole: '压力来源',
+      profilePrompt: '王嬷嬷，古风宅院长辈角色设定卡。',
+      threeViewPrompt: '王嬷嬷三视图。',
+      expressionPrompt: '王嬷嬷表情展示。',
+      costumePrompt: '王嬷嬷服饰细节。',
+      hairAccessoryPrompt: '王嬷嬷发型头饰。',
+      propPrompt: '茶盏与规训道具。',
+      voiceStyle: '严厉、克制',
+      linkedEpisodeIds: ['episode-1'],
+      linkedShotIds: ['shot-script-1'],
+      assetIds: [],
+      sourceEvidence: ['StoryBible:王嬷嬷', 'ShotScript:shot-script-1'],
+      generatedAt: '2026-05-25T00:00:00.000Z',
+      version: 'studio-character-bible-v1',
+      missingReason: null,
+    },
+  ];
+  return base.map((item, index) => ({ ...item, ...(overrides[index] || {}) }));
+}
+
+function readyLocationBibles(overrides: Record<string, any>[] = []) {
+  const base = [
+    {
+      id: 'location-bible-1',
+      projectId: 'project-1',
+      locationId: 'location-1',
+      name: '静水院',
+      status: 'done',
+      functionRole: '人物日常行动、家族秩序和关系压力发生的宅院空间',
+      architectureStyle: '古风宅院建筑：木构门窗、屏风、书案、廊柱',
+      lightingMood: '窗侧柔光与室内暗部对比',
+      props: ['书册', '木窗'],
+      reusableShotPrompts: ['静水院建立镜头', '静水院关系镜头'],
+      visualPrompt: '静水院，古风宅院建筑，窗侧柔光，保持空间连续性。',
+      linkedEpisodeIds: ['episode-1'],
+      linkedShotIds: ['shot-script-1'],
+      assetIds: [],
+      sourceEvidence: ['StoryBible:静水院', 'ShotScript:shot-script-1'],
+      generatedAt: '2026-05-25T00:00:00.000Z',
+      version: 'studio-location-bible-v1',
+      missingReason: null,
+    },
+  ];
+  return overrides.length > base.length
+    ? [
+        ...base.map((item, index) => ({ ...item, ...(overrides[index] || {}) })),
+        ...overrides.slice(base.length).map((override, index) => ({
+          ...base[0],
+          id: `location-bible-${index + base.length + 1}`,
+          locationId: `location-${index + base.length + 1}`,
+          name: `场景 ${index + base.length + 1}`,
+          ...override,
+        })),
+      ]
+    : base.map((item, index) => ({ ...item, ...(overrides[index] || {}) }));
+}
+
 describe('ProjectProductionStateService', () => {
   it('returns missing stages for an empty project without throwing', async () => {
     const prisma = createPrismaMock();
@@ -512,10 +607,7 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [
-                { id: 'character-1', name: '薛知盈', status: 'done' },
-                { id: 'character-2', name: '萧昀祈', status: 'done' },
-              ],
+              characterBibles: readyCharacterBibles(),
             },
           },
         }),
@@ -542,11 +634,17 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
-              locationBibles: [
-                { id: 'location-1', name: '静水院', status: 'done' },
-                { id: 'location-2', name: '云墨斋', status: 'done' },
-              ],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles([
+                {},
+                {
+                  id: 'location-bible-2',
+                  locationId: 'location-2',
+                  name: '云墨斋',
+                  visualPrompt: '云墨斋，古风书斋场景设定。',
+                  sourceEvidence: ['StoryBible:云墨斋'],
+                },
+              ]),
             },
           },
         }),
@@ -575,8 +673,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
-              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
             },
           },
@@ -609,8 +707,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
-              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
             },
@@ -653,8 +751,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
-              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [
                 readyDirectorScript({
@@ -719,8 +817,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', name: '薛知盈', status: 'done' }],
-              locationBibles: [{ id: 'location-1', name: '静水院', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript({ keyLocations: ['静水院'], sourceEvidence, source_evidence: sourceEvidence })],
             },
@@ -784,8 +882,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', status: 'done' }],
-              locationBibles: [{ id: 'location-1', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
@@ -867,8 +965,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', status: 'done' }],
-              locationBibles: [{ id: 'location-1', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) =>
@@ -910,8 +1008,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', status: 'done' }],
-              locationBibles: [{ id: 'location-1', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
@@ -951,8 +1049,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', status: 'done' }],
-              locationBibles: [{ id: 'location-1', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
@@ -991,8 +1089,8 @@ describe('ProjectProductionStateService', () => {
           metadata: {
             animationStudio: {
               storyBible: readyStoryBible(),
-              characterBibles: [{ id: 'character-1', status: 'done' }],
-              locationBibles: [{ id: 'location-1', status: 'done' }],
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
               episodePlans: [readyEpisodePlan()],
               directorScripts: [readyDirectorScript()],
               shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),

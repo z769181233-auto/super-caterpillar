@@ -7,6 +7,16 @@ type JsonRecord = Record<string, unknown>;
 
 const LOCATION_BIBLE_VERSION = 'studio-location-bible-v1';
 const SAMPLE_LOCATION_NAMES = ['静水院', '云墨斋'];
+const PLACEHOLDER_TEXT_PATTERN = /待定场景|旧摘要|未识别|待生成|待补充/;
+
+export interface LocationBibleQualityValidationResult {
+  passed: boolean;
+  blockers: string[];
+  locationCount: number;
+  shotLocationCoverageRate: number | null;
+  storyboardLocationCoverageRate: number | null;
+  evidenceCoverageRate: number;
+}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -26,6 +36,41 @@ function truncate(value: string, maxLength: number): string {
 
 function uniq(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+}
+
+function stableId(prefix: string, value: string): string {
+  if (value.startsWith(`${prefix}-`) || value.startsWith(`${prefix}:`)) return value;
+  const normalized = encodeURIComponent(value.trim().toLowerCase()).replace(/%/g, '').slice(0, 36);
+  return `${prefix}:${normalized || 'unknown'}`;
+}
+
+function shotLocationIds(shotScripts: unknown): string[] {
+  return uniq(
+    asArray(shotScripts)
+      .map((shot) => asString(asRecord(shot).location_id))
+      .filter(Boolean) as string[]
+  );
+}
+
+function storyboardLocationIds(storyboardAssets: unknown): string[] {
+  return uniq(
+    asArray(storyboardAssets)
+      .map((asset) => asString(asRecord(asset).locationId))
+      .filter(Boolean) as string[]
+  );
+}
+
+function linkedShotIdsForLocation(locationId: string, name: string, shotScripts: unknown): string[] {
+  return uniq(
+    asArray(shotScripts)
+      .map((shot) => {
+        const record = asRecord(shot);
+        const shotLocation = asString(record.location_id);
+        const text = Object.values(record).join(' ');
+        return shotLocation === locationId || text.includes(name) ? asString(record.shot_id) : null;
+      })
+      .filter(Boolean) as string[]
+  );
 }
 
 function buildMissing(projectId: string, reason: string): LocationBibleDTO[] {
@@ -108,17 +153,24 @@ function inferProps(name: string, context: string): string[] {
   return uniq(props).slice(0, 8);
 }
 
-function buildLocation(projectId: string, name: string, text: string, generatedAt: string): LocationBibleDTO {
+function buildLocation(
+  projectId: string,
+  name: string,
+  text: string,
+  generatedAt: string,
+  shotScripts: unknown = []
+): LocationBibleDTO {
   const context = findContext(text, name);
   const functionRole = inferFunctionRole(name, context);
   const architectureStyle = inferArchitectureStyle(name, context);
   const lightingMood = inferLightingMood(name, context);
   const props = inferProps(name, context);
+  const locationId = stableId('location', name);
 
   return {
     id: `project-metadata:${projectId}:location-bible:${encodeURIComponent(name)}`,
     projectId,
-    locationId: null,
+    locationId,
     name,
     status: 'done',
     functionRole,
@@ -132,12 +184,76 @@ function buildLocation(projectId: string, name: string, text: string, generatedA
     ],
     visualPrompt: `${name}，${architectureStyle}，${lightingMood}，关键道具：${props.join('、') || '待补充'}，古风动画场景设定图，保持可复用空间连续性。`,
     linkedEpisodeIds: [],
-    linkedShotIds: [],
+    linkedShotIds: linkedShotIdsForLocation(locationId, name, shotScripts),
     assetIds: [],
     sourceEvidence: [context],
     generatedAt,
     version: LOCATION_BIBLE_VERSION,
     missingReason: null,
+  };
+}
+
+export function validateLocationBibleQuality(
+  locationBibles: unknown,
+  shotScripts: unknown,
+  storyboardAssets: unknown,
+  storyBible?: unknown
+): LocationBibleQualityValidationResult {
+  const locations = asArray(locationBibles)
+    .map((item) => asRecord(item))
+    .filter((item) => asString(item.status) === 'done');
+  const blockers: string[] = [];
+  const storyBibleRecord = asRecord(storyBible);
+  const hasStoryBible = Object.keys(storyBibleRecord).length === 0 || ['ready', 'done'].includes(String(storyBibleRecord.status || '').toLowerCase());
+  const locationIds = new Set(locations.map((location) => asString(location.locationId)).filter(Boolean) as string[]);
+  const requiredShotLocations = shotLocationIds(shotScripts);
+  const requiredStoryboardLocations = storyboardLocationIds(storyboardAssets);
+  const shotCovered = requiredShotLocations.filter((locationId) => locationIds.has(locationId));
+  const storyboardCovered = requiredStoryboardLocations.filter((locationId) => locationIds.has(locationId));
+  const shotLocationCoverageRate =
+    requiredShotLocations.length > 0 ? shotCovered.length / requiredShotLocations.length : null;
+  const storyboardLocationCoverageRate =
+    requiredStoryboardLocations.length > 0
+      ? storyboardCovered.length / requiredStoryboardLocations.length
+      : null;
+  const evidenceCoverageRate =
+    locations.length > 0
+      ? locations.filter((location) => asArray(location.sourceEvidence).length > 0).length / locations.length
+      : 0;
+
+  if (!hasStoryBible) blockers.push('StoryBible 必须 ready。');
+  if (locations.length < 1) blockers.push('LocationBible 数量不足：0/1');
+  for (const location of locations) {
+    const name = asString(location.name) || '未命名场景';
+    if (!asString(location.locationId)) blockers.push(`${name} 缺少稳定 locationId。`);
+    if (!asString(location.functionRole)) blockers.push(`${name} 缺少 functionRole。`);
+    if (!asString(location.architectureStyle)) blockers.push(`${name} 缺少 architectureStyle。`);
+    if (!asString(location.lightingMood)) blockers.push(`${name} 缺少 lightingMood。`);
+    if (!asString(location.visualPrompt)) blockers.push(`${name} 缺少 visualPrompt。`);
+    if (asArray(location.sourceEvidence).length === 0) blockers.push(`${name} 缺少 sourceEvidence。`);
+    if (asArray(location.assetIds).length > 0) blockers.push(`${name} 不应在 Phase 2B 绑定图片 assetIds。`);
+    if (PLACEHOLDER_TEXT_PATTERN.test(Object.values(location).join(' '))) {
+      blockers.push(`${name} 含有占位文本。`);
+    }
+  }
+  if (shotLocationCoverageRate !== null && shotLocationCoverageRate < 0.9) {
+    blockers.push(`ShotScript 地点覆盖率不足：${Math.round(shotLocationCoverageRate * 100)}%/90%`);
+  }
+  if (storyboardLocationCoverageRate !== null && storyboardLocationCoverageRate < 0.9) {
+    blockers.push(`StoryboardAsset 地点覆盖率不足：${Math.round(storyboardLocationCoverageRate * 100)}%/90%`);
+  }
+  const linkedLocations = locations.filter((location) => asArray(location.linkedShotIds).length > 0);
+  if (requiredShotLocations.length > 0 && linkedLocations.length === 0) {
+    blockers.push('主要场景 linkedShotIds 为空。');
+  }
+
+  return {
+    passed: blockers.length === 0,
+    blockers,
+    locationCount: locations.length,
+    shotLocationCoverageRate,
+    storyboardLocationCoverageRate,
+    evidenceCoverageRate,
   };
 }
 
@@ -227,6 +343,7 @@ export class ProjectStudioLocationBibleService {
     }
 
     const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    const shotScripts = asArray(animationStudio.shotScripts);
     const storyBibleText = Object.values(asRecord(animationStudio.storyBible))
       .filter((value) => typeof value === 'string')
       .join(' ');
@@ -257,13 +374,13 @@ export class ProjectStudioLocationBibleService {
       .filter(Boolean)
       .join(' ');
 
-    const names = extractLocationNames(sourceText);
+    const names = uniq([...extractLocationNames(sourceText), ...shotLocationIds(shotScripts)]);
     if (names.length === 0) {
       throw new BadRequestException('No reusable location candidates found in current story source');
     }
 
     const generatedAt = new Date().toISOString();
-    const locationBibles = names.map((name) => buildLocation(projectId, name, sourceText, generatedAt));
+    const locationBibles = names.map((name) => buildLocation(projectId, name, sourceText, generatedAt, shotScripts));
 
     const metadata = asRecord(project.metadata);
     const nextMetadata = {

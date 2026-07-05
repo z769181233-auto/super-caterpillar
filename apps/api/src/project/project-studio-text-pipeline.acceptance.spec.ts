@@ -310,7 +310,9 @@ describe('Studio text production pipeline acceptance', () => {
     expect(productionState.stages.find((stage) => stage.key === 'storyboard_ready')?.status).not.toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).not.toBe('done');
     expect(productionState.stages.find((stage) => stage.key === 'video_generating')?.status).not.toBe('done');
-    expect(productionState.riskFlags.join('\n')).toContain('StoryboardAsset 尚未真实生成');
+    expect(productionState.stages.find((stage) => stage.key === 'storyboard_ready')?.missingReason).toContain(
+      '当前没有 StoryboardAsset 文本绑定'
+    );
     expect(prisma.project.update).toHaveBeenCalledTimes(3);
   });
 });
