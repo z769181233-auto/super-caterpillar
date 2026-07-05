@@ -362,4 +362,70 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(readiness.imageAssetCount).toBe(1);
     expect(prisma.project.update).not.toHaveBeenCalled();
   });
+
+  it('returns a storyboard image dry-run plan without writing metadata or creating jobs', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const dryRun = await service.dryRunStoryboardImageGeneration('project-1', 'org-1', {
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+    });
+
+    expect(dryRun.status).toBe('ready');
+    expect(dryRun.mode).toBe('dry_run');
+    expect(dryRun.plannedImageCount).toBe(8);
+    expect(dryRun.estimatedCostUnits).toBe(8);
+    expect(dryRun.assets[0]).toEqual(
+      expect.objectContaining({
+        shotId: 'shot-script-1',
+        sourceStoryboardAssetId: 'storyboard-asset-1',
+        estimatedCostUnit: 1,
+      })
+    );
+    expect(dryRun.willCreateJob).toBe(false);
+    expect(dryRun.willCallProvider).toBe(false);
+    expect(dryRun.willGenerateImage).toBe(false);
+    expect(dryRun.willWriteMetadata).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks storyboard image dry-run when cost is not confirmed or model is missing', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const dryRun = await service.dryRunStoryboardImageGeneration('project-1', 'org-1', {});
+
+    expect(dryRun.status).toBe('blocked');
+    expect(dryRun.blockers.join('\n')).toContain('确认预计成本');
+    expect(dryRun.blockers.join('\n')).toContain('选择图片模型');
+    expect(dryRun.willGenerateImage).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { StoryboardAssetDTO } from '@scu/shared-types';
+import {
+  StoryboardAssetDTO,
+  StoryboardImageGenerationDryRunDTO,
+  StoryboardImageGenerationDryRunRequestDTO,
+  StoryboardImageGenerationPlanItemDTO,
+} from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateCharacterBibleQuality } from './project-studio-character-bible.service';
@@ -39,6 +44,10 @@ export interface StoryboardImageReadinessDTO {
   willGenerateImage: false;
   nextAction: string;
 }
+
+const DEFAULT_IMAGE_MODEL = 'image-generation-model-not-selected';
+const DEFAULT_IMAGE_SIZE = '16:9';
+const DEFAULT_IMAGE_QUALITY = 'draft';
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -355,6 +364,102 @@ function buildStoryboardImageReadiness(
   };
 }
 
+function buildStoryboardImageGenerationDryRun(
+  projectId: string,
+  animationStudio: JsonRecord,
+  request: StoryboardImageGenerationDryRunRequestDTO = {}
+): StoryboardImageGenerationDryRunDTO {
+  const readiness = buildStoryboardImageReadiness(projectId, animationStudio);
+  const storyboardAssets = asArray(animationStudio.storyboardAssets)
+    .map((item) => normalizeStoryboardAsset(projectId, item))
+    .filter((asset) => asset.assetKind === 'text_binding' && asset.status === 'done');
+  const requestedShotIds = uniq(
+    Array.isArray(request.shotIds)
+      ? request.shotIds
+          .map((shotId: string) => (typeof shotId === 'string' ? shotId : ''))
+          .filter(Boolean)
+      : []
+  );
+  const requestedEpisodeId = asString(request.episodeId);
+  const filteredAssets = storyboardAssets.filter((asset) => {
+    if (requestedEpisodeId && asset.episodeId !== requestedEpisodeId) return false;
+    if (
+      requestedShotIds.length > 0 &&
+      (!asset.sourceShotScriptId || !requestedShotIds.includes(asset.sourceShotScriptId))
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const existingImageAssetCount = asArray(animationStudio.storyboardAssets).filter((asset) => {
+    const record = asRecord(asset);
+    return (
+      record.assetKind === 'image' ||
+      Boolean(asString(record.assetUrl) || asString(record.assetStorageKey))
+    );
+  }).length;
+  const globalBlockers = [...readiness.blockers];
+  if (!request.confirmCost) {
+    globalBlockers.push('真实图片生成前必须确认预计成本；dry-run 不会调用图片模型。');
+  }
+  if (filteredAssets.length === 0) {
+    globalBlockers.push('没有匹配的 StoryboardAsset 文本绑定可用于图片生成计划。');
+  }
+  if (!asString(request.imageModel)) {
+    globalBlockers.push('真实图片生成前必须选择图片模型。');
+  }
+
+  const assets: StoryboardImageGenerationPlanItemDTO[] = filteredAssets.map((asset) => {
+    const itemBlockers: string[] = [];
+    if (!asset.sourceShotScriptId) itemBlockers.push('缺少 sourceShotScriptId');
+    if (!asset.sourcePrompt && !asset.prompt) itemBlockers.push('缺少 sourcePrompt/prompt');
+    if (!asset.frameDescription) itemBlockers.push('缺少 frameDescription');
+    return {
+      shotId: asset.sourceShotScriptId || asset.shotId,
+      shotNo: asset.shotNo,
+      episodeId: asset.episodeId,
+      sourceStoryboardAssetId: asset.id,
+      sourcePrompt: asset.sourcePrompt || asset.prompt,
+      imagePrompt: [asset.prompt, asset.frameDescription, asset.cameraLanguage]
+        .map((value) => asString(value))
+        .filter(Boolean)
+        .join('\n'),
+      estimatedCostUnit: 1,
+      blockers: itemBlockers,
+    };
+  });
+  const itemBlockers = assets.flatMap((asset) =>
+    asset.blockers.map(
+      (blocker: string) => `镜头 ${asset.shotNo || asset.shotId || '-'}：${blocker}`
+    )
+  );
+  const blockers = uniq([...globalBlockers, ...itemBlockers]);
+
+  return {
+    projectId,
+    status: blockers.length === 0 ? 'ready' : 'blocked',
+    mode: 'dry_run',
+    requestedEpisodeId,
+    requestedShotIds,
+    plannedImageCount: assets.length,
+    existingImageAssetCount,
+    estimatedCostUnits: assets.reduce((sum, asset) => sum + asset.estimatedCostUnit, 0),
+    imageModel: asString(request.imageModel) || DEFAULT_IMAGE_MODEL,
+    imageSize: asString(request.imageSize) || DEFAULT_IMAGE_SIZE,
+    imageQuality: asString(request.imageQuality) || DEFAULT_IMAGE_QUALITY,
+    assets,
+    blockers,
+    willCreateJob: false,
+    willCallProvider: false,
+    willGenerateImage: false,
+    willWriteMetadata: false,
+    nextAction:
+      blockers.length === 0
+        ? 'dry-run 已通过；真实图片生成仍需单独阶段审批和显式生成入口。'
+        : '先修复 dry-run blockers；当前请求不会生成图片、写入 metadata 或创建 job。',
+  };
+}
+
 @Injectable()
 export class ProjectStudioStoryboardAssetService {
   constructor(private readonly prisma: PrismaService) {}
@@ -455,5 +560,23 @@ export class ProjectStudioStoryboardAssetService {
 
     const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
     return buildStoryboardImageReadiness(projectId, animationStudio);
+  }
+
+  async dryRunStoryboardImageGeneration(
+    projectId: string,
+    organizationId: string,
+    request: StoryboardImageGenerationDryRunRequestDTO = {}
+  ): Promise<StoryboardImageGenerationDryRunDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    return buildStoryboardImageGenerationDryRun(projectId, animationStudio, request);
   }
 }
