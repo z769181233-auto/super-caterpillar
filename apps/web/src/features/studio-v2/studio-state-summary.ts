@@ -53,9 +53,9 @@ export function formatTextPipelineSummary(state: ProductionStateDTO): string[] {
     `文本链路：${isTextPipelineReady(state) ? '已完成' : '未完成'}`,
     ...textStages.map((stage) => `${stage.label}：${stage.status}`),
     `最早阻断：${firstBlocker ? `${firstBlocker.label} - ${firstBlocker.missingReason || firstBlocker.status}` : '无'}`,
-    `下一步：${firstBlocker?.nextAction || '文本链路已到 ShotScript；下一阶段仍需方案设计'}`,
+    `下一步：${firstBlocker?.nextAction || '文本链路已到 ShotScript；后续按阶段生成 StoryboardAsset 与 VideoPrompt 文本准备态'}`,
     `Storyboard：${storyboardStage?.status || '未知'}（ShotScript ready 不会自动生成）`,
-    `VideoPrompt：${videoPromptStage?.status || '未知'}（ShotScript video_prompt 只是文本草案）`,
+    `VideoPrompt：${videoPromptStage?.status || '未知'}（VideoPrompt ready 也不会创建 VideoJob）`,
   ];
 }
 
