@@ -1,5 +1,7 @@
-import { BadRequestException } from '@nestjs/common';
-import { ProjectStudioVideoPromptService } from './project-studio-video-prompt.service';
+import {
+  ProjectStudioVideoPromptService,
+  validateVideoPromptQuality,
+} from './project-studio-video-prompt.service';
 
 function createPrismaMock(overrides: Record<string, any> = {}) {
   return {
@@ -58,11 +60,33 @@ describe('ProjectStudioVideoPromptService', () => {
                   status: 'ready',
                 },
               ],
+              characterBibles: [
+                {
+                  characterId: 'char-xue',
+                  name: '薛知盈',
+                  status: 'done',
+                },
+                {
+                  characterId: 'char-wang',
+                  name: '王嬷嬷',
+                  status: 'done',
+                },
+              ],
+              locationBibles: [
+                {
+                  locationId: 'loc-jingshui',
+                  name: '静水院',
+                  status: 'done',
+                },
+              ],
               storyboardAssets: [
                 {
                   id: 'storyboard-asset-1',
                   shotId: 'shot-script-1',
                   status: 'done',
+                  assetKind: 'text_binding',
+                  assetUrl: null,
+                  assetStorageKey: null,
                   prompt: '近景，缓慢推进，薛知盈藏书。',
                 },
               ],
@@ -91,6 +115,7 @@ describe('ProjectStudioVideoPromptService', () => {
         cameraLanguage: '近景 / 缓慢推进',
         sourceShotScriptId: 'shot-script-1',
         sourceStoryboardAssetId: 'storyboard-asset-1',
+        qualityScore: 100,
         version: 'studio-video-prompt-v1',
       })
     );
@@ -109,6 +134,7 @@ describe('ProjectStudioVideoPromptService', () => {
                 expect.objectContaining({
                   shotId: 'shot-script-1',
                   status: 'done',
+                  qualityScore: 100,
                   version: 'studio-video-prompt-v1',
                 }),
               ]),
@@ -119,7 +145,7 @@ describe('ProjectStudioVideoPromptService', () => {
     );
   });
 
-  it('does not generate VideoPrompt without a real Studio ShotScript', async () => {
+  it('returns blocked VideoPrompt without a real Studio ShotScript and does not write metadata', async () => {
     const prisma = createPrismaMock({
       project: {
         findFirst: jest.fn().mockResolvedValue({
@@ -135,9 +161,70 @@ describe('ProjectStudioVideoPromptService', () => {
     });
     const service = new ProjectStudioVideoPromptService(prisma as any);
 
-    await expect(service.generateVideoPrompts('project-1', 'org-1')).rejects.toBeInstanceOf(
-      BadRequestException
-    );
+    const prompts = await service.generateVideoPrompts('project-1', 'org-1');
+
+    expect(prompts[0].status).toBe('blocked');
+    expect(prompts[0].missingReason).toContain('缺少 ready ShotScript');
     expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('returns blocked VideoPrompt when StoryboardAsset text binding is missing', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          metadata: {
+            animationStudio: {
+              shotScripts: [
+                {
+                  shot_id: 'shot-script-1',
+                  status: 'ready',
+                },
+              ],
+            },
+          },
+        }),
+        update: jest.fn().mockResolvedValue({ id: 'project-1' }),
+      },
+    });
+    const service = new ProjectStudioVideoPromptService(prisma as any);
+
+    const prompts = await service.generateVideoPrompts('project-1', 'org-1');
+
+    expect(prompts[0].status).toBe('blocked');
+    expect(prompts[0].missingReason).toContain('StoryboardAsset');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks quality validation when prompt lacks StoryboardAsset binding and continuity', () => {
+    const quality = validateVideoPromptQuality(
+      [
+        {
+          id: 'video-prompt-1',
+          shotId: 'shot-script-1',
+          sourceShotScriptId: 'shot-script-1',
+          status: 'done',
+          prompt: '镜头级视频提示词',
+          negativePrompt: '避免角色变脸',
+          durationSec: 5,
+          aspectRatio: '16:9',
+          cameraLanguage: '近景 / 缓慢推进',
+          characters: ['薛知盈'],
+          locationId: 'loc-jingshui',
+          soundCue: '脚步声',
+          lightingCue: '柔光',
+          motionCue: '缓慢推进',
+          continuityNotes: [],
+        },
+      ],
+      [{ shot_id: 'shot-script-1', status: 'ready' }],
+      [{ id: 'storyboard-asset-1', shotId: 'shot-script-1', status: 'done', assetKind: 'text_binding' }],
+      [{ characterId: 'char-xue' }],
+      [{ locationId: 'loc-jingshui' }]
+    );
+
+    expect(quality.passed).toBe(false);
+    expect(quality.blockers.join('\n')).toContain('StoryboardAsset 绑定率不足');
+    expect(quality.blockers.join('\n')).toContain('continuityNotes 覆盖率不足');
   });
 });

@@ -490,6 +490,14 @@ export interface VideoPromptDTO {
   sourceStoryboardAssetId: string | null;
   sourceStoryboardPrompt: string | null;
   continuityNotes: string[];
+  qualityScore?: number | null;
+  blockers?: string[];
+  missingReasons?: string[];
+  shotCoverageRate?: number | null;
+  storyboardBindingRate?: number | null;
+  characterBindingRate?: number | null;
+  locationBindingRate?: number | null;
+  continuityCoverageRate?: number | null;
   generatedAt: string | null;
   version: string;
   missingReason: string | null;

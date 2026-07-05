@@ -279,6 +279,38 @@ function readyStoryboardAsset(shotNo: number, overrides: Record<string, any> = {
   };
 }
 
+function readyVideoPrompt(shotNo: number, overrides: Record<string, any> = {}) {
+  return {
+    id: `video-prompt-${shotNo}`,
+    projectId: 'project-1',
+    shotId: `shot-script-${shotNo}`,
+    episodeId: 'episode-1',
+    shotNo,
+    sceneId: `episode-1:scene-${Math.ceil(shotNo / 2)}`,
+    locationId: 'location-1',
+    status: 'done',
+    prompt: '镜头级视频提示词，保持角色造型、服装、发型、道具和场景连续性。',
+    negativePrompt: '避免角色变脸、服装错乱、手指畸形、场景跳变、字幕乱码、画面闪烁。',
+    durationSec: 6,
+    aspectRatio: '16:9',
+    cameraLanguage: '中景 / 缓慢推进',
+    characters: ['薛知盈'],
+    dialogueCue: '薛知盈：不能让书被发现。',
+    soundCue: '脚步声',
+    lightingCue: '午后柔光',
+    motionCue: '缓慢推进；薛知盈藏书',
+    sourceShotScriptId: `shot-script-${shotNo}`,
+    sourceStoryboardAssetId: `storyboard-asset-${shotNo}`,
+    sourceStoryboardPrompt: '分镜构图提示词，本阶段不生成图片。',
+    continuityNotes: ['VideoPrompt 已绑定 StoryboardAsset 文本层，但未创建 VideoJob。'],
+    qualityScore: 100,
+    generatedAt: '2026-05-26T00:00:00.000Z',
+    version: 'studio-video-prompt-v1',
+    missingReason: null,
+    ...overrides,
+  };
+}
+
 function readyCharacterBibles(overrides: Record<string, any>[] = []) {
   const base = [
     {
@@ -1079,7 +1111,7 @@ describe('ProjectProductionStateService', () => {
     );
   });
 
-  it('marks video prompt ready only when Studio VideoPrompt metadata exists', async () => {
+  it('does not mark video prompt ready when stored VideoPrompt fails quality gate', async () => {
     const prisma = createPrismaMock({
       project: {
         findFirst: jest.fn().mockResolvedValue({
@@ -1115,10 +1147,46 @@ describe('ProjectProductionStateService', () => {
     const state = await service.getProductionState('project-1', 'org-1');
 
     expect(state.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).toBe(
+      'blocked'
+    );
+    expect(state.stages.find((stage) => stage.key === 'video_generating')?.status).toBe(
+      'missing'
+    );
+  });
+
+  it('marks video prompt ready only when Studio VideoPrompt metadata passes quality gate', async () => {
+    const prisma = createPrismaMock({
+      project: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'project-1',
+          name: '测试项目',
+          status: 'in_progress',
+          metadata: {
+            animationStudio: {
+              storyBible: readyStoryBible(),
+              characterBibles: readyCharacterBibles(),
+              locationBibles: readyLocationBibles(),
+              episodePlans: [readyEpisodePlan()],
+              directorScripts: [readyDirectorScript()],
+              shotScripts: Array.from({ length: 8 }, (_, index) => readyShotScript(index + 1)),
+              storyboardAssets: Array.from({ length: 8 }, (_, index) =>
+                readyStoryboardAsset(index + 1)
+              ),
+              videoPrompts: Array.from({ length: 8 }, (_, index) => readyVideoPrompt(index + 1)),
+            },
+          },
+        }),
+      },
+    });
+    const service = new ProjectProductionStateService(prisma as any);
+
+    const state = await service.getProductionState('project-1', 'org-1');
+
+    expect(state.stages.find((stage) => stage.key === 'video_prompt_ready')?.status).toBe(
       'done'
     );
     expect(state.stages.find((stage) => stage.key === 'video_prompt_ready')?.evidence).toContain(
-      'Project.metadata.animationStudio.videoPrompts:1'
+      'Project.metadata.animationStudio.videoPrompts:8'
     );
     expect(state.stages.find((stage) => stage.key === 'video_generating')?.status).toBe(
       'missing'
