@@ -79,7 +79,7 @@ function getNextAction(state: ProductionStateDTO | null): string {
     return '导入小说，作为 StoryBible、EpisodePlan、DirectorScript 和 ShotScript 的来源。';
   }
   const blocker = getFirstTextPipelineBlocker(state);
-  if (!blocker) return '文本链路已完成。下一阶段只能先做视觉资产方案设计。';
+  if (!blocker) return '文本链路已完成。下一步按阶段生成 StoryboardAsset 文本绑定和 VideoPrompt 文本准备态。';
   if (blocker.key === 'story_bible_ready') return '生成或修复 StoryBible。';
   if (blocker.key === 'episodes_ready') return '生成或修复第一集 EpisodePlan。';
   if (blocker.key === 'director_script_ready') return '生成或修复第一集 DirectorScript。';
@@ -125,8 +125,11 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
   const textReady = state ? isTextPipelineReady(state) : false;
   const shotCount = getEvidenceValue(getStage(state, 'shot_script_ready'), 'Project.metadata.animationStudio.shotScripts') || '0';
   const storyboardStage = getStage(state, 'storyboard_ready');
+  const videoPromptStage = getStage(state, 'video_prompt_ready');
   const storyboardAssetCount =
     getEvidenceValue(storyboardStage, 'Project.metadata.animationStudio.storyboardAssets') || '0';
+  const videoPromptCount =
+    getEvidenceValue(videoPromptStage, 'Project.metadata.animationStudio.videoPrompts') || '0';
   const errorCopy = getErrorCopy(errorStatus);
   const nextAction = getNextAction(state);
   const visualSummary = useMemo(
@@ -139,10 +142,18 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
             ? `文本分镜资产 ${storyboardAssetCount} 个；assetUrl 为空，不生成图片。`
             : '未生成 StoryboardAsset 文本绑定。',
       },
+      {
+        label: 'VideoPrompt',
+        status: videoPromptStage?.status === 'done' ? 'READY / TEXT' : 'LOCKED / MISSING',
+        body:
+          videoPromptStage?.status === 'done'
+            ? `视频提示词文本 ${videoPromptCount} 个；未创建 VideoJob。`
+            : '未生成 VideoPrompt 文本准备态。',
+      },
       { label: 'Image', status: 'LOCKED / NOT STARTED', body: '没有图片生成入口。' },
       { label: 'Video', status: 'LOCKED / NOT STARTED', body: '没有视频生成入口。' },
     ],
-    [storyboardAssetCount, storyboardStage?.status]
+    [storyboardAssetCount, storyboardStage?.status, videoPromptCount, videoPromptStage?.status]
   );
 
   return (
@@ -269,7 +280,7 @@ export function StudioOverviewPage({ locale, projectId }: StudioOverviewPageProp
             ))}
           </div>
           <div style={noticeStyle()}>
-            ShotScript ready 只代表镜头台本文本 ready。StoryboardAsset ready 只代表文本分镜绑定 ready；storyboard_prompt 不生成图片，video_prompt 不调用视频生成。
+            ShotScript ready 只代表镜头台本文本 ready。StoryboardAsset ready 只代表文本分镜绑定 ready。VideoPrompt ready 只代表视频提示词文本准备态；不会创建 VideoJob、不会调用视频模型。
           </div>
         </section>
       </div>

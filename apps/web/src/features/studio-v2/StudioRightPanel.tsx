@@ -38,7 +38,11 @@ function nextAction(state: ProductionStateDTO | null, hasError: boolean): string
     if (locationStage?.status === 'blocked' || locationStage?.status === 'missing') {
       return locationStage.nextAction || '修复 LocationBible 场景一致性绑定。';
     }
-    return '文本链路与角色/场景一致性已完成；下一阶段只能进入视觉资产方案设计。';
+    const storyboardStage = state.stages.find((stage) => stage.key === 'storyboard_ready');
+    const videoPromptStage = state.stages.find((stage) => stage.key === 'video_prompt_ready');
+    if (storyboardStage?.status !== 'done') return storyboardStage?.nextAction || '生成 StoryboardAsset 文本绑定。';
+    if (videoPromptStage?.status !== 'done') return videoPromptStage?.nextAction || '生成 VideoPrompt 文本准备态。';
+    return 'VideoPrompt 文本准备态已完成；下一阶段只能做视频生成方案设计，不能直接生成视频。';
   }
   if (blocker.key === 'story_bible_ready') return '修复或生成 StoryBible。';
   if (blocker.key === 'episodes_ready') return '修复或生成 EpisodePlan。';
@@ -59,9 +63,11 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
   const textPipelineStages = state ? getTextPipelineStages(state) : [];
   const textReady = state ? isTextPipelineReady(state) : false;
   const storyboardStage = state?.stages.find((stage) => stage.key === 'storyboard_ready');
+  const videoPromptStage = state?.stages.find((stage) => stage.key === 'video_prompt_ready');
   const characterStage = state?.stages.find((stage) => stage.key === 'characters_ready');
   const locationStage = state?.stages.find((stage) => stage.key === 'locations_ready');
   const storyboardReady = storyboardStage?.status === 'done';
+  const videoPromptReady = videoPromptStage?.status === 'done';
   const importHref = `/${locale}/projects/${projectId}/import-novel`;
   const projectHref = `/${locale}/projects/${projectId}`;
   const hasError = Boolean(stateError);
@@ -74,6 +80,7 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
         <StatusLine label="角色一致性" value={statusText(characterStage?.status)} />
         <StatusLine label="场景一致性" value={statusText(locationStage?.status)} />
         <StatusLine label="分镜文本层" value={storyboardReady ? 'READY' : '未开始'} />
+        <StatusLine label="视频提示词" value={videoPromptReady ? 'READY / TEXT' : statusText(videoPromptStage?.status)} />
         <StatusLine label="图片/视频链路" value="未开始" />
       </section>
 
@@ -105,6 +112,7 @@ export function StudioRightPanel({ locale, projectId, state, stateError = null, 
         <h3 style={titleStyle()}>风险</h3>
         <ul style={compactListStyle()}>
           <li>{storyboardReady ? 'StoryboardAsset 只是文本绑定，未生成图片' : '未生成 StoryboardAsset 文本绑定'}</li>
+          <li>{videoPromptReady ? 'VideoPrompt 只是文本准备态，未创建 VideoJob' : '未生成 VideoPrompt 文本准备态'}</li>
           <li>未生成 Image</li>
           <li>未生成 Video</li>
           <li>未启动 worker/job</li>

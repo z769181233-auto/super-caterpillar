@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { VideoPromptDTO } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,23 @@ import { PrismaService } from '../prisma/prisma.service';
 type JsonRecord = Record<string, unknown>;
 
 const VIDEO_PROMPT_VERSION = 'studio-video-prompt-v1';
+const MIN_VIDEO_PROMPT_BINDING_RATE = 0.9;
+const MIN_VIDEO_PROMPT_CONTINUITY_RATE = 0.9;
+const MIN_VIDEO_PROMPT_QUALITY_SCORE = 70;
+const VIDEO_PROMPT_PLACEHOLDER_PATTERN =
+  /待定|未生成|旧摘要|待识别角色|景别待定|运镜待定|动作待定|画面目标待定|光影待定/;
+
+export interface VideoPromptQualityValidationResult {
+  passed: boolean;
+  blockers: string[];
+  promptCount: number;
+  shotCoverageRate: number;
+  storyboardBindingRate: number;
+  characterBindingRate: number;
+  locationBindingRate: number;
+  continuityCoverageRate: number;
+  qualityScore: number;
+}
 
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
@@ -82,10 +99,18 @@ function buildMissing(projectId: string, reason: string): VideoPromptDTO[] {
       sourceStoryboardAssetId: null,
       sourceStoryboardPrompt: null,
       continuityNotes: [],
+      qualityScore: null,
+      blockers: [],
+      missingReasons: [reason],
+      shotCoverageRate: null,
+      storyboardBindingRate: null,
+      characterBindingRate: null,
+      locationBindingRate: null,
+      continuityCoverageRate: null,
       generatedAt: null,
       version: VIDEO_PROMPT_VERSION,
       missingReason: reason,
-    },
+    } as VideoPromptDTO,
   ];
 }
 
@@ -125,20 +150,90 @@ function normalizeVideoPrompt(projectId: string, value: unknown): VideoPromptDTO
     sourceStoryboardAssetId: asString(record.sourceStoryboardAssetId),
     sourceStoryboardPrompt: asString(record.sourceStoryboardPrompt),
     continuityNotes: textArray(record.continuityNotes),
+    qualityScore: asNumber(record.qualityScore),
+    blockers: textArray(record.blockers),
+    missingReasons: textArray(record.missingReasons),
+    shotCoverageRate: asNumber(record.shotCoverageRate),
+    storyboardBindingRate: asNumber(record.storyboardBindingRate),
+    characterBindingRate: asNumber(record.characterBindingRate),
+    locationBindingRate: asNumber(record.locationBindingRate),
+    continuityCoverageRate: asNumber(record.continuityCoverageRate),
     generatedAt: asString(record.generatedAt),
     version: asString(record.version) || VIDEO_PROMPT_VERSION,
     missingReason: status === 'missing' ? asString(record.missingReason) || fallback.missingReason : null,
-  };
+  } as VideoPromptDTO;
 }
 
-function storyboardByShotId(items: unknown[]): Map<string, JsonRecord> {
+function buildBlocked(
+  projectId: string,
+  reason: string,
+  quality?: Partial<VideoPromptQualityValidationResult>
+): VideoPromptDTO[] {
+  const missing = buildMissing(projectId, reason)[0];
+  return [
+    {
+      ...missing,
+      status: 'blocked',
+      blockers: quality?.blockers || [reason],
+      missingReasons: [reason],
+      qualityScore: quality?.qualityScore ?? null,
+      shotCoverageRate: quality?.shotCoverageRate ?? null,
+      storyboardBindingRate: quality?.storyboardBindingRate ?? null,
+      characterBindingRate: quality?.characterBindingRate ?? null,
+      locationBindingRate: quality?.locationBindingRate ?? null,
+      continuityCoverageRate: quality?.continuityCoverageRate ?? null,
+      missingReason: reason,
+    } as VideoPromptDTO,
+  ];
+}
+
+function readyStoryboardByShotId(items: unknown[]): Map<string, JsonRecord> {
   const map = new Map<string, JsonRecord>();
   for (const item of items) {
     const record = asRecord(item);
     const shotId = asString(record.shotId) || asString(record.sourceShotScriptId);
-    if (shotId && asString(record.status) !== 'missing') map.set(shotId, record);
+    const isTextBinding = asString(record.assetKind) === 'text_binding';
+    const isReady = asString(record.status) === 'done';
+    const hasImageAsset = Boolean(asString(record.assetUrl) || asString(record.assetStorageKey));
+    if (shotId && isReady && isTextBinding && !hasImageAsset) map.set(shotId, record);
   }
   return map;
+}
+
+function idSet(items: unknown[], key: string): Set<string> {
+  return new Set(
+    items.map((item) => asString(asRecord(item)[key])).filter(Boolean) as string[]
+  );
+}
+
+function hasPlaceholder(value: VideoPromptDTO): boolean {
+  return [
+    value.prompt,
+    value.negativePrompt,
+    value.cameraLanguage,
+    value.soundCue,
+    value.lightingCue,
+    value.motionCue,
+    value.sourceStoryboardPrompt,
+    ...value.continuityNotes,
+  ].some((item) => Boolean(item && VIDEO_PROMPT_PLACEHOLDER_PATTERN.test(item)));
+}
+
+function promptQualityScore(input: {
+  shotCoverageRate: number;
+  storyboardBindingRate: number;
+  characterBindingRate: number;
+  locationBindingRate: number;
+  continuityCoverageRate: number;
+  hasPlaceholders: boolean;
+}): number {
+  const score =
+    input.shotCoverageRate * 25 +
+    input.storyboardBindingRate * 25 +
+    input.characterBindingRate * 15 +
+    input.locationBindingRate * 15 +
+    input.continuityCoverageRate * 20;
+  return Math.max(0, Math.round(score - (input.hasPlaceholders ? 30 : 0)));
 }
 
 function buildVideoPrompt(
@@ -203,9 +298,111 @@ function buildVideoPrompt(
         : 'VideoPrompt 从 ShotScript 直接生成，缺少 StoryboardAsset 绑定。',
       '后续视频生成必须单独创建 VideoJob，并写回镜头级任务状态。',
     ],
+    qualityScore: null,
+    blockers: [],
+    missingReasons: [],
+    shotCoverageRate: null,
+    storyboardBindingRate: null,
+    characterBindingRate: null,
+    locationBindingRate: null,
+    continuityCoverageRate: null,
     generatedAt,
     version: VIDEO_PROMPT_VERSION,
     missingReason: null,
+  } as VideoPromptDTO;
+}
+
+export function validateVideoPromptQuality(
+  videoPrompts: unknown,
+  shotScripts: unknown,
+  storyboardAssets: unknown,
+  characterBibles: unknown,
+  locationBibles: unknown
+): VideoPromptQualityValidationResult {
+  const prompts = asArray(videoPrompts).map((item) => normalizeVideoPrompt('validation', item));
+  const shots = asArray(shotScripts)
+    .map((item) => asRecord(item))
+    .filter((item) => asString(item.status) === 'ready' && asString(item.shot_id));
+  const readyStoryboardAssets = readyStoryboardByShotId(asArray(storyboardAssets));
+  const characterIds = idSet(asArray(characterBibles), 'characterId');
+  const locationIds = idSet(asArray(locationBibles), 'locationId');
+  const promptShotIds = new Set(prompts.map((prompt) => prompt.sourceShotScriptId || prompt.shotId).filter(Boolean) as string[]);
+  const expectedShotIds = new Set(shots.map((shot) => asString(shot.shot_id)).filter(Boolean) as string[]);
+  const promptCount = prompts.filter((prompt) => prompt.status !== 'missing').length;
+  const blockers: string[] = [];
+
+  if (shots.length === 0) blockers.push('缺少 ready ShotScript，不能生成 VideoPrompt。');
+  if (readyStoryboardAssets.size === 0) blockers.push('缺少 ready StoryboardAsset 文本绑定。');
+  if (characterIds.size === 0) blockers.push('缺少 ready CharacterBible 角色绑定。');
+  if (locationIds.size === 0) blockers.push('缺少 ready LocationBible 场景绑定。');
+
+  const shotCoverageRate =
+    expectedShotIds.size === 0
+      ? 0
+      : Array.from(expectedShotIds).filter((shotId) => promptShotIds.has(shotId)).length /
+        expectedShotIds.size;
+  const storyboardBindingRate =
+    promptCount === 0
+      ? 0
+      : prompts.filter((prompt) => Boolean(prompt.sourceStoryboardAssetId)).length / promptCount;
+  const characterBindingRate =
+    promptCount === 0
+      ? 0
+      : prompts.filter((prompt) => prompt.characters.some((name) => name.trim())).length / promptCount;
+  const locationBindingRate =
+    promptCount === 0
+      ? 0
+      : prompts.filter((prompt) => Boolean(prompt.locationId && locationIds.has(prompt.locationId))).length /
+        promptCount;
+  const continuityCoverageRate =
+    promptCount === 0
+      ? 0
+      : prompts.filter((prompt) => prompt.continuityNotes.length > 0).length / promptCount;
+  const hasPlaceholders = prompts.some(hasPlaceholder);
+  const qualityScore = promptQualityScore({
+    shotCoverageRate,
+    storyboardBindingRate,
+    characterBindingRate,
+    locationBindingRate,
+    continuityCoverageRate,
+    hasPlaceholders,
+  });
+
+  if (promptCount !== shots.length) blockers.push(`VideoPrompt 数量不匹配：${promptCount}/${shots.length}`);
+  if (shotCoverageRate < 1) blockers.push(`ShotScript 覆盖率不足：${Math.round(shotCoverageRate * 100)}%/100%`);
+  if (storyboardBindingRate < 1) blockers.push(`StoryboardAsset 绑定率不足：${Math.round(storyboardBindingRate * 100)}%/100%`);
+  if (characterBindingRate < MIN_VIDEO_PROMPT_BINDING_RATE) {
+    blockers.push(`CharacterBible 角色绑定率不足：${Math.round(characterBindingRate * 100)}%/90%`);
+  }
+  if (locationBindingRate < MIN_VIDEO_PROMPT_BINDING_RATE) {
+    blockers.push(`LocationBible 场景绑定率不足：${Math.round(locationBindingRate * 100)}%/90%`);
+  }
+  if (continuityCoverageRate < MIN_VIDEO_PROMPT_CONTINUITY_RATE) {
+    blockers.push(`continuityNotes 覆盖率不足：${Math.round(continuityCoverageRate * 100)}%/90%`);
+  }
+  if (prompts.some((prompt) => !prompt.prompt)) blockers.push('存在缺少 prompt 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.negativePrompt)) blockers.push('存在缺少 negativePrompt 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.durationSec)) blockers.push('存在缺少 durationSec 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.aspectRatio)) blockers.push('存在缺少 aspectRatio 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.cameraLanguage)) blockers.push('存在缺少 cameraLanguage 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.soundCue)) blockers.push('存在缺少 soundCue 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.lightingCue)) blockers.push('存在缺少 lightingCue 的 VideoPrompt。');
+  if (prompts.some((prompt) => !prompt.motionCue)) blockers.push('存在缺少 motionCue 的 VideoPrompt。');
+  if (hasPlaceholders) blockers.push('VideoPrompt 中存在待定/未生成/旧摘要等占位文本。');
+  if (qualityScore < MIN_VIDEO_PROMPT_QUALITY_SCORE) {
+    blockers.push(`VideoPrompt overall quality score 不足：${qualityScore}/70`);
+  }
+
+  return {
+    passed: blockers.length === 0,
+    blockers,
+    promptCount,
+    shotCoverageRate,
+    storyboardBindingRate,
+    characterBindingRate,
+    locationBindingRate,
+    continuityCoverageRate,
+    qualityScore,
   };
 }
 
@@ -245,13 +442,17 @@ export class ProjectStudioVideoPromptService {
     const animationStudio = asRecord(metadata.animationStudio);
     const shotScripts = asArray(animationStudio.shotScripts)
       .map((item) => asRecord(item))
-      .filter((item) => asString(item.status) !== 'missing' && asString(item.shot_id));
+      .filter((item) => asString(item.status) === 'ready' && asString(item.shot_id));
 
     if (shotScripts.length === 0) {
-      throw new BadRequestException('No Studio ShotScript found for VideoPrompt generation');
+      return buildBlocked(projectId, '缺少 ready ShotScript，不能生成 VideoPrompt。');
     }
 
-    const storyboardAssetsByShotId = storyboardByShotId(asArray(animationStudio.storyboardAssets));
+    const storyboardAssets = asArray(animationStudio.storyboardAssets);
+    const storyboardAssetsByShotId = readyStoryboardByShotId(storyboardAssets);
+    if (storyboardAssetsByShotId.size === 0) {
+      return buildBlocked(projectId, '缺少 ready StoryboardAsset 文本绑定，不能生成 VideoPrompt。');
+    }
     const generatedAt = new Date().toISOString();
     const videoPrompts = shotScripts.map((shotScript) =>
       buildVideoPrompt(
@@ -261,12 +462,36 @@ export class ProjectStudioVideoPromptService {
         generatedAt
       )
     );
+    const quality = validateVideoPromptQuality(
+      videoPrompts,
+      shotScripts,
+      storyboardAssets,
+      animationStudio.characterBibles,
+      animationStudio.locationBibles
+    );
+    const readyVideoPrompts = videoPrompts.map((prompt) => ({
+      ...prompt,
+      status: quality.passed ? 'done' : 'blocked',
+      qualityScore: quality.qualityScore,
+      blockers: quality.passed ? [] : quality.blockers,
+      missingReasons: quality.passed ? [] : quality.blockers,
+      shotCoverageRate: quality.shotCoverageRate,
+      storyboardBindingRate: quality.storyboardBindingRate,
+      characterBindingRate: quality.characterBindingRate,
+      locationBindingRate: quality.locationBindingRate,
+      continuityCoverageRate: quality.continuityCoverageRate,
+      missingReason: quality.passed ? null : quality.blockers.join('；'),
+    })) as VideoPromptDTO[];
+
+    if (!quality.passed) {
+      return readyVideoPrompts;
+    }
 
     const nextMetadata = {
       ...metadata,
       animationStudio: {
         ...animationStudio,
-        videoPrompts,
+        videoPrompts: readyVideoPrompts,
       },
     } as unknown as Prisma.InputJsonValue;
 
@@ -275,6 +500,6 @@ export class ProjectStudioVideoPromptService {
       data: { metadata: nextMetadata },
     });
 
-    return videoPrompts;
+    return readyVideoPrompts;
   }
 }

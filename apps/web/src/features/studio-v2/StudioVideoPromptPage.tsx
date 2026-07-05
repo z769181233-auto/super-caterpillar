@@ -49,6 +49,20 @@ export function StudioVideoPromptPage({ locale, projectId, episodeId }: StudioVi
     return matching.length > 0 ? matching : realVideoPrompts;
   }, [episodeId, realVideoPrompts]);
   const isDone = realVideoPrompts.length > 0;
+  const metrics = {
+    promptCount: String(realVideoPrompts.length),
+    shotCoverage: promptStage?.evidence.find((item) => item.startsWith('shotCoverage:'))?.split(':')[1] || '未评估',
+    storyboardBinding:
+      promptStage?.evidence.find((item) => item.startsWith('storyboardBinding:'))?.split(':')[1] || '未评估',
+    characterBinding:
+      promptStage?.evidence.find((item) => item.startsWith('characterBinding:'))?.split(':')[1] || '未评估',
+    locationBinding:
+      promptStage?.evidence.find((item) => item.startsWith('locationBinding:'))?.split(':')[1] || '未评估',
+    continuityCoverage:
+      promptStage?.evidence.find((item) => item.startsWith('continuityCoverage:'))?.split(':')[1] || '未评估',
+    qualityScore:
+      promptStage?.evidence.find((item) => item.startsWith('quality_score:'))?.split(':')[1] || '未评估',
+  };
 
   async function handleGenerate() {
     setGenerating(true);
@@ -76,7 +90,7 @@ export function StudioVideoPromptPage({ locale, projectId, episodeId }: StudioVi
         }}
       >
         <p style={{ color: 'var(--text-secondary)', margin: '0 0 0.5rem' }}>
-          Phase 2H：只生成 VideoPrompt 文本输出，不创建视频任务
+          Phase 2C：只生成 VideoPrompt 文本准备态，不创建 VideoJob
         </p>
         <div
           style={{
@@ -89,7 +103,7 @@ export function StudioVideoPromptPage({ locale, projectId, episodeId }: StudioVi
           <div>
             <h1 style={{ margin: 0 }}>视频提示词 VideoPrompt</h1>
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-              从 ShotScript 和可选 StoryboardAsset 派生镜头级视频提示词，包括正向提示词、反向提示词、时长、画幅、镜头语言、对白、声音和连续性约束。
+              从 ShotScript、StoryboardAsset 文本绑定、CharacterBible 和 LocationBible 派生镜头级视频提示词，包括正向提示词、反向提示词、镜头语言、对白、声音和连续性约束。
             </p>
           </div>
           <button
@@ -128,8 +142,25 @@ export function StudioVideoPromptPage({ locale, projectId, episodeId }: StudioVi
         <Callout
           tone="info"
           title="边界说明"
-          body="本页只生成镜头级 VideoPrompt 文本。不会创建 VideoJob，不会调用视频模型，不会生成视频预览，也不能视为成片。"
+          body="本页只生成镜头级 VideoPrompt 文本准备态。不会创建 VideoJob，不会调用视频模型，不会启动 worker，不会生成视频预览，也不能视为成片。"
         />
+
+        <div
+          style={{
+            display: 'grid',
+            gap: '0.75rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            marginTop: '1rem',
+          }}
+        >
+          <MetricCard label="Prompt 数量" value={metrics.promptCount} />
+          <MetricCard label="Shot 覆盖率" value={metrics.shotCoverage} />
+          <MetricCard label="Storyboard 绑定" value={metrics.storyboardBinding} />
+          <MetricCard label="角色绑定" value={metrics.characterBinding} />
+          <MetricCard label="场景绑定" value={metrics.locationBinding} />
+          <MetricCard label="连续性覆盖" value={metrics.continuityCoverage} />
+          <MetricCard label="质量分" value={metrics.qualityScore} />
+        </div>
 
         <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
           {visibleVideoPrompts.length > 0 ? (
@@ -181,8 +212,24 @@ function VideoPromptCard({ prompt }: { prompt: VideoPromptDTO }) {
           value={prompt.continuityNotes.length > 0 ? prompt.continuityNotes.join('\n') : '未生成'}
         />
         <InfoRow label="协议版本" value={prompt.version || '未生成'} />
+        <InfoRow label="阶段边界" value="VideoPrompt 只是文本准备态；未创建 VideoJob，未调用视频模型。" />
       </div>
     </article>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--r-md)',
+        padding: '0.85rem',
+      }}
+    >
+      <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>{label}</div>
+      <strong style={{ color: 'var(--text-primary)' }}>{value}</strong>
+    </div>
   );
 }
 

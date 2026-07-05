@@ -18,6 +18,7 @@ import { validateLocationBibleQuality } from './project-studio-location-bible.se
 import { validateShotScriptQuality } from './project-studio-shot-script.service';
 import { validateStoryBibleQuality } from './project-studio-story-bible.service';
 import { validateStoryboardAssetQuality } from './project-studio-storyboard-asset.service';
+import { validateVideoPromptQuality } from './project-studio-video-prompt.service';
 
 const STAGE_LABELS: Record<ProductionStage, string> = {
   imported: '已导入故事来源',
@@ -861,7 +862,14 @@ export class ProjectProductionStateService {
         }).length
       : 0;
     const videoPromptCount = Array.isArray(studioVideoPrompts) ? studioVideoPrompts.length : 0;
-    const hasStudioVideoPrompts = videoPromptCount > 0;
+    const videoPromptQuality = validateVideoPromptQuality(
+      studioVideoPrompts,
+      studioShotScripts,
+      studioStoryboardAssets,
+      studioCharacterBibles,
+      studioLocationBibles
+    );
+    const hasStudioVideoPrompts = videoPromptCount > 0 && videoPromptQuality.passed;
     const imported = hasCanonicalStorySource || hasLegacyNovelSource;
     const latestStatus = latestAnalysisJob?.status ? String(latestAnalysisJob.status) : null;
     const isAnalysisRunning = latestStatus === 'PENDING' || latestStatus === 'RUNNING';
@@ -1091,12 +1099,28 @@ export class ProjectProductionStateService {
       ),
       stage(
         'video_prompt_ready',
-        hasStudioVideoPrompts ? 'done' : 'missing',
+        hasStudioVideoPrompts ? 'done' : videoPromptCount > 0 ? 'blocked' : 'missing',
         hasStudioVideoPrompts
-          ? [`Project.metadata.animationStudio.videoPrompts:${videoPromptCount}`]
-          : [],
-        hasStudioVideoPrompts ? null : '当前没有 VideoPrompt 协议；不能把 ShotScript 草案伪装成正式视频提示词',
-        hasStudioVideoPrompts ? '进入镜头视频生成阶段' : 'Phase 2H 生成 VideoPrompt 文本输出'
+          ? [
+              `Project.metadata.animationStudio.videoPrompts:${videoPromptCount}`,
+              `shotCoverage:${Math.round(videoPromptQuality.shotCoverageRate * 100)}%`,
+              `storyboardBinding:${Math.round(videoPromptQuality.storyboardBindingRate * 100)}%`,
+              `characterBinding:${Math.round(videoPromptQuality.characterBindingRate * 100)}%`,
+              `locationBinding:${Math.round(videoPromptQuality.locationBindingRate * 100)}%`,
+              `continuityCoverage:${Math.round(videoPromptQuality.continuityCoverageRate * 100)}%`,
+              `quality_score:${videoPromptQuality.qualityScore}`,
+            ]
+          : videoPromptCount > 0
+            ? videoPromptQuality.blockers
+            : [],
+        hasStudioVideoPrompts
+          ? null
+          : videoPromptCount > 0
+            ? `VideoPrompt 文本质量门槛未通过：${videoPromptQuality.blockers.join('；') || '字段不足'}`
+            : '当前没有 VideoPrompt 协议；不能把 ShotScript 草案伪装成正式视频提示词',
+        hasStudioVideoPrompts
+          ? 'VideoPrompt 文本准备态已完成；VideoJob / worker / 视频生成仍保持锁定'
+          : 'Phase 2C 生成 VideoPrompt 文本准备态'
       ),
       stage(
         'video_generating',
