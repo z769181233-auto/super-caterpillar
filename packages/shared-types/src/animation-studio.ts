@@ -451,6 +451,47 @@ export interface StoryboardAssetDTO {
   missingReason: string | null;
 }
 
+export interface StoryboardImageGenerationDryRunRequestDTO {
+  episodeId?: string | null;
+  shotIds?: string[];
+  imageModel?: string | null;
+  imageSize?: string | null;
+  imageQuality?: string | null;
+  confirmCost?: boolean;
+}
+
+export interface StoryboardImageGenerationPlanItemDTO {
+  shotId: string | null;
+  shotNo: number | null;
+  episodeId: string | null;
+  sourceStoryboardAssetId: string | null;
+  sourcePrompt: string | null;
+  imagePrompt: string | null;
+  estimatedCostUnit: number;
+  blockers: string[];
+}
+
+export interface StoryboardImageGenerationDryRunDTO {
+  projectId: string;
+  status: 'ready' | 'blocked';
+  mode: 'dry_run';
+  requestedEpisodeId: string | null;
+  requestedShotIds: string[];
+  plannedImageCount: number;
+  existingImageAssetCount: number;
+  estimatedCostUnits: number;
+  imageModel: string | null;
+  imageSize: string | null;
+  imageQuality: string | null;
+  assets: StoryboardImageGenerationPlanItemDTO[];
+  blockers: string[];
+  willCreateJob: false;
+  willCallProvider: false;
+  willGenerateImage: false;
+  willWriteMetadata: false;
+  nextAction: string;
+}
+
 export interface StoryboardEpisodeAcceptanceDTO {
   projectId: string;
   episodeId: string;
