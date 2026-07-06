@@ -500,10 +500,11 @@ export interface StoryboardImageGenerateOneRequestDTO {
   confirmCost: true;
   confirmSingleShot: true;
   confirmNoVideo: true;
+  confirmRealImageGeneration?: true;
 }
 
 export interface StoryboardImageProviderResultDTO {
-  provider: 'mock';
+  provider: 'mock' | 'openai';
   assetUrl: string;
   assetStorageKey: string;
   attempted: boolean;
@@ -517,7 +518,7 @@ export interface StoryboardImageGenerateOneDTO {
   blockers: string[];
   providerCall: {
     attempted: boolean;
-    provider: 'mock' | null;
+    provider: 'mock' | 'openai' | null;
     model: string | null;
   };
   willCreateJob: false;
