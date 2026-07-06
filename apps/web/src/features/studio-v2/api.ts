@@ -108,14 +108,20 @@ export interface StoryboardImageGenerateOneDTO {
   auditLog: {
     planned: boolean;
     recorded: boolean;
+    preflightRecorded: boolean;
+    providerAttemptRecorded: boolean;
+    providerSuccessRecorded: boolean;
+    providerFailureRecorded: boolean;
     action: string;
     resourceType: string;
     resourceId: string | null;
     failureReason: string | null;
   };
   rollback: {
-    required: false;
-    reason: null;
+    required: boolean;
+    reason: string | null;
+    metadataWritten: boolean;
+    metadataRestored: boolean;
   };
   willCreateJob: false;
   willGenerateVideo: false;

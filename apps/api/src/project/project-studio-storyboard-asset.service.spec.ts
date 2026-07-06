@@ -531,6 +531,8 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.rollback).toEqual({
       required: false,
       reason: null,
+      metadataWritten: true,
+      metadataRestored: false,
     });
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
@@ -587,6 +589,10 @@ describe('ProjectStudioStoryboardAssetService', () => {
 
     expect(result.status).toBe('ready');
     expect(result.auditLog.recorded).toBe(true);
+    expect(result.auditLog.preflightRecorded).toBe(true);
+    expect(result.auditLog.providerAttemptRecorded).toBe(true);
+    expect(result.auditLog.providerSuccessRecorded).toBe(true);
+    expect(result.auditLog.providerFailureRecorded).toBe(false);
     expect(auditLogService.record).toHaveBeenCalledWith(
       expect.objectContaining({
         orgId: 'org-1',
@@ -602,6 +608,82 @@ describe('ProjectStudioStoryboardAssetService', () => {
           willCreateJob: false,
           willGenerateVideo: false,
           phase: '3A-E',
+        }),
+      })
+    );
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          status: 'provider_attempt',
+        }),
+      })
+    );
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          status: 'provider_success',
+        }),
+      })
+    );
+  });
+
+  it('returns failed rollback state when metadata write fails after provider result', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    prisma.project.update.mockRejectedValueOnce(new Error('metadata write failed'));
+    const auditLogService = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new ProjectStudioStoryboardAssetService(prisma as any, auditLogService as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.asset).toBeNull();
+    expect(result.blockers.join('\n')).toContain('metadata write failed');
+    expect(result.providerCall).toEqual({
+      attempted: true,
+      provider: 'mock',
+      model: 'gpt-image-1',
+      confirmed: false,
+    });
+    expect(result.auditLog.preflightRecorded).toBe(true);
+    expect(result.auditLog.providerAttemptRecorded).toBe(true);
+    expect(result.auditLog.providerSuccessRecorded).toBe(true);
+    expect(result.auditLog.providerFailureRecorded).toBe(true);
+    expect(result.rollback).toEqual({
+      required: true,
+      reason: 'Provider returned an asset but metadata write failed; no worker/job/video was created.',
+      metadataWritten: false,
+      metadataRestored: false,
+    });
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          status: 'metadata_write_failed',
+          willCreateJob: false,
+          willGenerateVideo: false,
         }),
       })
     );

@@ -546,6 +546,37 @@ function resolveStoryboardImageProvider(provider: StoryboardImageProviderName): 
     : new MockStoryboardImageProvider();
 }
 
+function auditFlags(
+  status: 'blocked' | 'approved' | 'provider_attempt' | 'provider_success' | 'provider_failure' | 'metadata_write_failed',
+  recorded: boolean
+): Pick<
+  StoryboardImageGenerateOneDTO['auditLog'],
+  'preflightRecorded' | 'providerAttemptRecorded' | 'providerSuccessRecorded' | 'providerFailureRecorded'
+> {
+  return {
+    preflightRecorded: (status === 'blocked' || status === 'approved') && recorded,
+    providerAttemptRecorded: status === 'provider_attempt' && recorded,
+    providerSuccessRecorded: status === 'provider_success' && recorded,
+    providerFailureRecorded:
+      (status === 'provider_failure' || status === 'metadata_write_failed') && recorded,
+  };
+}
+
+function mergeAuditLog(
+  current: StoryboardImageGenerateOneDTO['auditLog'],
+  next: StoryboardImageGenerateOneDTO['auditLog']
+): StoryboardImageGenerateOneDTO['auditLog'] {
+  return {
+    ...current,
+    recorded: current.recorded || next.recorded,
+    preflightRecorded: current.preflightRecorded || next.preflightRecorded,
+    providerAttemptRecorded: current.providerAttemptRecorded || next.providerAttemptRecorded,
+    providerSuccessRecorded: current.providerSuccessRecorded || next.providerSuccessRecorded,
+    providerFailureRecorded: current.providerFailureRecorded || next.providerFailureRecorded,
+    failureReason: current.failureReason || next.failureReason,
+  };
+}
+
 @Injectable()
 export class ProjectStudioStoryboardAssetService {
   constructor(
@@ -559,7 +590,7 @@ export class ProjectStudioStoryboardAssetService {
     shotId: string | null;
     provider: StoryboardImageProviderName;
     model: string | null;
-    status: 'blocked' | 'approved';
+    status: 'blocked' | 'approved' | 'provider_attempt' | 'provider_success' | 'provider_failure' | 'metadata_write_failed';
     blockers: string[];
   }): Promise<StoryboardImageGenerateOneDTO['auditLog']> {
     const resourceId = options.shotId
@@ -568,6 +599,10 @@ export class ProjectStudioStoryboardAssetService {
     const auditLog: StoryboardImageGenerateOneDTO['auditLog'] = {
       planned: true,
       recorded: false,
+      preflightRecorded: false,
+      providerAttemptRecorded: false,
+      providerSuccessRecorded: false,
+      providerFailureRecorded: false,
       action: STORYBOARD_IMAGE_PROVIDER_AUDIT_ACTION,
       resourceType: STORYBOARD_IMAGE_PROVIDER_AUDIT_RESOURCE,
       resourceId,
@@ -577,6 +612,7 @@ export class ProjectStudioStoryboardAssetService {
     if (!this.auditLogService) {
       return {
         ...auditLog,
+        ...auditFlags(options.status, false),
         failureReason: 'AuditLogService unavailable in current execution context',
       };
     }
@@ -599,10 +635,11 @@ export class ProjectStudioStoryboardAssetService {
           phase: '3A-E',
         },
       });
-      return { ...auditLog, recorded: true };
+      return { ...auditLog, ...auditFlags(options.status, true), recorded: true };
     } catch (error: any) {
       return {
         ...auditLog,
+        ...auditFlags(options.status, false),
         failureReason: error?.message || 'Failed to record provider audit log',
       };
     }
@@ -800,6 +837,8 @@ export class ProjectStudioStoryboardAssetService {
         rollback: {
           required: false,
           reason: null,
+          metadataWritten: false,
+          metadataRestored: false,
         },
         willCreateJob: false,
         willGenerateVideo: false,
@@ -809,7 +848,7 @@ export class ProjectStudioStoryboardAssetService {
 
     const safeRequest = request as StoryboardImageGenerateOneRequestDTO;
     const provider = resolveStoryboardImageProvider(providerName);
-    const auditLog = await this.recordStoryboardImageProviderAudit({
+    let auditLog = await this.recordStoryboardImageProviderAudit({
       projectId,
       organizationId,
       shotId,
@@ -818,12 +857,77 @@ export class ProjectStudioStoryboardAssetService {
       status: 'approved',
       blockers: [],
     });
-    const providerResult = await provider.generate({
-      projectId,
-      asset: textBindingAsset,
-      request: safeRequest,
-      imagePrompt: dryRun.assets[0]?.imagePrompt || textBindingAsset.sourcePrompt || textBindingAsset.prompt,
-    });
+    auditLog = mergeAuditLog(
+      auditLog,
+      await this.recordStoryboardImageProviderAudit({
+        projectId,
+        organizationId,
+        shotId,
+        provider: providerName,
+        model: safeRequest.imageModel,
+        status: 'provider_attempt',
+        blockers: [],
+      })
+    );
+
+    let providerResult: StoryboardImageProviderResultDTO;
+    try {
+      providerResult = await provider.generate({
+        projectId,
+        asset: textBindingAsset,
+        request: safeRequest,
+        imagePrompt: dryRun.assets[0]?.imagePrompt || textBindingAsset.sourcePrompt || textBindingAsset.prompt,
+      });
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_success',
+          blockers: [],
+        })
+      );
+    } catch (error: any) {
+      const failureMessage = error?.message || 'Storyboard image provider call failed';
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_failure',
+          blockers: [failureMessage],
+        })
+      );
+      return {
+        projectId,
+        status: 'failed',
+        mode: 'single_shot',
+        asset: null,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: true,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: 'Provider failed before metadata write',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        willCreateJob: false,
+        willGenerateVideo: false,
+        nextAction: '图片 provider 调用失败；未写入 metadata、未创建 worker/job、未触发视频链路。',
+      };
+    }
     const generatedAt = new Date().toISOString();
     const imageAsset: StoryboardAssetDTO = {
       ...textBindingAsset,
@@ -853,10 +957,49 @@ export class ProjectStudioStoryboardAssetService {
       },
     } as unknown as Prisma.InputJsonValue;
 
-    await this.prisma.project.update({
-      where: { id: projectId },
-      data: { metadata: nextMetadata },
-    });
+    try {
+      await this.prisma.project.update({
+        where: { id: projectId },
+        data: { metadata: nextMetadata },
+      });
+    } catch (error: any) {
+      const failureMessage = error?.message || 'Failed to write storyboard image metadata';
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'metadata_write_failed',
+          blockers: [failureMessage],
+        })
+      );
+      return {
+        projectId,
+        status: 'failed',
+        mode: 'single_shot',
+        asset: null,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: providerResult.attempted,
+          provider: providerResult.provider,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: true,
+          reason: 'Provider returned an asset but metadata write failed; no worker/job/video was created.',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        willCreateJob: false,
+        willGenerateVideo: false,
+        nextAction: '图片 provider 已返回结果但 metadata 写入失败；需要人工确认是否存在外部资产残留。',
+      };
+    }
 
     return {
       projectId,
@@ -874,6 +1017,8 @@ export class ProjectStudioStoryboardAssetService {
       rollback: {
         required: false,
         reason: null,
+        metadataWritten: true,
+        metadataRestored: false,
       },
       willCreateJob: false,
       willGenerateVideo: false,
