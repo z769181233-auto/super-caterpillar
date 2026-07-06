@@ -517,6 +517,20 @@ describe('ProjectStudioStoryboardAssetService', () => {
       attempted: true,
       provider: 'mock',
       model: 'gpt-image-1',
+      confirmed: false,
+    });
+    expect(result.auditLog).toEqual(
+      expect.objectContaining({
+        planned: true,
+        recorded: false,
+        action: 'STUDIO_STORYBOARD_IMAGE_PROVIDER_CALL',
+        resourceType: 'studio_storyboard_image_provider_call',
+        resourceId: 'project-1:shot-script-1',
+      })
+    );
+    expect(result.rollback).toEqual({
+      required: false,
+      reason: null,
     });
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
@@ -537,6 +551,57 @@ describe('ProjectStudioStoryboardAssetService', () => {
               ]),
             }),
           }),
+        }),
+      })
+    );
+  });
+
+  it('records provider-call audit skeleton before mock provider write', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const auditLogService = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new ProjectStudioStoryboardAssetService(prisma as any, auditLogService as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.auditLog.recorded).toBe(true);
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orgId: 'org-1',
+        action: 'STUDIO_STORYBOARD_IMAGE_PROVIDER_CALL',
+        resourceType: 'studio_storyboard_image_provider_call',
+        resourceId: 'project-1:shot-script-1',
+        details: expect.objectContaining({
+          projectId: 'project-1',
+          shotId: 'shot-script-1',
+          provider: 'mock',
+          model: 'gpt-image-1',
+          status: 'approved',
+          willCreateJob: false,
+          willGenerateVideo: false,
+          phase: '3A-E',
         }),
       })
     );
@@ -569,6 +634,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
       confirmCost: true,
       confirmSingleShot: true,
       confirmNoVideo: true,
+      confirmProviderCall: true,
       confirmRealImageGeneration: true,
     });
 
@@ -578,7 +644,15 @@ describe('ProjectStudioStoryboardAssetService', () => {
       attempted: false,
       provider: 'openai',
       model: 'gpt-image-1',
+      confirmed: true,
     });
+    expect(result.auditLog).toEqual(
+      expect.objectContaining({
+        planned: true,
+        recorded: false,
+        resourceId: 'project-1:shot-script-1',
+      })
+    );
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
@@ -616,6 +690,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.blockers.join('\n')).toContain('ENABLE_STUDIO_REAL_IMAGE_GENERATION=true');
     expect(result.blockers.join('\n')).toContain('OPENAI_API_KEY');
     expect(result.blockers.join('\n')).toContain('confirmRealImageGeneration=true');
+    expect(result.blockers.join('\n')).toContain('confirmProviderCall=true');
     expect(result.providerCall.attempted).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

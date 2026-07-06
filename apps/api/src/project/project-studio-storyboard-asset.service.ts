@@ -9,6 +9,7 @@ import {
   StoryboardImageProviderResultDTO,
 } from '@scu/shared-types';
 import { Prisma } from 'database';
+import { AuditLogService } from '../audit-log/audit-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { validateCharacterBibleQuality } from './project-studio-character-bible.service';
 import { validateLocationBibleQuality } from './project-studio-location-bible.service';
@@ -18,6 +19,8 @@ import { validateVideoPromptQuality } from './project-studio-video-prompt.servic
 type JsonRecord = Record<string, unknown>;
 
 const STORYBOARD_ASSET_VERSION = 'studio-storyboard-asset-v1';
+const STORYBOARD_IMAGE_PROVIDER_AUDIT_ACTION = 'STUDIO_STORYBOARD_IMAGE_PROVIDER_CALL';
+const STORYBOARD_IMAGE_PROVIDER_AUDIT_RESOURCE = 'studio_storyboard_image_provider_call';
 
 export interface StoryboardAssetQualityValidationResult {
   passed: boolean;
@@ -530,6 +533,9 @@ function validateStoryboardImageProviderGate(
   if (request.confirmRealImageGeneration !== true) {
     blockers.push('真实图片 provider 需要 confirmRealImageGeneration=true');
   }
+  if (request.confirmProviderCall !== true) {
+    blockers.push('真实图片 provider 调用前需要 confirmProviderCall=true');
+  }
   blockers.push('Phase 3A-D 第一段只接入 OpenAI provider skeleton，不调用真实图片模型');
   return blockers;
 }
@@ -542,7 +548,65 @@ function resolveStoryboardImageProvider(provider: StoryboardImageProviderName): 
 
 @Injectable()
 export class ProjectStudioStoryboardAssetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditLogService?: AuditLogService
+  ) {}
+
+  private async recordStoryboardImageProviderAudit(options: {
+    projectId: string;
+    organizationId: string;
+    shotId: string | null;
+    provider: StoryboardImageProviderName;
+    model: string | null;
+    status: 'blocked' | 'approved';
+    blockers: string[];
+  }): Promise<StoryboardImageGenerateOneDTO['auditLog']> {
+    const resourceId = options.shotId
+      ? `${options.projectId}:${options.shotId}`
+      : options.projectId;
+    const auditLog: StoryboardImageGenerateOneDTO['auditLog'] = {
+      planned: true,
+      recorded: false,
+      action: STORYBOARD_IMAGE_PROVIDER_AUDIT_ACTION,
+      resourceType: STORYBOARD_IMAGE_PROVIDER_AUDIT_RESOURCE,
+      resourceId,
+      failureReason: null,
+    };
+
+    if (!this.auditLogService) {
+      return {
+        ...auditLog,
+        failureReason: 'AuditLogService unavailable in current execution context',
+      };
+    }
+
+    try {
+      await this.auditLogService.record({
+        orgId: options.organizationId,
+        action: STORYBOARD_IMAGE_PROVIDER_AUDIT_ACTION,
+        resourceType: STORYBOARD_IMAGE_PROVIDER_AUDIT_RESOURCE,
+        resourceId,
+        details: {
+          projectId: options.projectId,
+          shotId: options.shotId,
+          provider: options.provider,
+          model: options.model,
+          status: options.status,
+          blockers: options.blockers,
+          willCreateJob: false,
+          willGenerateVideo: false,
+          phase: '3A-E',
+        },
+      });
+      return { ...auditLog, recorded: true };
+    } catch (error: any) {
+      return {
+        ...auditLog,
+        failureReason: error?.message || 'Failed to record provider audit log',
+      };
+    }
+  }
 
   async getStoryboardAssets(projectId: string, organizationId: string): Promise<StoryboardAssetDTO[]> {
     const project = await this.prisma.project.findFirst({
@@ -711,6 +775,15 @@ export class ProjectStudioStoryboardAssetService {
     ]);
 
     if (blockers.length > 0 || !textBindingAsset || !shotId) {
+      const auditLog = await this.recordStoryboardImageProviderAudit({
+        projectId,
+        organizationId,
+        shotId,
+        provider: providerName,
+        model: asString(request.imageModel),
+        status: 'blocked',
+        blockers,
+      });
       return {
         projectId,
         status: 'blocked',
@@ -721,6 +794,12 @@ export class ProjectStudioStoryboardAssetService {
           attempted: false,
           provider: providerName,
           model: asString(request.imageModel),
+          confirmed: request.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: null,
         },
         willCreateJob: false,
         willGenerateVideo: false,
@@ -730,6 +809,15 @@ export class ProjectStudioStoryboardAssetService {
 
     const safeRequest = request as StoryboardImageGenerateOneRequestDTO;
     const provider = resolveStoryboardImageProvider(providerName);
+    const auditLog = await this.recordStoryboardImageProviderAudit({
+      projectId,
+      organizationId,
+      shotId,
+      provider: providerName,
+      model: safeRequest.imageModel,
+      status: 'approved',
+      blockers: [],
+    });
     const providerResult = await provider.generate({
       projectId,
       asset: textBindingAsset,
@@ -780,6 +868,12 @@ export class ProjectStudioStoryboardAssetService {
         attempted: providerResult.attempted,
         provider: providerResult.provider,
         model: safeRequest.imageModel,
+        confirmed: safeRequest.confirmProviderCall === true,
+      },
+      auditLog,
+      rollback: {
+        required: false,
+        reason: null,
       },
       willCreateJob: false,
       willGenerateVideo: false,
