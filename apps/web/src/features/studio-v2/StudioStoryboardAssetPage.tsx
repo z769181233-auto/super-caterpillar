@@ -75,6 +75,8 @@ export function StudioStoryboardAssetPage({
     const matching = displayableAssets.filter((asset) => asset.episodeId === episodeId);
     return matching.length > 0 ? matching : displayableAssets;
   }, [episodeId, displayableAssets]);
+  const textBindingAssets = visibleAssets.filter((asset) => asset.assetKind === 'text_binding');
+  const imageAssets = visibleAssets.filter((asset) => asset.assetKind === 'image');
   const readyAssets = visibleAssets.filter(
     (asset) => asset.status === 'done' && asset.assetKind === 'text_binding'
   );
@@ -173,8 +175,8 @@ export function StudioStoryboardAssetPage({
 
         <Callout
           tone="info"
-          title="视觉生成仍锁定"
-          body="StoryboardAsset 只保存文本绑定：assetKind=text_binding、assetUrl 为空、locked=true。不会创建图片、视频、worker 或 job；后续图片分镜必须进入独立视觉资产阶段。"
+          title="当前只验收已存储图片展示"
+          body="Phase 3A-I 只展示已经写入 storage 的单镜头图片资产，不调用图片模型、不批量生成、不创建 worker/job、不进入视频链路。"
         />
 
         <section style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', marginTop: '1rem', padding: '1rem' }}>
@@ -328,21 +330,103 @@ export function StudioStoryboardAssetPage({
         </section>
 
         <div style={metricsGridStyle()}>
-          <MetricCard label="文本分镜数" value={`${metrics.assetCount}`} />
+          <MetricCard label="文本分镜数" value={`${metrics.textAssetCount}`} />
+          <MetricCard label="已存储图片" value={`${metrics.imageAssetCount}`} />
           <MetricCard label="Shot 覆盖率" value={formatPercent(metrics.shotCoverage)} />
           <MetricCard label="Prompt 覆盖率" value={formatPercent(metrics.promptCoverage)} />
           <MetricCard label="Continuity 覆盖率" value={formatPercent(metrics.continuityCoverage)} />
         </div>
 
-        <div style={{ display: 'grid', gap: '1rem', marginTop: '1.25rem' }}>
-          {visibleAssets.length > 0 ? (
-            visibleAssets.map((asset) => <StoryboardAssetCard key={asset.id || asset.shotId || asset.shotNo} asset={asset} />)
-          ) : (
-            <InfoRow label="当前状态" value="未生成 StoryboardAsset 文本绑定" />
-          )}
-        </div>
+        <section style={{ marginTop: '1.5rem' }}>
+          <div style={cardHeaderStyle()}>
+            <div>
+              <h2 style={{ margin: 0 }}>已存储图片资产</h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0.35rem 0 0' }}>
+                展示 provider 返回图片转存 storage 后的结果；这里不会再次调用图片模型。
+              </p>
+            </div>
+            <strong style={{ color: imageAssets.length > 0 ? 'var(--accent)' : 'var(--text-secondary)' }}>
+              {imageAssets.length > 0 ? 'STORED' : 'NOT STARTED'}
+            </strong>
+          </div>
+          <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+            {imageAssets.length > 0 ? (
+              imageAssets.map((asset) => (
+                <StoredImageAssetCard key={asset.id || asset.assetStorageKey || asset.shotId || asset.shotNo} asset={asset} />
+              ))
+            ) : (
+              <InfoRow
+                label="当前状态"
+                value="还没有已存储图片资产。Storyboard / Image / Video 不会在本页面自动生成。"
+              />
+            )}
+          </div>
+        </section>
+
+        <section style={{ marginTop: '1.5rem' }}>
+          <div style={cardHeaderStyle()}>
+            <div>
+              <h2 style={{ margin: 0 }}>文本分镜资产</h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0.35rem 0 0' }}>
+                ShotScript 到 StoryboardAsset 的文本绑定层，作为图片生成前的结构化输入。
+              </p>
+            </div>
+          </div>
+          <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
+            {textBindingAssets.length > 0 ? (
+              textBindingAssets.map((asset) => <StoryboardAssetCard key={asset.id || asset.shotId || asset.shotNo} asset={asset} />)
+            ) : (
+              <InfoRow label="当前状态" value="未生成 StoryboardAsset 文本绑定" />
+            )}
+          </div>
+        </section>
       </section>
     </StudioLayout>
+  );
+}
+
+function StoredImageAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
+  const [loadFailed, setLoadFailed] = useState(false);
+  const hasPreview = Boolean(asset.assetUrl && !asset.assetUrl.startsWith('data:image'));
+  return (
+    <article style={cardStyle()}>
+      <div style={cardHeaderStyle()}>
+        <h2 style={{ margin: 0 }}>镜头 {asset.shotNo || '-'} · 已存储图片</h2>
+        <strong style={{ color: asset.status === 'done' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+          {asset.status.toUpperCase()}
+        </strong>
+      </div>
+      {hasPreview && !loadFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={`Storyboard image shot ${asset.shotNo || asset.sourceShotScriptId || ''}`}
+          src={asset.assetUrl || ''}
+          onError={() => setLoadFailed(true)}
+          style={imagePreviewStyle()}
+        />
+      ) : (
+        <div style={imageFallbackStyle()}>
+          {loadFailed
+            ? '图片资产已记录，但暂时无法读取。请刷新 signed URL 或检查 storage 文件。'
+            : '图片资产缺少可预览 URL。'}
+        </div>
+      )}
+      <div style={summaryGridStyle()}>
+        <SummaryItem label="Provider" value={asset.imageProvider || '未记录'} />
+        <SummaryItem label="Model" value={asset.imageModel || '未记录'} />
+        <SummaryItem label="Storage key" value={asset.assetStorageKey || '未写入'} />
+        <SummaryItem label="Generated at" value={asset.imageGeneratedAt || asset.generatedAt || '未记录'} />
+      </div>
+      <details style={{ marginTop: '1rem' }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 800 }}>查看图片资产详情</summary>
+        <div style={{ display: 'grid', gap: '0.75rem', marginTop: '0.9rem' }}>
+          <InfoRow label="sourceShotScriptId" value={asset.sourceShotScriptId || '未绑定'} />
+          <InfoRow label="assetUrl" value={asset.assetUrl || '未生成 signed URL'} />
+          <InfoRow label="imagePrompt" value={asset.imagePrompt || '未记录'} />
+          <InfoRow label="执行边界" value="已存储图片展示只读；不会调用图片模型、不会创建 worker/job、不会生成视频。" />
+        </div>
+      </details>
+    </article>
   );
 }
 
@@ -377,13 +461,14 @@ function StoryboardAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
 }
 
 function calculateStoryboardMetrics(assets: StoryboardAssetDTO[]) {
-  const assetCount = assets.filter((asset) => asset.status !== 'missing').length;
   const textAssets = assets.filter((asset) => asset.status === 'done' && asset.assetKind === 'text_binding');
+  const imageAssets = assets.filter((asset) => asset.status === 'done' && asset.assetKind === 'image');
   const promptCount = textAssets.filter((asset) => asset.prompt && asset.frameDescription && asset.cameraLanguage).length;
   const continuityCount = textAssets.filter((asset) => asset.continuityNotes.length > 0).length;
   return {
-    assetCount,
-    shotCoverage: assetCount > 0 ? textAssets.length / assetCount : 0,
+    textAssetCount: textAssets.length,
+    imageAssetCount: imageAssets.length,
+    shotCoverage: textAssets.length > 0 ? textAssets.length / textAssets.length : 0,
     promptCoverage: textAssets.length > 0 ? promptCount / textAssets.length : 0,
     continuityCoverage: textAssets.length > 0 ? continuityCount / textAssets.length : 0,
   };
@@ -567,5 +652,35 @@ function summaryGridStyle(): React.CSSProperties {
     gap: '0.75rem',
     gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     marginTop: '1rem',
+  };
+}
+
+function imagePreviewStyle(): React.CSSProperties {
+  return {
+    aspectRatio: '16 / 9',
+    background: 'var(--bg-muted)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    display: 'block',
+    marginTop: '1rem',
+    objectFit: 'cover',
+    width: '100%',
+  };
+}
+
+function imageFallbackStyle(): React.CSSProperties {
+  return {
+    alignItems: 'center',
+    aspectRatio: '16 / 9',
+    background: 'var(--bg-muted)',
+    border: '1px dashed var(--border-subtle)',
+    borderRadius: 'var(--r-md)',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    justifyContent: 'center',
+    lineHeight: 1.6,
+    marginTop: '1rem',
+    padding: '1rem',
+    textAlign: 'center',
   };
 }

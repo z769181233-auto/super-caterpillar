@@ -796,6 +796,31 @@ export class ProjectStudioStoryboardAssetService {
     };
   }
 
+  private async normalizeServedStoryboardAsset(
+    projectId: string,
+    organizationId: string,
+    value: unknown
+  ): Promise<StoryboardAssetDTO> {
+    const asset = normalizeStoryboardAsset(projectId, value);
+    if (asset.assetKind !== 'image') return asset;
+
+    const assetUrl = asset.assetUrl?.startsWith('data:image') ? null : asset.assetUrl;
+    if (!asset.assetStorageKey || !this.signedUrlService) {
+      return { ...asset, assetUrl };
+    }
+
+    const signed = await this.signedUrlService.generateSignedUrl({
+      key: asset.assetStorageKey,
+      tenantId: organizationId,
+      userId: 'studio-system',
+    });
+
+    return {
+      ...asset,
+      assetUrl: signed.url,
+    };
+  }
+
   private async recordStoryboardImageProviderAudit(options: {
     projectId: string;
     organizationId: string;
@@ -872,7 +897,9 @@ export class ProjectStudioStoryboardAssetService {
       return buildMissing(projectId, 'StoryboardAsset 文本绑定未生成');
     }
 
-    return assets.map((item) => normalizeStoryboardAsset(projectId, item));
+    return Promise.all(
+      assets.map((item) => this.normalizeServedStoryboardAsset(projectId, organizationId, item))
+    );
   }
 
   async generateStoryboardAssets(
