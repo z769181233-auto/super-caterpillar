@@ -485,6 +485,29 @@ export interface StoryboardImageReviewResultDTO {
   nextAction: string;
 }
 
+export interface StoryboardImageRetryPlanRequestDTO {
+  shotId: string;
+}
+
+export interface StoryboardImageRetryPlanDTO {
+  projectId: string;
+  shotId: string | null;
+  status: 'ready' | 'blocked';
+  previousImageAssetId: string | null;
+  reviewStatus: StoryboardImageReviewStatus | null;
+  reviewReason: string | null;
+  reviewTags: string[];
+  originalPrompt: string | null;
+  promptPatch: string | null;
+  nextPromptPreview: string | null;
+  blockers: string[];
+  willCallProvider: false;
+  willCreateJob: false;
+  willGenerateVideo: false;
+  willWriteMetadata: false;
+  nextAction: string;
+}
+
 export interface StoryboardImageGenerationDryRunRequestDTO {
   episodeId?: string | null;
   shotIds?: string[];
