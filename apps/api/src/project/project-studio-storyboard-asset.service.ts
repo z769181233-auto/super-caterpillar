@@ -12,6 +12,8 @@ import {
   StoryboardImageReviewRequestDTO,
   StoryboardImageReviewResultDTO,
   StoryboardImageReviewStatus,
+  StoryboardImageRetryPlanRequestDTO,
+  StoryboardImageRetryPlanDTO,
 } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -732,6 +734,28 @@ function providerFailureMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Storyboard image provider call failed';
 }
 
+function buildPromptPatch(reviewReason: string | null, reviewTags: string[]): string {
+  const rules: string[] = [];
+  const reason = reviewReason || '人工验收标记需要重试';
+  rules.push(`重试原因：${reason}`);
+  if (reviewTags.includes('character-mismatch')) {
+    rules.push('强化角色一致性：保持发型、服装、年龄感、五官比例和主角色彩不变。');
+  }
+  if (reviewTags.includes('composition')) {
+    rules.push('调整构图：重新匹配 shot_size、camera_movement 和 visual_goal，避免主体偏离画面。');
+  }
+  if (reviewTags.includes('style')) {
+    rules.push('统一画风：保持动漫公司级二维动画质感，不偏写实、不偏插画杂风格。');
+  }
+  if (reviewTags.includes('artifact') || reviewTags.includes('quality')) {
+    rules.push('修复质量问题：避免畸形手指、多余文字、水印、模糊和背景断裂。');
+  }
+  if (rules.length === 1) {
+    rules.push('保持原镜头叙事目标，但针对验收失败点重新约束画面。');
+  }
+  return rules.join('\n');
+}
+
 function resolveStoryboardImageProvider(provider: StoryboardImageProviderName): StoryboardImageProvider {
   return provider === 'openai'
     ? new OpenAIStoryboardImageProviderSkeleton()
@@ -1446,6 +1470,75 @@ export class ProjectStudioStoryboardAssetService {
         decision === 'accepted'
           ? '当前单镜头图片已验收通过；不会自动推进批量图片、worker/job 或视频。'
           : '已记录单镜头图片验收结果；如需重试必须再次显式执行单镜头生成。',
+    };
+  }
+
+  async getStoryboardImageRetryPlan(
+    projectId: string,
+    organizationId: string,
+    request: Partial<StoryboardImageRetryPlanRequestDTO> = {}
+  ): Promise<StoryboardImageRetryPlanDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const shotId = asString(request.shotId);
+    const blockers: string[] = [];
+    if (!shotId) blockers.push('必须选择一个 shotId');
+
+    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    const storyboardAssets = asArray(animationStudio.storyboardAssets).map((item) =>
+      normalizeStoryboardAsset(projectId, item)
+    );
+    const imageAsset = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    if (!imageAsset) blockers.push('目标镜头没有已存储 image asset，不能准备重试计划');
+
+    const review = imageAsset?.review || null;
+    if (review?.status === 'accepted') {
+      blockers.push('当前图片已验收通过；如需重试，先标记为 needs_retry 或 rejected');
+    }
+    if (review?.status !== 'needs_retry' && review?.status !== 'rejected') {
+      blockers.push('只有 needs_retry 或 rejected 的图片才能准备重试计划');
+    }
+
+    const originalPrompt = imageAsset?.imagePrompt || imageAsset?.sourcePrompt || imageAsset?.prompt || null;
+    if (!originalPrompt) blockers.push('缺少原始 imagePrompt/sourcePrompt，不能准备重试计划');
+
+    const promptPatch = imageAsset ? buildPromptPatch(review?.reason || null, review?.tags || []) : null;
+    const nextPromptPreview =
+      originalPrompt && promptPatch
+        ? [originalPrompt, '', '重试修正要求：', promptPatch].join('\n')
+        : null;
+
+    return {
+      projectId,
+      shotId,
+      status: blockers.length === 0 ? 'ready' : 'blocked',
+      previousImageAssetId: imageAsset?.id || null,
+      reviewStatus: review?.status || null,
+      reviewReason: review?.reason || null,
+      reviewTags: review?.tags || [],
+      originalPrompt,
+      promptPatch: blockers.includes('缺少原始 imagePrompt/sourcePrompt，不能准备重试计划') ? null : promptPatch,
+      nextPromptPreview: blockers.length === 0 ? nextPromptPreview : null,
+      blockers,
+      willCallProvider: false,
+      willCreateJob: false,
+      willGenerateVideo: false,
+      willWriteMetadata: false,
+      nextAction:
+        blockers.length === 0
+          ? '重试计划已准备好；如需重新生成，仍必须手动进入单镜头确认，不会自动调用 provider。'
+          : '先修复 retry plan blockers；本操作不会调用 provider、写 metadata、创建 worker/job 或生成视频。',
     };
   }
 }

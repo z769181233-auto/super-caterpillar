@@ -159,6 +159,29 @@ export interface StoryboardImageReviewResultDTO {
   nextAction: string;
 }
 
+export interface StoryboardImageRetryPlanRequestDTO {
+  shotId: string;
+}
+
+export interface StoryboardImageRetryPlanDTO {
+  projectId: string;
+  shotId: string | null;
+  status: 'ready' | 'blocked';
+  previousImageAssetId: string | null;
+  reviewStatus: StoryboardImageReviewStatus | null;
+  reviewReason: string | null;
+  reviewTags: string[];
+  originalPrompt: string | null;
+  promptPatch: string | null;
+  nextPromptPreview: string | null;
+  blockers: string[];
+  willCallProvider: false;
+  willCreateJob: false;
+  willGenerateVideo: false;
+  willWriteMetadata: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -510,6 +533,26 @@ export async function reviewStudioStoryboardImage(
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.error?.message || 'Failed to review Studio storyboard image');
+  }
+
+  return result.data;
+}
+
+export async function getStudioStoryboardImageRetryPlan(
+  projectId: string,
+  payload: StoryboardImageRetryPlanRequestDTO
+): Promise<StoryboardImageRetryPlanDTO> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-images/retry-plan`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageRetryPlanDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to prepare Studio storyboard image retry plan');
   }
 
   return result.data;

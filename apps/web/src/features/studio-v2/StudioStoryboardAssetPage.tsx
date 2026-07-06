@@ -5,6 +5,7 @@ import type { ProductionStateDTO, StoryboardAssetDTO } from '@scu/shared-types';
 import {
   dryRunStudioStoryboardImageGeneration,
   generateOneStudioStoryboardImage,
+  getStudioStoryboardImageRetryPlan,
   generateStudioStoryboardAssets,
   getStudioProductionState,
   getStudioStoryboardImageReadiness,
@@ -17,6 +18,7 @@ import type {
   StoryboardImageReadinessDTO,
   StoryboardImageReviewRequestDTO,
   StoryboardImageReviewResultDTO,
+  StoryboardImageRetryPlanDTO,
 } from './api';
 import {
   formatStudioGenerationError,
@@ -59,6 +61,8 @@ export function StudioStoryboardAssetPage({
   const [generateOneResult, setGenerateOneResult] = useState<StoryboardImageGenerateOneDTO | null>(null);
   const [reviewingShotId, setReviewingShotId] = useState<string | null>(null);
   const [reviewResult, setReviewResult] = useState<StoryboardImageReviewResultDTO | null>(null);
+  const [retryPlanningShotId, setRetryPlanningShotId] = useState<string | null>(null);
+  const [retryPlan, setRetryPlan] = useState<StoryboardImageRetryPlanDTO | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -245,6 +249,26 @@ export function StudioStoryboardAssetPage({
       setError(formatStudioGenerationError(message, '单镜头图片验收'));
     } finally {
       setReviewingShotId(null);
+    }
+  }
+
+  async function handlePrepareRetryPlan(asset: StoryboardAssetDTO) {
+    const shotId = asset.sourceShotScriptId || asset.shotId;
+    if (!shotId) {
+      setError('缺少目标镜头 shotId，不能准备重试计划。');
+      return;
+    }
+    setRetryPlanningShotId(shotId);
+    setError(null);
+    try {
+      const result = await getStudioStoryboardImageRetryPlan(projectId, { shotId });
+      setRetryPlan(result);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to prepare Studio storyboard retry plan';
+      setError(formatStudioGenerationError(message, '单镜头重试计划'));
+    } finally {
+      setRetryPlanningShotId(null);
     }
   }
 
@@ -472,7 +496,9 @@ export function StudioStoryboardAssetPage({
                   key={asset.id || asset.assetStorageKey || asset.shotId || asset.shotNo}
                   asset={asset}
                   reviewing={reviewingShotId === (asset.sourceShotScriptId || asset.shotId)}
+                  retryPlanning={retryPlanningShotId === (asset.sourceShotScriptId || asset.shotId)}
                   onReview={handleReviewImage}
+                  onPrepareRetryPlan={handlePrepareRetryPlan}
                 />
               ))
             ) : (
@@ -490,6 +516,38 @@ export function StudioStoryboardAssetPage({
             title="单镜头图片验收结果"
             body={`${reviewResult.nextAction}\nwillCallProvider=${String(reviewResult.willCallProvider)}；willCreateJob=${String(reviewResult.willCreateJob)}；willGenerateVideo=${String(reviewResult.willGenerateVideo)}`}
           />
+        )}
+
+        {retryPlan && (
+          <section style={{ ...cardStyle(), marginTop: '1rem' }}>
+            <div style={cardHeaderStyle()}>
+              <div>
+                <h2 style={{ margin: 0 }}>单镜头重试计划</h2>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>
+                  只读计划，不调用 provider、不写 metadata、不创建 worker/job、不生成视频。
+                </p>
+              </div>
+              <strong style={{ color: retryPlan.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                {retryPlan.status.toUpperCase()}
+              </strong>
+            </div>
+            {retryPlan.blockers.length > 0 && (
+              <Callout tone="warn" title="重试计划阻断项" body={retryPlan.blockers.join('\n')} />
+            )}
+            <div style={summaryGridStyle()}>
+              <SummaryItem label="Shot" value={retryPlan.shotId || '未选择'} />
+              <SummaryItem label="Review" value={retryPlan.reviewStatus || '未验收'} />
+              <SummaryItem label="Previous asset" value={retryPlan.previousImageAssetId || '未绑定'} />
+              <SummaryItem label="Tags" value={retryPlan.reviewTags.join('、') || '无'} />
+            </div>
+            <InfoRow label="Review reason" value={retryPlan.reviewReason || '未记录'} />
+            <InfoRow label="Prompt patch" value={retryPlan.promptPatch || '未生成'} />
+            <InfoRow label="Next prompt preview" value={retryPlan.nextPromptPreview || '未生成'} />
+            <InfoRow
+              label="执行边界"
+              value={`willCallProvider=${String(retryPlan.willCallProvider)}；willCreateJob=${String(retryPlan.willCreateJob)}；willGenerateVideo=${String(retryPlan.willGenerateVideo)}；willWriteMetadata=${String(retryPlan.willWriteMetadata)}；${retryPlan.nextAction}`}
+            />
+          </section>
         )}
 
         <section style={{ marginTop: '1.5rem' }}>
@@ -636,11 +694,15 @@ export function StudioStoryboardAssetPage({
 function StoredImageAssetCard({
   asset,
   reviewing,
+  retryPlanning,
   onReview,
+  onPrepareRetryPlan,
 }: {
   asset: StoryboardAssetDTO;
   reviewing: boolean;
+  retryPlanning: boolean;
   onReview: (asset: StoryboardAssetDTO, decision: StoryboardImageReviewRequestDTO['decision']) => void;
+  onPrepareRetryPlan: (asset: StoryboardAssetDTO) => void;
 }) {
   const [loadFailed, setLoadFailed] = useState(false);
   const hasPreview = Boolean(asset.assetUrl && !asset.assetUrl.startsWith('data:image'));
@@ -700,6 +762,14 @@ function StoredImageAssetCard({
           style={secondaryButtonStyle()}
         >
           拒绝当前图
+        </button>
+        <button
+          type="button"
+          onClick={() => onPrepareRetryPlan(asset)}
+          disabled={retryPlanning || (review?.status !== 'needs_retry' && review?.status !== 'rejected')}
+          style={secondaryButtonStyle()}
+        >
+          {retryPlanning ? '准备中...' : '准备重试计划'}
         </button>
         <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           只记录验收 metadata；不会调用 provider、不会创建 worker/job、不会生成视频。

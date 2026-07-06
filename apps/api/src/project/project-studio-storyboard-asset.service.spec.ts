@@ -1298,4 +1298,123 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.willGenerateVideo).toBe(false);
     expect(mockedAxios.post).not.toHaveBeenCalled();
   });
+
+  it('returns a retry plan for a needs_retry image without writing metadata or calling provider', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [
+          ...readyStoryboardAssets(),
+          readyImageAsset({
+            imagePrompt: '原始 image prompt',
+            review: {
+              status: 'needs_retry',
+              reason: '角色造型不一致',
+              tags: ['character-mismatch', 'needs-retry'],
+              reviewedAt: '2026-05-28T00:00:00.000Z',
+              reviewedBy: 'user-1',
+            },
+          }),
+        ],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageRetryPlan('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.previousImageAssetId).toBe('storyboard-image-1');
+    expect(result.reviewStatus).toBe('needs_retry');
+    expect(result.reviewReason).toBe('角色造型不一致');
+    expect(result.promptPatch).toContain('强化角色一致性');
+    expect(result.nextPromptPreview).toContain('原始 image prompt');
+    expect(result.willCallProvider).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(result.willWriteMetadata).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('returns a retry plan for a rejected image with composition guidance', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [
+          ...readyStoryboardAssets(),
+          readyImageAsset({
+            review: {
+              status: 'rejected',
+              reason: '构图不符合镜头目标',
+              tags: ['composition'],
+              reviewedAt: '2026-05-28T00:00:00.000Z',
+              reviewedBy: 'user-1',
+            },
+          }),
+        ],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageRetryPlan('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.reviewStatus).toBe('rejected');
+    expect(result.promptPatch).toContain('调整构图');
+    expect(result.nextAction).toContain('不会自动调用 provider');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks retry plan for accepted images', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [
+          ...readyStoryboardAssets(),
+          readyImageAsset({
+            review: {
+              status: 'accepted',
+              reason: '画面满足当前镜头验收要求',
+              tags: ['single-shot-accepted'],
+              reviewedAt: '2026-05-28T00:00:00.000Z',
+              reviewedBy: 'user-1',
+            },
+          }),
+        ],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageRetryPlan('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('已验收通过');
+    expect(result.nextPromptPreview).toBeNull();
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks retry plan when no image asset exists', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: readyStoryboardAssets(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageRetryPlan('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('没有已存储 image asset');
+    expect(result.willCallProvider).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(result.willWriteMetadata).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
 });
