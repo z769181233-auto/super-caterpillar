@@ -12,6 +12,8 @@ import {
 import { Prisma } from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { LocalStorageService } from '../storage/local-storage.service';
+import { SignedUrlService } from '../storage/signed-url.service';
 import { validateCharacterBibleQuality } from './project-studio-character-bible.service';
 import { validateLocationBibleQuality } from './project-studio-location-bible.service';
 import { validateShotScriptQuality } from './project-studio-shot-script.service';
@@ -55,6 +57,7 @@ export interface StoryboardImageReadinessDTO {
 const DEFAULT_IMAGE_MODEL = 'image-generation-model-not-selected';
 const DEFAULT_IMAGE_SIZE = '16:9';
 const DEFAULT_IMAGE_QUALITY = 'draft';
+const STORYBOARD_IMAGE_STORAGE_MAX_BYTES = 12 * 1024 * 1024;
 
 type StoryboardImageProviderName = 'mock' | 'openai';
 
@@ -604,6 +607,77 @@ function getOpenAIStoryboardImageTimeoutMs(): number {
   return Number.isFinite(value) && value > 0 ? value : 60000;
 }
 
+function getStoryboardImageDownloadTimeoutMs(): number {
+  const value = Number(process.env.STUDIO_STORYBOARD_IMAGE_DOWNLOAD_TIMEOUT_MS);
+  return Number.isFinite(value) && value > 0 ? value : 30000;
+}
+
+function sanitizeStorageSegment(value: string | null): string {
+  return (value || 'unknown')
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'unknown';
+}
+
+function buildStoryboardImageStorageKey(
+  projectId: string,
+  shotId: string | null,
+  provider: StoryboardImageProviderName
+): string {
+  return [
+    'studio',
+    'storyboards',
+    sanitizeStorageSegment(projectId),
+    sanitizeStorageSegment(shotId),
+    `${Date.now()}.${provider}.png`,
+  ].join('/');
+}
+
+function isPng(buffer: Buffer): boolean {
+  return (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  );
+}
+
+function assertValidStoryboardImageBuffer(buffer: Buffer, contentType: string | null): void {
+  if (buffer.length === 0) {
+    throw new Error('Storyboard image provider returned an empty image payload');
+  }
+  if (buffer.length > STORYBOARD_IMAGE_STORAGE_MAX_BYTES) {
+    throw new Error(
+      `Storyboard image payload exceeds ${STORYBOARD_IMAGE_STORAGE_MAX_BYTES} bytes`
+    );
+  }
+  if (contentType && !contentType.toLowerCase().startsWith('image/')) {
+    throw new Error(`Storyboard image provider returned non-image content-type: ${contentType}`);
+  }
+  if (!isPng(buffer)) {
+    throw new Error('Storyboard image storage currently only accepts PNG payloads');
+  }
+}
+
+function decodeDataUrlImage(value: string): Buffer | null {
+  const match = /^data:image\/png;base64,([a-zA-Z0-9+/=]+)$/i.exec(value.trim());
+  return match ? Buffer.from(match[1], 'base64') : null;
+}
+
+function encodeStorageKeyAsPath(key: string): string {
+  return key
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
 function providerFailureMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const axiosError = error as AxiosError<any>;
@@ -661,8 +735,64 @@ function mergeAuditLog(
 export class ProjectStudioStoryboardAssetService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditLogService?: AuditLogService
+    private readonly auditLogService?: AuditLogService,
+    private readonly localStorageService?: LocalStorageService,
+    private readonly signedUrlService?: SignedUrlService
   ) {}
+
+  private async persistProviderImageResult(options: {
+    projectId: string;
+    organizationId: string;
+    shotId: string;
+    providerResult: StoryboardImageProviderResultDTO;
+  }): Promise<Pick<StoryboardImageProviderResultDTO, 'assetUrl' | 'assetStorageKey'>> {
+    const { projectId, organizationId, shotId, providerResult } = options;
+    if (providerResult.provider === 'mock') {
+      return {
+        assetUrl: providerResult.assetUrl,
+        assetStorageKey: providerResult.assetStorageKey,
+      };
+    }
+
+    if (!this.localStorageService) {
+      throw new Error('LocalStorageService is required to persist provider storyboard images');
+    }
+
+    let buffer: Buffer | null = decodeDataUrlImage(providerResult.assetUrl);
+    let contentType: string | null = buffer ? 'image/png' : null;
+
+    if (!buffer) {
+      const url = new URL(providerResult.assetUrl);
+      if (url.protocol !== 'https:') {
+        throw new Error('Storyboard image provider URL must use https');
+      }
+      const response = await axios.get<ArrayBuffer>(providerResult.assetUrl, {
+        responseType: 'arraybuffer',
+        timeout: getStoryboardImageDownloadTimeoutMs(),
+        maxContentLength: STORYBOARD_IMAGE_STORAGE_MAX_BYTES,
+      });
+      contentType = asString(response.headers?.['content-type']);
+      buffer = Buffer.from(response.data);
+    }
+
+    assertValidStoryboardImageBuffer(buffer, contentType);
+    const storageKey = buildStoryboardImageStorageKey(projectId, shotId, providerResult.provider);
+    await this.localStorageService.adapter.put(storageKey, buffer);
+
+    if (this.signedUrlService) {
+      const signed = await this.signedUrlService.generateSignedUrl({
+        key: storageKey,
+        tenantId: organizationId,
+        userId: 'studio-system',
+      });
+      return { assetStorageKey: storageKey, assetUrl: signed.url };
+    }
+
+    return {
+      assetStorageKey: storageKey,
+      assetUrl: `/api/storage/sign/${encodeStorageKeyAsPath(storageKey)}`,
+    };
+  }
 
   private async recordStoryboardImageProviderAudit(options: {
     projectId: string;
@@ -1009,13 +1139,60 @@ export class ProjectStudioStoryboardAssetService {
       };
     }
     const generatedAt = new Date().toISOString();
+    let persistedProviderResult: Pick<StoryboardImageProviderResultDTO, 'assetUrl' | 'assetStorageKey'>;
+    try {
+      persistedProviderResult = await this.persistProviderImageResult({
+        projectId,
+        organizationId,
+        shotId,
+        providerResult,
+      });
+    } catch (error: any) {
+      const failureMessage = error?.message || 'Failed to persist storyboard image provider result';
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_failure',
+          blockers: [failureMessage],
+        })
+      );
+      return {
+        projectId,
+        status: 'failed',
+        mode: 'single_shot',
+        asset: null,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: providerResult.attempted,
+          provider: providerResult.provider,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: 'Provider result failed storage persistence before metadata write',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        willCreateJob: false,
+        willGenerateVideo: false,
+        nextAction: '图片 provider 已返回结果但 storage 持久化失败；未写入 metadata、未创建 worker/job、未触发视频链路。',
+      };
+    }
+
     const imageAsset: StoryboardAssetDTO = {
       ...textBindingAsset,
       id: `project-metadata:${projectId}:storyboard-image:${shotId}`,
       status: 'done',
       assetKind: 'image',
-      assetUrl: providerResult.assetUrl,
-      assetStorageKey: providerResult.assetStorageKey,
+      assetUrl: persistedProviderResult.assetUrl,
+      assetStorageKey: persistedProviderResult.assetStorageKey,
       imageProvider: providerResult.provider,
       imageModel: safeRequest.imageModel,
       imageSize: safeRequest.imageSize,
@@ -1044,6 +1221,9 @@ export class ProjectStudioStoryboardAssetService {
       });
     } catch (error: any) {
       const failureMessage = error?.message || 'Failed to write storyboard image metadata';
+      if (providerResult.provider !== 'mock' && this.localStorageService) {
+        await this.localStorageService.adapter.delete(persistedProviderResult.assetStorageKey);
+      }
       auditLog = mergeAuditLog(
         auditLog,
         await this.recordStoryboardImageProviderAudit({
