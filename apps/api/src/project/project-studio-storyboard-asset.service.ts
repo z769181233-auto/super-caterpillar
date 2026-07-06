@@ -607,17 +607,27 @@ function getOpenAIStoryboardImageTimeoutMs(): number {
   return Number.isFinite(value) && value > 0 ? value : 60000;
 }
 
-function getStoryboardImageDownloadTimeoutMs(): number {
-  const value = Number(process.env.STUDIO_STORYBOARD_IMAGE_DOWNLOAD_TIMEOUT_MS);
-  return Number.isFinite(value) && value > 0 ? value : 30000;
-}
-
 function sanitizeStorageSegment(value: string | null): string {
-  return (value || 'unknown')
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80) || 'unknown';
+  const source = (value || 'unknown').trim();
+  const output: string[] = [];
+  let previousWasDash = false;
+  for (const char of source) {
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+    const isUpper = code >= 65 && code <= 90;
+    const isLower = code >= 97 && code <= 122;
+    const isSafePunctuation = char === '.' || char === '_';
+    if (isDigit || isUpper || isLower || isSafePunctuation) {
+      output.push(char);
+      previousWasDash = false;
+    } else if (!previousWasDash && output.length > 0) {
+      output.push('-');
+      previousWasDash = true;
+    }
+    if (output.length >= 80) break;
+  }
+  while (output[output.length - 1] === '-') output.pop();
+  return output.join('') || 'unknown';
 }
 
 function buildStoryboardImageStorageKey(
@@ -762,17 +772,9 @@ export class ProjectStudioStoryboardAssetService {
     let contentType: string | null = buffer ? 'image/png' : null;
 
     if (!buffer) {
-      const url = new URL(providerResult.assetUrl);
-      if (url.protocol !== 'https:') {
-        throw new Error('Storyboard image provider URL must use https');
-      }
-      const response = await axios.get<ArrayBuffer>(providerResult.assetUrl, {
-        responseType: 'arraybuffer',
-        timeout: getStoryboardImageDownloadTimeoutMs(),
-        maxContentLength: STORYBOARD_IMAGE_STORAGE_MAX_BYTES,
-      });
-      contentType = asString(response.headers?.['content-type']);
-      buffer = Buffer.from(response.data);
+      throw new Error(
+        'Storyboard image storage currently requires provider b64_json; remote image URL download is disabled'
+      );
     }
 
     assertValidStoryboardImageBuffer(buffer, contentType);

@@ -820,7 +820,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(prisma.project.update).toHaveBeenCalledTimes(1);
   });
 
-  it('downloads and stores OpenAI https image URL before metadata write', async () => {
+  it('rejects OpenAI remote image URL before metadata write', async () => {
     process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
     process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
     process.env.OPENAI_API_KEY = 'test-key';
@@ -832,10 +832,6 @@ describe('ProjectStudioStoryboardAssetService', () => {
           },
         ],
       },
-    });
-    mockedAxios.get.mockResolvedValueOnce({
-      data: PNG_BUFFER,
-      headers: { 'content-type': 'image/png' },
     });
     const prisma = createPrismaMock({
       animationStudio: {
@@ -871,67 +867,13 @@ describe('ProjectStudioStoryboardAssetService', () => {
       confirmRealImageGeneration: true,
     });
 
-    expect(result.status).toBe('ready');
-    expect(mockedAxios.get).toHaveBeenCalledWith(
-      'https://images.example.test/storyboard.png',
-      expect.objectContaining({
-        responseType: 'arraybuffer',
-        timeout: 30000,
-      })
-    );
-    expect(storage.adapter.put).toHaveBeenCalledWith(expect.any(String), PNG_BUFFER);
-    expect(result.asset?.assetUrl).not.toBe('https://images.example.test/storyboard.png');
-    expect(result.asset?.assetUrl).toContain('/api/storage/signed/');
+    expect(result.status).toBe('failed');
+    expect(result.blockers.join('\n')).toContain('requires provider b64_json');
+    expect(mockedAxios.get).not.toHaveBeenCalled();
+    expect(storage.adapter.put).not.toHaveBeenCalled();
+    expect(result.asset).toBeNull();
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
-  });
-
-  it('fails before metadata write when OpenAI image URL is not https', async () => {
-    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
-    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
-    process.env.OPENAI_API_KEY = 'test-key';
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        data: [
-          {
-            url: 'http://images.example.test/storyboard.png',
-          },
-        ],
-      },
-    });
-    const prisma = createPrismaMock({
-      animationStudio: {
-        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
-        shotScripts: readyShotScripts(),
-        storyboardAssets: readyStoryboardAssets(),
-        characterBibles: readyCharacterBibles(),
-        locationBibles: readyLocationBibles(),
-        videoPrompts: readyVideoPrompts(),
-      },
-    });
-    const storage = createStorageMock();
-    const service = new ProjectStudioStoryboardAssetService(
-      prisma as any,
-      undefined,
-      storage as any,
-      createSignedUrlMock() as any
-    );
-
-    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
-      shotId: 'shot-script-1',
-      imageModel: 'gpt-image-1',
-      imageSize: '16:9',
-      imageQuality: 'standard',
-      confirmCost: true,
-      confirmSingleShot: true,
-      confirmNoVideo: true,
-      confirmProviderCall: true,
-      confirmRealImageGeneration: true,
-    });
-
-    expect(result.status).toBe('failed');
-    expect(result.blockers.join('\n')).toContain('must use https');
-    expect(storage.adapter.put).not.toHaveBeenCalled();
     expect(prisma.project.update).not.toHaveBeenCalled();
   });
 
