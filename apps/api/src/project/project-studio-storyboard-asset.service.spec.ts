@@ -275,6 +275,53 @@ describe('ProjectStudioStoryboardAssetService', () => {
     );
   });
 
+  it('refreshes signed URL for stored image assets without returning data URLs', async () => {
+    const storyboardAssets = readyStoryboardAssets();
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [
+          ...storyboardAssets,
+          {
+            ...storyboardAssets[0],
+            id: 'storyboard-image-1',
+            assetKind: 'image',
+            assetStorageKey: 'studio/storyboards/project-1/shot-script-1/123.openai.png',
+            assetUrl: `data:image/png;base64,${PNG_BASE64}`,
+            imageProvider: 'openai',
+            imageModel: 'gpt-image-1',
+            imageGeneratedAt: '2026-05-27T00:00:00.000Z',
+            generationMode: 'single_shot',
+          },
+        ],
+      },
+    });
+    const signedUrl = createSignedUrlMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      undefined,
+      signedUrl as any
+    );
+
+    const assets = await service.getStoryboardAssets('project-1', 'org-1');
+    const imageAsset = assets.find((asset) => asset.assetKind === 'image');
+
+    expect(imageAsset).toEqual(
+      expect.objectContaining({
+        assetStorageKey: 'studio/storyboards/project-1/shot-script-1/123.openai.png',
+        assetUrl:
+          'http://localhost:3000/api/storage/signed/studio/storyboards/project-1/shot-script-1/123.openai.png',
+        imageProvider: 'openai',
+      })
+    );
+    expect(imageAsset?.assetUrl).not.toContain('data:image');
+    expect(signedUrl.generateSignedUrl).toHaveBeenCalledWith({
+      key: 'studio/storyboards/project-1/shot-script-1/123.openai.png',
+      tenantId: 'org-1',
+      userId: 'studio-system',
+    });
+  });
+
   it('blocks generation when ready ShotScript is missing and does not write metadata', async () => {
     const prisma = createPrismaMock({ animationStudio: {} });
     const service = new ProjectStudioStoryboardAssetService(prisma as any);
