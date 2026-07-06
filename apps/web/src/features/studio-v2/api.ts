@@ -182,6 +182,27 @@ export interface StoryboardImageRetryPlanDTO {
   nextAction: string;
 }
 
+export interface StoryboardImageRetryOneRequestDTO extends StoryboardImageGenerateOneRequestDTO {
+  confirmRetryReplacesPreviousCandidate: true;
+}
+
+export interface StoryboardImageRetryOneDTO {
+  projectId: string;
+  status: 'ready' | 'blocked' | 'failed';
+  acceptanceState: StoryboardImageGenerateOneDTO['acceptanceState'];
+  mode: 'single_shot_retry';
+  asset: StoryboardAssetDTO | null;
+  previousImageAsset: StoryboardAssetDTO | null;
+  retryPlan: StoryboardImageRetryPlanDTO | null;
+  blockers: string[];
+  providerCall: StoryboardImageGenerateOneDTO['providerCall'];
+  auditLog: StoryboardImageGenerateOneDTO['auditLog'];
+  rollback: StoryboardImageGenerateOneDTO['rollback'];
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -553,6 +574,26 @@ export async function getStudioStoryboardImageRetryPlan(
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.error?.message || 'Failed to prepare Studio storyboard image retry plan');
+  }
+
+  return result.data;
+}
+
+export async function retryOneStudioStoryboardImage(
+  projectId: string,
+  payload: StoryboardImageRetryOneRequestDTO
+): Promise<StoryboardImageRetryOneDTO> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-images/retry-one`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageRetryOneDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to retry one Studio storyboard image');
   }
 
   return result.data;

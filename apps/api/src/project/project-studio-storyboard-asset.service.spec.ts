@@ -1417,4 +1417,271 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.willWriteMetadata).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
   });
+
+  it('blocks retry-one when no image asset exists and does not call provider or write metadata', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.retryOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmRetryReplacesPreviousCandidate: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.mode).toBe('single_shot_retry');
+    expect(result.blockers.join('\n')).toContain('没有已存储 image asset');
+    expect(result.providerCall.attempted).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks retry-one for accepted images without writing metadata', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [
+          ...readyStoryboardAssets(),
+          readyImageAsset({
+            review: {
+              status: 'accepted',
+              reason: '画面满足当前镜头验收要求',
+              tags: ['single-shot-accepted'],
+              reviewedAt: '2026-05-28T00:00:00.000Z',
+              reviewedBy: 'user-1',
+            },
+          }),
+        ],
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.retryOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmRetryReplacesPreviousCandidate: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('已验收通过');
+    expect(result.previousImageAsset).toBeNull();
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks retry-one when confirmation is missing', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [
+          ...readyStoryboardAssets(),
+          readyImageAsset({
+            imagePrompt: '原始 image prompt',
+            review: {
+              status: 'needs_retry',
+              reason: '角色造型不一致',
+              tags: ['character-mismatch'],
+              reviewedAt: '2026-05-28T00:00:00.000Z',
+              reviewedBy: 'user-1',
+            },
+          }),
+        ],
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.retryOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('必须确认本次只创建新的单镜头 retry candidate');
+    expect(result.providerCall.attempted).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('writes a retry image candidate without deleting the previous image or creating jobs/video', async () => {
+    const previousImage = readyImageAsset({
+      imagePrompt: '原始 image prompt',
+      review: {
+        status: 'needs_retry',
+        reason: '角色造型不一致',
+        tags: ['character-mismatch'],
+        reviewedAt: '2026-05-28T00:00:00.000Z',
+        reviewedBy: 'user-1',
+      },
+    });
+    const storyboardAssets = [...readyStoryboardAssets(), previousImage];
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets,
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const auditLogService = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new ProjectStudioStoryboardAssetService(prisma as any, auditLogService as any);
+
+    const result = await service.retryOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmRetryReplacesPreviousCandidate: true,
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.mode).toBe('single_shot_retry');
+    expect(result.asset).toEqual(
+      expect.objectContaining({
+        assetKind: 'image',
+        sourceShotScriptId: 'shot-script-1',
+        retryOfAssetId: 'storyboard-image-1',
+        retryAttemptNo: 1,
+        retryPromptPatch: expect.stringContaining('强化角色一致性'),
+        imagePrompt: expect.stringContaining('重试修正要求'),
+        review: expect.objectContaining({
+          status: 'pending_review',
+          tags: ['single-shot-retry'],
+        }),
+      })
+    );
+    expect(result.previousImageAsset).toEqual(
+      expect.objectContaining({
+        id: 'storyboard-image-1',
+        review: expect.objectContaining({ status: 'needs_retry' }),
+      })
+    );
+    expect(result.retryPlan?.status).toBe('ready');
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(auditLogService.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({
+          status: 'approved',
+          phase: '3A-N',
+          willCreateJob: false,
+          willGenerateVideo: false,
+        }),
+      })
+    );
+    expect(prisma.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            animationStudio: expect.objectContaining({
+              storyboardAssets: expect.arrayContaining([
+                expect.objectContaining({
+                  id: 'storyboard-image-1',
+                  review: expect.objectContaining({ status: 'needs_retry' }),
+                }),
+                expect.objectContaining({
+                  assetKind: 'image',
+                  retryOfAssetId: 'storyboard-image-1',
+                  review: expect.objectContaining({ status: 'pending_review' }),
+                }),
+              ]),
+            }),
+          }),
+        }),
+      })
+    );
+  });
+
+  it('blocks retry-one when a pending retry candidate already exists for the shot', async () => {
+    const previousImage = readyImageAsset({
+      review: {
+        status: 'needs_retry',
+        reason: '角色造型不一致',
+        tags: ['character-mismatch'],
+        reviewedAt: '2026-05-28T00:00:00.000Z',
+        reviewedBy: 'user-1',
+      },
+    });
+    const pendingRetry = readyImageAsset({
+      id: 'storyboard-image-retry-1',
+      retryOfAssetId: 'storyboard-image-1',
+      retryAttemptNo: 1,
+      review: {
+        status: 'pending_review',
+        reason: null,
+        tags: ['single-shot-retry'],
+        reviewedAt: null,
+        reviewedBy: null,
+      },
+    });
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [...readyStoryboardAssets(), previousImage, pendingRetry],
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.retryOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmRetryReplacesPreviousCandidate: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('已有 pending_review retry candidate');
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
 });

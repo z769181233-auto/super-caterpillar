@@ -14,6 +14,8 @@ import {
   StoryboardImageReviewStatus,
   StoryboardImageRetryPlanRequestDTO,
   StoryboardImageRetryPlanDTO,
+  StoryboardImageRetryOneRequestDTO,
+  StoryboardImageRetryOneDTO,
 } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -176,6 +178,9 @@ function normalizeStoryboardAsset(projectId: string, value: unknown): Storyboard
     imageGeneratedAt: asString(record.imageGeneratedAt),
     generationMode: record.generationMode === 'single_shot' || record.generationMode === 'batch' ? record.generationMode : null,
     estimatedCostUnit: asNumber(record.estimatedCostUnit),
+    retryOfAssetId: asString(record.retryOfAssetId),
+    retryAttemptNo: asNumber(record.retryAttemptNo),
+    retryPromptPatch: asString(record.retryPromptPatch),
     review: normalizeReview(record.review),
     locked: record.locked === false ? false : true,
     generatedAt: asString(record.generatedAt),
@@ -213,6 +218,9 @@ function buildMissing(projectId: string, reason: string): StoryboardAssetDTO[] {
       imageGeneratedAt: null,
       generationMode: null,
       estimatedCostUnit: null,
+      retryOfAssetId: null,
+      retryAttemptNo: null,
+      retryPromptPatch: null,
       review: null,
       locked: true,
       generatedAt: null,
@@ -278,6 +286,9 @@ function buildStoryboardAsset(
     imageGeneratedAt: null,
     generationMode: null,
     estimatedCostUnit: null,
+    retryOfAssetId: null,
+    retryAttemptNo: null,
+    retryPromptPatch: null,
     review: null,
     locked: true,
     generatedAt,
@@ -526,6 +537,14 @@ function validateGenerateOneRequest(request: Partial<StoryboardImageGenerateOneR
   return blockers;
 }
 
+function validateRetryOneRequest(request: Partial<StoryboardImageRetryOneRequestDTO>): string[] {
+  const blockers = validateGenerateOneRequest(request);
+  if (request.confirmRetryReplacesPreviousCandidate !== true) {
+    blockers.push('必须确认本次只创建新的单镜头 retry candidate，不覆盖旧图片');
+  }
+  return blockers;
+}
+
 class MockStoryboardImageProvider implements StoryboardImageProvider {
   readonly provider = 'mock' as const;
 
@@ -734,6 +753,17 @@ function providerFailureMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Storyboard image provider call failed';
 }
 
+function toRetryOneResult(
+  base: Omit<StoryboardImageRetryOneDTO, 'mode' | 'willCreateJob' | 'willGenerateVideo'>
+): StoryboardImageRetryOneDTO {
+  return {
+    ...base,
+    mode: 'single_shot_retry',
+    willCreateJob: false,
+    willGenerateVideo: false,
+  };
+}
+
 function buildPromptPatch(reviewReason: string | null, reviewTags: string[]): string {
   const rules: string[] = [];
   const reason = reviewReason || '人工验收标记需要重试';
@@ -881,6 +911,7 @@ export class ProjectStudioStoryboardAssetService {
     model: string | null;
     status: 'blocked' | 'approved' | 'provider_attempt' | 'provider_success' | 'provider_failure' | 'metadata_write_failed';
     blockers: string[];
+    phase?: string;
   }): Promise<StoryboardImageGenerateOneDTO['auditLog']> {
     const resourceId = options.shotId
       ? `${options.projectId}:${options.shotId}`
@@ -921,7 +952,7 @@ export class ProjectStudioStoryboardAssetService {
           blockers: options.blockers,
           willCreateJob: false,
           willGenerateVideo: false,
-          phase: '3A-G',
+          phase: options.phase || '3A-G',
         },
       });
       return { ...auditLog, ...auditFlags(options.status, true), recorded: true };
@@ -1377,6 +1408,378 @@ export class ProjectStudioStoryboardAssetService {
       willGenerateVideo: false,
       nextAction: '已写入单镜头 image asset；未创建 worker/job，未触发视频链路。',
     };
+  }
+
+  async retryOneStoryboardImage(
+    projectId: string,
+    organizationId: string,
+    request: Partial<StoryboardImageRetryOneRequestDTO> = {}
+  ): Promise<StoryboardImageRetryOneDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const metadata = asRecord(project.metadata);
+    const animationStudio = asRecord(metadata.animationStudio);
+    const providerName = getConfiguredStoryboardImageProviderName();
+    const shotId = asString(request.shotId);
+    const requestBlockers = validateRetryOneRequest(request);
+    const providerBlockers = validateStoryboardImageProviderGate(providerName, request);
+    const retryPlan = await this.getStoryboardImageRetryPlan(projectId, organizationId, {
+      shotId: shotId || '',
+    });
+    const storyboardAssets = asArray(animationStudio.storyboardAssets).map((item) =>
+      normalizeStoryboardAsset(projectId, item)
+    );
+    const textBindingAsset = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'text_binding' &&
+        asset.status === 'done' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    const previousImageAsset = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId) &&
+        (asset.review?.status === 'needs_retry' || asset.review?.status === 'rejected')
+    ) || null;
+    const pendingRetryCandidate = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId) &&
+        Boolean(asset.retryOfAssetId) &&
+        asset.review?.status === 'pending_review'
+    );
+    const retryAttemptNo =
+      Math.max(
+        0,
+        ...storyboardAssets
+          .filter(
+            (asset) =>
+              asset.assetKind === 'image' &&
+              (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+          )
+          .map((asset) => asset.retryAttemptNo || 0)
+      ) + 1;
+    const dryRun = buildStoryboardImageGenerationDryRun(projectId, animationStudio, {
+      shotIds: shotId ? [shotId] : [],
+      imageModel: asString(request.imageModel),
+      imageSize: asString(request.imageSize),
+      imageQuality: asString(request.imageQuality),
+      confirmCost: request.confirmCost,
+    });
+    const retryDryRunBlockers = dryRun.blockers.filter(
+      (blocker) =>
+        !blocker.includes('已发现图片资产') &&
+        !blocker.includes('StoryboardAsset 文本绑定未通过') &&
+        !blocker.includes('CharacterBible 未通过') &&
+        !blocker.includes('LocationBible 未通过') &&
+        !blocker.includes('VideoPrompt 未通过')
+    );
+    const blockers = uniq([
+      ...requestBlockers,
+      ...providerBlockers,
+      ...retryPlan.blockers,
+      ...retryDryRunBlockers,
+      ...(dryRun.assets.length !== 1 ? ['本阶段只允许单镜头 retry 生成'] : []),
+      ...(!textBindingAsset ? ['缺少目标镜头的 ready StoryboardAsset 文本绑定'] : []),
+      ...(!previousImageAsset ? ['缺少 needs_retry/rejected 的上一版 image asset'] : []),
+      ...(pendingRetryCandidate ? ['目标镜头已有 pending_review retry candidate，不能重复重试'] : []),
+      ...(!retryPlan.nextPromptPreview ? ['缺少 retry nextPromptPreview，不能执行重试'] : []),
+    ]);
+
+    if (blockers.length > 0 || !textBindingAsset || !previousImageAsset || !shotId) {
+      const auditLog = await this.recordStoryboardImageProviderAudit({
+        projectId,
+        organizationId,
+        shotId,
+        provider: providerName,
+        model: asString(request.imageModel),
+        status: 'blocked',
+        blockers,
+        phase: '3A-N',
+      });
+      return toRetryOneResult({
+        projectId,
+        status: 'blocked',
+        acceptanceState: 'blocked',
+        asset: null,
+        previousImageAsset,
+        retryPlan,
+        blockers,
+        providerCall: {
+          attempted: false,
+          provider: providerName,
+          model: asString(request.imageModel),
+          confirmed: request.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: null,
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        nextAction: '先修复单镜头 retry blockers；不会调用真实图片模型、worker 或视频链路。',
+      });
+    }
+
+    const safeRequest = request as StoryboardImageRetryOneRequestDTO;
+    const provider = resolveStoryboardImageProvider(providerName);
+    let auditLog = await this.recordStoryboardImageProviderAudit({
+      projectId,
+      organizationId,
+      shotId,
+      provider: providerName,
+      model: safeRequest.imageModel,
+      status: 'approved',
+      blockers: [],
+      phase: '3A-N',
+    });
+    auditLog = mergeAuditLog(
+      auditLog,
+      await this.recordStoryboardImageProviderAudit({
+        projectId,
+        organizationId,
+        shotId,
+        provider: providerName,
+        model: safeRequest.imageModel,
+        status: 'provider_attempt',
+        blockers: [],
+        phase: '3A-N',
+      })
+    );
+
+    let providerResult: StoryboardImageProviderResultDTO;
+    try {
+      providerResult = await provider.generate({
+        projectId,
+        asset: textBindingAsset,
+        request: safeRequest,
+        imagePrompt: retryPlan.nextPromptPreview,
+      });
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_success',
+          blockers: [],
+          phase: '3A-N',
+        })
+      );
+    } catch (error: any) {
+      const failureMessage = providerFailureMessage(error);
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_failure',
+          blockers: [failureMessage],
+          phase: '3A-N',
+        })
+      );
+      return toRetryOneResult({
+        projectId,
+        status: 'failed',
+        acceptanceState: 'provider_failed',
+        asset: null,
+        previousImageAsset,
+        retryPlan,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: true,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: 'Provider failed before retry metadata write',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        nextAction: '图片 provider 调用失败；未写入 retry metadata、未创建 worker/job、未触发视频链路。',
+      });
+    }
+
+    const generatedAt = new Date().toISOString();
+    let persistedProviderResult: Pick<StoryboardImageProviderResultDTO, 'assetUrl' | 'assetStorageKey'>;
+    try {
+      persistedProviderResult = await this.persistProviderImageResult({
+        projectId,
+        organizationId,
+        shotId,
+        providerResult,
+      });
+    } catch (error: any) {
+      const failureMessage = error?.message || 'Failed to persist storyboard retry image provider result';
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'provider_failure',
+          blockers: [failureMessage],
+          phase: '3A-N',
+        })
+      );
+      return toRetryOneResult({
+        projectId,
+        status: 'failed',
+        acceptanceState: 'storage_failed',
+        asset: null,
+        previousImageAsset,
+        retryPlan,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: providerResult.attempted,
+          provider: providerResult.provider,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: false,
+          reason: 'Provider result failed storage persistence before retry metadata write',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        nextAction: '图片 provider 已返回结果但 retry storage 持久化失败；未写入 metadata、未创建 worker/job、未触发视频链路。',
+      });
+    }
+
+    const imageAsset: StoryboardAssetDTO = {
+      ...textBindingAsset,
+      id: `project-metadata:${projectId}:storyboard-image-retry:${shotId}:${retryAttemptNo}`,
+      status: 'done',
+      assetKind: 'image',
+      assetUrl: persistedProviderResult.assetUrl,
+      assetStorageKey: persistedProviderResult.assetStorageKey,
+      imageProvider: providerResult.provider,
+      imageModel: safeRequest.imageModel,
+      imageSize: safeRequest.imageSize,
+      imageQuality: safeRequest.imageQuality,
+      imagePrompt: retryPlan.nextPromptPreview,
+      imageGeneratedAt: generatedAt,
+      generationMode: 'single_shot',
+      estimatedCostUnit: dryRun.assets[0]?.estimatedCostUnit ?? 1,
+      retryOfAssetId: previousImageAsset.id,
+      retryAttemptNo,
+      retryPromptPatch: retryPlan.promptPatch,
+      continuityNotes: uniq([
+        ...textBindingAsset.continuityNotes,
+        `Retry of ${previousImageAsset.id || 'previous image asset'}`,
+        retryPlan.reviewReason ? `Review reason: ${retryPlan.reviewReason}` : '',
+        retryPlan.promptPatch ? `Prompt patch: ${retryPlan.promptPatch}` : '',
+      ]),
+      review: {
+        status: 'pending_review',
+        reason: null,
+        tags: ['single-shot-retry'],
+        reviewedAt: null,
+        reviewedBy: null,
+      },
+      locked: true,
+      generatedAt,
+      missingReason: null,
+    };
+    const nextStoryboardAssets = [...storyboardAssets, imageAsset];
+    const nextMetadata = {
+      ...metadata,
+      animationStudio: {
+        ...animationStudio,
+        storyboardAssets: nextStoryboardAssets,
+      },
+    } as unknown as Prisma.InputJsonValue;
+
+    try {
+      await this.prisma.project.update({
+        where: { id: projectId },
+        data: { metadata: nextMetadata },
+      });
+    } catch (error: any) {
+      const failureMessage = error?.message || 'Failed to write storyboard retry image metadata';
+      if (providerResult.provider !== 'mock' && this.localStorageService) {
+        await this.localStorageService.adapter.delete(persistedProviderResult.assetStorageKey);
+      }
+      auditLog = mergeAuditLog(
+        auditLog,
+        await this.recordStoryboardImageProviderAudit({
+          projectId,
+          organizationId,
+          shotId,
+          provider: providerName,
+          model: safeRequest.imageModel,
+          status: 'metadata_write_failed',
+          blockers: [failureMessage],
+          phase: '3A-N',
+        })
+      );
+      return toRetryOneResult({
+        projectId,
+        status: 'failed',
+        acceptanceState: 'rollback_required',
+        asset: null,
+        previousImageAsset,
+        retryPlan,
+        blockers: [failureMessage],
+        providerCall: {
+          attempted: providerResult.attempted,
+          provider: providerResult.provider,
+          model: safeRequest.imageModel,
+          confirmed: safeRequest.confirmProviderCall === true,
+        },
+        auditLog,
+        rollback: {
+          required: true,
+          reason: 'Provider returned a retry asset but metadata write failed; no worker/job/video was created.',
+          metadataWritten: false,
+          metadataRestored: false,
+        },
+        nextAction: '图片 provider 已返回 retry 结果但 metadata 写入失败；需要人工确认是否存在外部资产残留。',
+      });
+    }
+
+    return toRetryOneResult({
+      projectId,
+      status: 'ready',
+      acceptanceState: 'ready',
+      asset: imageAsset,
+      previousImageAsset,
+      retryPlan,
+      blockers: [],
+      providerCall: {
+        attempted: providerResult.attempted,
+        provider: providerResult.provider,
+        model: safeRequest.imageModel,
+        confirmed: safeRequest.confirmProviderCall === true,
+      },
+      auditLog,
+      rollback: {
+        required: false,
+        reason: null,
+        metadataWritten: true,
+        metadataRestored: false,
+      },
+      nextAction: '已写入单镜头 retry image candidate；旧图片未删除，未创建 worker/job，未触发视频链路。',
+    });
   }
 
   async reviewStoryboardImage(
