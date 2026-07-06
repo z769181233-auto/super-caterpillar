@@ -1063,6 +1063,7 @@ export class ProjectStudioStoryboardAssetService {
       return {
         projectId,
         status: 'blocked',
+        acceptanceState: 'blocked',
         mode: 'single_shot',
         asset: null,
         blockers,
@@ -1146,6 +1147,7 @@ export class ProjectStudioStoryboardAssetService {
       return {
         projectId,
         status: 'failed',
+        acceptanceState: 'provider_failed',
         mode: 'single_shot',
         asset: null,
         blockers: [failureMessage],
@@ -1193,6 +1195,7 @@ export class ProjectStudioStoryboardAssetService {
       return {
         projectId,
         status: 'failed',
+        acceptanceState: 'storage_failed',
         mode: 'single_shot',
         asset: null,
         blockers: [failureMessage],
@@ -1268,6 +1271,7 @@ export class ProjectStudioStoryboardAssetService {
       return {
         projectId,
         status: 'failed',
+        acceptanceState: 'rollback_required',
         mode: 'single_shot',
         asset: null,
         blockers: [failureMessage],
@@ -1293,6 +1297,7 @@ export class ProjectStudioStoryboardAssetService {
     return {
       projectId,
       status: 'ready',
+      acceptanceState: 'ready',
       mode: 'single_shot',
       asset: imageAsset,
       blockers: [],
@@ -1311,7 +1316,7 @@ export class ProjectStudioStoryboardAssetService {
       },
       willCreateJob: false,
       willGenerateVideo: false,
-      nextAction: '已写入单镜头 mock image asset；未调用真实图片模型、worker 或视频链路。',
+      nextAction: '已写入单镜头 image asset；未创建 worker/job，未触发视频链路。',
     };
   }
 }

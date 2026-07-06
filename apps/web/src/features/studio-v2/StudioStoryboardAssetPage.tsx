@@ -512,9 +512,13 @@ export function StudioStoryboardAssetPage({
                   <div style={cardHeaderStyle()}>
                     <h3 style={{ margin: 0 }}>生成结果</h3>
                     <strong style={{ color: generateOneResult.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                      {generateOneResult.status.toUpperCase()}
+                      {formatGenerateOneAcceptanceState(generateOneResult.acceptanceState)}
                     </strong>
                   </div>
+                  <InfoRow
+                    label="验收状态"
+                    value={describeGenerateOneAcceptanceState(generateOneResult.acceptanceState)}
+                  />
                   {generateOneResult.blockers.length > 0 && (
                     <Callout tone="warn" title="阻断/失败原因" body={generateOneResult.blockers.join('\n')} />
                   )}
@@ -530,6 +534,12 @@ export function StudioStoryboardAssetPage({
                     label="rollback"
                     value={`required=${String(generateOneResult.rollback.required)}；metadataWritten=${String(generateOneResult.rollback.metadataWritten)}；metadataRestored=${String(generateOneResult.rollback.metadataRestored)}；reason=${generateOneResult.rollback.reason || 'none'}`}
                   />
+                  {generateOneResult.asset?.assetUrl && (
+                    <InfoRow
+                      label="stored image"
+                      value={`assetKind=${generateOneResult.asset.assetKind}；storageKey=${generateOneResult.asset.assetStorageKey || '未写入'}；url=${generateOneResult.asset.assetUrl}`}
+                    />
+                  )}
                   <InfoRow
                     label="执行边界"
                     value={`willCreateJob=${String(generateOneResult.willCreateJob)}；willGenerateVideo=${String(generateOneResult.willGenerateVideo)}；${generateOneResult.nextAction}`}
@@ -681,6 +691,30 @@ function isSingleShotConfirmed(confirmations: {
     confirmations.providerCall &&
     confirmations.noWorkerJob
   );
+}
+
+function formatGenerateOneAcceptanceState(state: StoryboardImageGenerateOneDTO['acceptanceState']) {
+  if (state === 'ready') return 'READY';
+  if (state === 'blocked') return 'BLOCKED';
+  if (state === 'provider_failed') return 'PROVIDER FAILED';
+  if (state === 'storage_failed') return 'STORAGE FAILED';
+  return 'ROLLBACK REQUIRED';
+}
+
+function describeGenerateOneAcceptanceState(state: StoryboardImageGenerateOneDTO['acceptanceState']) {
+  if (state === 'ready') {
+    return '单镜头图片资产已写入 metadata/storage；未创建 worker/job，未触发视频链路。';
+  }
+  if (state === 'blocked') {
+    return '生成前置条件未满足，未调用 provider，未写入 metadata。';
+  }
+  if (state === 'provider_failed') {
+    return 'provider 调用失败，未写入图片资产，可修复配置或提示词后重试。';
+  }
+  if (state === 'storage_failed') {
+    return 'provider 已返回结果但 storage 持久化失败，metadata 未写入 ready 图片资产。';
+  }
+  return 'provider 已返回结果但 metadata 写入失败，需要人工确认外部资产残留后再重试。';
 }
 
 function ConfirmationCheckbox({
