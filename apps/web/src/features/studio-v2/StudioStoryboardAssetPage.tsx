@@ -9,6 +9,7 @@ import {
   retryOneStudioStoryboardImage,
   generateStudioStoryboardAssets,
   getStudioProductionState,
+  getStudioStoryboardImageEpisodeAcceptance,
   getStudioStoryboardImageReadiness,
   getStudioStoryboardAssets,
   reviewStudioStoryboardImage,
@@ -16,6 +17,7 @@ import {
 import type {
   StoryboardImageGenerateOneDTO,
   StoryboardImageGenerationDryRunDTO,
+  StoryboardImageEpisodeAcceptanceDTO,
   StoryboardImageReadinessDTO,
   StoryboardImageReviewRequestDTO,
   StoryboardImageReviewResultDTO,
@@ -42,6 +44,8 @@ export function StudioStoryboardAssetPage({
   const [state, setState] = useState<ProductionStateDTO | null>(null);
   const [assets, setAssets] = useState<StoryboardAssetDTO[]>([]);
   const [imageReadiness, setImageReadiness] = useState<StoryboardImageReadinessDTO | null>(null);
+  const [episodeAcceptance, setEpisodeAcceptance] =
+    useState<StoryboardImageEpisodeAcceptanceDTO | null>(null);
   const [imageDryRun, setImageDryRun] = useState<StoryboardImageGenerationDryRunDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -83,12 +87,17 @@ export function StudioStoryboardAssetPage({
       getStudioProductionState(projectId),
       getStudioStoryboardAssets(projectId),
       getStudioStoryboardImageReadiness(projectId),
+      getStudioStoryboardImageEpisodeAcceptance(
+        projectId,
+        episodeId && episodeId !== 'episode-placeholder' ? episodeId : null
+      ),
     ])
-      .then(([nextState, nextAssets, nextImageReadiness]) => {
+      .then(([nextState, nextAssets, nextImageReadiness, nextEpisodeAcceptance]) => {
         if (!mounted) return;
         setState(nextState);
         setAssets(nextAssets);
         setImageReadiness(nextImageReadiness);
+        setEpisodeAcceptance(nextEpisodeAcceptance);
       })
       .catch((err: Error) => {
         if (mounted) setError(err.message);
@@ -97,7 +106,7 @@ export function StudioStoryboardAssetPage({
     return () => {
       mounted = false;
     };
-  }, [projectId]);
+  }, [projectId, episodeId]);
 
   const storyboardStage = useMemo(
     () => state?.stages.find((stage) => stage.key === 'storyboard_ready') || null,
@@ -121,6 +130,20 @@ export function StudioStoryboardAssetPage({
   );
   const metrics = useMemo(() => calculateStoryboardMetrics(visibleAssets), [visibleAssets]);
 
+  async function refreshStoryboardImageState() {
+    const [nextAssets, nextImageReadiness, nextEpisodeAcceptance] = await Promise.all([
+      getStudioStoryboardAssets(projectId),
+      getStudioStoryboardImageReadiness(projectId),
+      getStudioStoryboardImageEpisodeAcceptance(
+        projectId,
+        episodeId && episodeId !== 'episode-placeholder' ? episodeId : null
+      ),
+    ]);
+    setAssets(nextAssets);
+    setImageReadiness(nextImageReadiness);
+    setEpisodeAcceptance(nextEpisodeAcceptance);
+  }
+
   async function handleGenerate() {
     if (!generationGate.canGenerate) {
       setError(generationGate.reason);
@@ -131,10 +154,17 @@ export function StudioStoryboardAssetPage({
     try {
       const nextAssets = await generateStudioStoryboardAssets(projectId);
       const nextState = await getStudioProductionState(projectId);
-      const nextImageReadiness = await getStudioStoryboardImageReadiness(projectId);
+      const [nextImageReadiness, nextEpisodeAcceptance] = await Promise.all([
+        getStudioStoryboardImageReadiness(projectId),
+        getStudioStoryboardImageEpisodeAcceptance(
+          projectId,
+          episodeId && episodeId !== 'episode-placeholder' ? episodeId : null
+        ),
+      ]);
       setAssets(nextAssets);
       setState(nextState);
       setImageReadiness(nextImageReadiness);
+      setEpisodeAcceptance(nextEpisodeAcceptance);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to generate Studio StoryboardAsset';
@@ -203,12 +233,7 @@ export function StudioStoryboardAssetPage({
         confirmRealImageGeneration: true,
       });
       setGenerateOneResult(result);
-      const [nextAssets, nextImageReadiness] = await Promise.all([
-        getStudioStoryboardAssets(projectId),
-        getStudioStoryboardImageReadiness(projectId),
-      ]);
-      setAssets(nextAssets);
-      setImageReadiness(nextImageReadiness);
+      await refreshStoryboardImageState();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to generate one Studio storyboard image';
@@ -250,12 +275,7 @@ export function StudioStoryboardAssetPage({
         tags,
       });
       setReviewResult(result);
-      const [nextAssets, nextImageReadiness] = await Promise.all([
-        getStudioStoryboardAssets(projectId),
-        getStudioStoryboardImageReadiness(projectId),
-      ]);
-      setAssets(nextAssets);
-      setImageReadiness(nextImageReadiness);
+      await refreshStoryboardImageState();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to review Studio storyboard image';
@@ -324,12 +344,7 @@ export function StudioStoryboardAssetPage({
         confirmRetryReplacesPreviousCandidate: true,
       });
       setRetryOneResult(result);
-      const [nextAssets, nextImageReadiness] = await Promise.all([
-        getStudioStoryboardAssets(projectId),
-        getStudioStoryboardImageReadiness(projectId),
-      ]);
-      setAssets(nextAssets);
-      setImageReadiness(nextImageReadiness);
+      await refreshStoryboardImageState();
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to retry one Studio storyboard image';
@@ -385,6 +400,68 @@ export function StudioStoryboardAssetPage({
           title="当前只验收已存储图片展示"
           body="Phase 3A-I 只展示已经写入 storage 的单镜头图片资产，不调用图片模型、不批量生成、不创建 worker/job、不进入视频链路。"
         />
+
+        <section style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', marginTop: '1rem', padding: '1rem' }}>
+          <div style={cardHeaderStyle()}>
+            <div>
+              <h2 style={{ margin: 0 }}>整集图片验收汇总</h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>
+                Phase 3A-O：只读汇总每个镜头的图片验收状态。这里不会生成图片、不会批量、不会创建 worker/job、不会进入视频。
+              </p>
+            </div>
+            <strong style={{ color: episodeAcceptance?.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+              {episodeAcceptance ? episodeAcceptance.status.toUpperCase() : 'LOADING'}
+            </strong>
+          </div>
+          <div style={metricsGridStyle()}>
+            <MetricCard label="应验收镜头" value={`${episodeAcceptance?.expectedShotCount ?? 0}`} />
+            <MetricCard label="已接受" value={`${episodeAcceptance?.acceptedShotCount ?? 0}`} />
+            <MetricCard label="等待验收" value={`${episodeAcceptance?.pendingReviewShotCount ?? 0}`} />
+            <MetricCard label="需要重试" value={`${episodeAcceptance?.needsRetryShotCount ?? 0}`} />
+            <MetricCard label="已拒绝" value={`${episodeAcceptance?.rejectedShotCount ?? 0}`} />
+            <MetricCard label="缺图/缺绑定" value={`${episodeAcceptance?.missingImageShotCount ?? 0}`} />
+            <MetricCard label="验收覆盖率" value={formatPercent(episodeAcceptance?.acceptedCoverageRate ?? 0)} />
+          </div>
+          {episodeAcceptance?.blockers.length ? (
+            <Callout tone="warn" title="整集图片尚未验收完成" body={episodeAcceptance.blockers.join('\n')} />
+          ) : (
+            <Callout
+              tone="info"
+              title="整集图片已逐镜验收通过"
+              body={episodeAcceptance?.nextAction || '仍不会自动创建 worker/job 或进入视频生成。'}
+            />
+          )}
+          <InfoRow
+            label="执行边界"
+            value={`willGenerateImage=${String(episodeAcceptance?.willGenerateImage ?? false)}；willCreateJob=${String(episodeAcceptance?.willCreateJob ?? false)}；willGenerateVideo=${String(episodeAcceptance?.willGenerateVideo ?? false)}`}
+          />
+          {episodeAcceptance?.shotSummaries.length ? (
+            <details style={{ marginTop: '1rem' }}>
+              <summary style={{ cursor: 'pointer', fontWeight: 800 }}>查看镜头验收明细</summary>
+              <div style={{ display: 'grid', gap: '0.75rem', marginTop: '0.9rem' }}>
+                {episodeAcceptance.shotSummaries.map((item) => (
+                  <InfoRow
+                    key={item.shotId}
+                    label={`镜头 ${item.shotNo || '-'} · ${formatShotAcceptanceStatus(item.status)}`}
+                    value={[
+                      `shotId=${item.shotId}`,
+                      `textBinding=${item.textBindingAssetId || 'missing'}`,
+                      `acceptedImage=${item.acceptedImageAssetId || 'missing'}`,
+                      `latestImage=${item.latestImageAssetId || 'missing'}`,
+                      `retryAttemptCount=${item.retryAttemptCount}`,
+                      item.reviewReason ? `reviewReason=${item.reviewReason}` : null,
+                      item.nextAction,
+                    ]
+                      .filter(Boolean)
+                      .join('；')}
+                  />
+                ))}
+              </div>
+            </details>
+          ) : (
+            <InfoRow label="镜头验收明细" value="暂无 ready ShotScript 或当前集没有可汇总镜头。" />
+          )}
+        </section>
 
         <section style={{ border: '1px solid var(--border-subtle)', borderRadius: 'var(--r-md)', marginTop: '1rem', padding: '1rem' }}>
           <div style={cardHeaderStyle()}>
@@ -1113,6 +1190,15 @@ function formatImageReviewStatus(status: NonNullable<StoryboardAssetDTO['review'
   if (status === 'needs_retry') return 'NEEDS RETRY';
   if (status === 'rejected') return 'REJECTED';
   return 'PENDING REVIEW';
+}
+
+function formatShotAcceptanceStatus(status: StoryboardImageEpisodeAcceptanceDTO['shotSummaries'][number]['status']) {
+  if (status === 'accepted') return 'ACCEPTED';
+  if (status === 'pending_review') return 'PENDING REVIEW';
+  if (status === 'needs_retry') return 'NEEDS RETRY';
+  if (status === 'rejected') return 'REJECTED';
+  if (status === 'missing_image') return 'MISSING IMAGE';
+  return 'MISSING TEXT BINDING';
 }
 
 function describeGenerateOneAcceptanceState(state: StoryboardImageGenerateOneDTO['acceptanceState']) {
