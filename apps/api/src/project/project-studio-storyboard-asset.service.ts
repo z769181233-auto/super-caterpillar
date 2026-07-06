@@ -1,3 +1,4 @@
+import axios, { AxiosError } from 'axios';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   StoryboardAssetDTO,
@@ -509,8 +510,49 @@ class MockStoryboardImageProvider implements StoryboardImageProvider {
 class OpenAIStoryboardImageProviderSkeleton implements StoryboardImageProvider {
   readonly provider = 'openai' as const;
 
-  async generate(): Promise<StoryboardImageProviderResultDTO> {
-    throw new Error('OpenAI storyboard image provider skeleton is configured but real provider calls are disabled in Phase 3A-D first segment');
+  async generate(input: StoryboardImageProviderInput): Promise<StoryboardImageProviderResultDTO> {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error('OPENAI_API_KEY is required for OpenAI storyboard image provider');
+    }
+
+    const prompt = asString(input.imagePrompt);
+    if (!prompt) {
+      throw new Error('OpenAI storyboard image provider requires a non-empty image prompt');
+    }
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/images/generations',
+      {
+        model: input.request.imageModel,
+        prompt,
+        size: normalizeOpenAIImageSize(input.request.imageSize),
+        quality: normalizeOpenAIImageQuality(input.request.imageQuality),
+        n: 1,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: getOpenAIStoryboardImageTimeoutMs(),
+      }
+    );
+
+    const image = response.data?.data?.[0];
+    const url = asString(image?.url);
+    const b64Json = asString(image?.b64_json);
+    if (!url && !b64Json) {
+      throw new Error('OpenAI storyboard image provider returned no image url or b64_json');
+    }
+
+    const shotId = input.asset.sourceShotScriptId || input.asset.shotId || input.request.shotId;
+    return {
+      provider: this.provider,
+      attempted: true,
+      assetStorageKey: `studio/storyboards/${input.projectId}/${shotId}.openai.png`,
+      assetUrl: url || `data:image/png;base64,${b64Json}`,
+    };
   }
 }
 
@@ -536,8 +578,46 @@ function validateStoryboardImageProviderGate(
   if (request.confirmProviderCall !== true) {
     blockers.push('真实图片 provider 调用前需要 confirmProviderCall=true');
   }
-  blockers.push('Phase 3A-D 第一段只接入 OpenAI provider skeleton，不调用真实图片模型');
   return blockers;
+}
+
+function normalizeOpenAIImageSize(size: string): string {
+  const normalized = size.trim().toLowerCase();
+  if (normalized === '16:9') return '1536x1024';
+  if (normalized === '9:16') return '1024x1536';
+  if (normalized === '1:1') return '1024x1024';
+  if (normalized === 'auto') return 'auto';
+  if (/^\d{3,4}x\d{3,4}$/.test(normalized)) return normalized;
+  return '1536x1024';
+}
+
+function normalizeOpenAIImageQuality(quality: string): string {
+  const normalized = quality.trim().toLowerCase();
+  if (normalized === 'standard' || normalized === 'draft') return 'low';
+  if (normalized === 'hd') return 'high';
+  if (['low', 'medium', 'high', 'auto'].includes(normalized)) return normalized;
+  return 'low';
+}
+
+function getOpenAIStoryboardImageTimeoutMs(): number {
+  const value = Number(process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER_TIMEOUT_MS);
+  return Number.isFinite(value) && value > 0 ? value : 60000;
+}
+
+function providerFailureMessage(error: unknown): string {
+  if (axios.isAxiosError(error)) {
+    const axiosError = error as AxiosError<any>;
+    const status = axiosError.response?.status;
+    const apiMessage =
+      asString(axiosError.response?.data?.error?.message) ||
+      asString(axiosError.response?.data?.message);
+    return [
+      'OpenAI storyboard image provider failed',
+      status ? `HTTP ${status}` : null,
+      apiMessage || axiosError.message,
+    ].filter(Boolean).join(': ');
+  }
+  return error instanceof Error ? error.message : 'Storyboard image provider call failed';
 }
 
 function resolveStoryboardImageProvider(provider: StoryboardImageProviderName): StoryboardImageProvider {
@@ -632,7 +712,7 @@ export class ProjectStudioStoryboardAssetService {
           blockers: options.blockers,
           willCreateJob: false,
           willGenerateVideo: false,
-          phase: '3A-E',
+          phase: '3A-G',
         },
       });
       return { ...auditLog, ...auditFlags(options.status, true), recorded: true };
@@ -891,7 +971,7 @@ export class ProjectStudioStoryboardAssetService {
         })
       );
     } catch (error: any) {
-      const failureMessage = error?.message || 'Storyboard image provider call failed';
+      const failureMessage = providerFailureMessage(error);
       auditLog = mergeAuditLog(
         auditLog,
         await this.recordStoryboardImageProviderAudit({
