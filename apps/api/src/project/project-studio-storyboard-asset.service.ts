@@ -8,6 +8,10 @@ import {
   StoryboardImageGenerationDryRunRequestDTO,
   StoryboardImageGenerationPlanItemDTO,
   StoryboardImageProviderResultDTO,
+  StoryboardImageReviewDTO,
+  StoryboardImageReviewRequestDTO,
+  StoryboardImageReviewResultDTO,
+  StoryboardImageReviewStatus,
 } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { AuditLogService } from '../audit-log/audit-log.service';
@@ -97,6 +101,27 @@ function textArray(value: unknown): string[] {
   return uniq(asArray(value).map((item) => asString(item)).filter(Boolean) as string[]);
 }
 
+function normalizeReview(value: unknown): StoryboardImageReviewDTO | null {
+  const record = asRecord(value);
+  const status = asString(record.status);
+  if (
+    status !== 'pending_review' &&
+    status !== 'accepted' &&
+    status !== 'needs_retry' &&
+    status !== 'rejected'
+  ) {
+    return null;
+  }
+
+  return {
+    status: status as StoryboardImageReviewStatus,
+    reason: asString(record.reason),
+    tags: textArray(record.tags),
+    reviewedAt: asString(record.reviewedAt),
+    reviewedBy: asString(record.reviewedBy),
+  };
+}
+
 function characterNames(value: unknown): string[] {
   return uniq(
     asArray(value)
@@ -149,6 +174,7 @@ function normalizeStoryboardAsset(projectId: string, value: unknown): Storyboard
     imageGeneratedAt: asString(record.imageGeneratedAt),
     generationMode: record.generationMode === 'single_shot' || record.generationMode === 'batch' ? record.generationMode : null,
     estimatedCostUnit: asNumber(record.estimatedCostUnit),
+    review: normalizeReview(record.review),
     locked: record.locked === false ? false : true,
     generatedAt: asString(record.generatedAt),
     version: asString(record.version) || STORYBOARD_ASSET_VERSION,
@@ -185,6 +211,7 @@ function buildMissing(projectId: string, reason: string): StoryboardAssetDTO[] {
       imageGeneratedAt: null,
       generationMode: null,
       estimatedCostUnit: null,
+      review: null,
       locked: true,
       generatedAt: null,
       version: STORYBOARD_ASSET_VERSION,
@@ -249,6 +276,7 @@ function buildStoryboardAsset(
     imageGeneratedAt: null,
     generationMode: null,
     estimatedCostUnit: null,
+    review: null,
     locked: true,
     generatedAt,
     version: STORYBOARD_ASSET_VERSION,
@@ -1233,6 +1261,13 @@ export class ProjectStudioStoryboardAssetService {
       imageGeneratedAt: generatedAt,
       generationMode: 'single_shot',
       estimatedCostUnit: dryRun.assets[0]?.estimatedCostUnit ?? 1,
+      review: {
+        status: 'pending_review',
+        reason: null,
+        tags: [],
+        reviewedAt: null,
+        reviewedBy: null,
+      },
       locked: true,
       generatedAt,
       missingReason: null,
@@ -1317,6 +1352,100 @@ export class ProjectStudioStoryboardAssetService {
       willCreateJob: false,
       willGenerateVideo: false,
       nextAction: '已写入单镜头 image asset；未创建 worker/job，未触发视频链路。',
+    };
+  }
+
+  async reviewStoryboardImage(
+    projectId: string,
+    organizationId: string,
+    userId: string,
+    request: Partial<StoryboardImageReviewRequestDTO> = {}
+  ): Promise<StoryboardImageReviewResultDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const shotId = asString(request.shotId);
+    const decision = asString(request.decision) as StoryboardImageReviewStatus | null;
+    const blockers: string[] = [];
+    if (!shotId) blockers.push('必须选择一个 shotId');
+    if (decision !== 'accepted' && decision !== 'needs_retry' && decision !== 'rejected') {
+      blockers.push('review decision 必须是 accepted / needs_retry / rejected');
+    }
+
+    const metadata = asRecord(project.metadata);
+    const animationStudio = asRecord(metadata.animationStudio);
+    const storyboardAssets = asArray(animationStudio.storyboardAssets).map((item) =>
+      normalizeStoryboardAsset(projectId, item)
+    );
+    const assetIndex = storyboardAssets.findIndex(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    if (assetIndex < 0) {
+      blockers.push('目标镜头没有已存储 image asset，不能做图片验收');
+    }
+
+    if (blockers.length > 0 || assetIndex < 0 || !shotId || !decision) {
+      return {
+        projectId,
+        shotId,
+        status: 'blocked',
+        asset: null,
+        blockers,
+        willCallProvider: false,
+        willCreateJob: false,
+        willGenerateVideo: false,
+        nextAction: '先生成并存储该镜头图片，再做单镜头验收；本操作不会调用 provider、worker 或视频链路。',
+      };
+    }
+
+    const nextReview = {
+      status: decision,
+      reason: asString(request.reason),
+      tags: textArray(request.tags),
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: userId,
+    };
+    const nextAsset = {
+      ...storyboardAssets[assetIndex],
+      review: nextReview,
+    };
+    const nextStoryboardAssets = storyboardAssets.map((asset, index) =>
+      index === assetIndex ? nextAsset : asset
+    );
+    const nextMetadata = {
+      ...metadata,
+      animationStudio: {
+        ...animationStudio,
+        storyboardAssets: nextStoryboardAssets,
+      },
+    } as unknown as Prisma.InputJsonValue;
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { metadata: nextMetadata },
+    });
+
+    return {
+      projectId,
+      shotId,
+      status: 'ready',
+      asset: nextAsset,
+      blockers: [],
+      willCallProvider: false,
+      willCreateJob: false,
+      willGenerateVideo: false,
+      nextAction:
+        decision === 'accepted'
+          ? '当前单镜头图片已验收通过；不会自动推进批量图片、worker/job 或视频。'
+          : '已记录单镜头图片验收结果；如需重试必须再次显式执行单镜头生成。',
     };
   }
 }

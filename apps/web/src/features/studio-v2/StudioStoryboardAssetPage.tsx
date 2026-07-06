@@ -9,11 +9,14 @@ import {
   getStudioProductionState,
   getStudioStoryboardImageReadiness,
   getStudioStoryboardAssets,
+  reviewStudioStoryboardImage,
 } from './api';
 import type {
   StoryboardImageGenerateOneDTO,
   StoryboardImageGenerationDryRunDTO,
   StoryboardImageReadinessDTO,
+  StoryboardImageReviewRequestDTO,
+  StoryboardImageReviewResultDTO,
 } from './api';
 import {
   formatStudioGenerationError,
@@ -54,6 +57,8 @@ export function StudioStoryboardAssetPage({
   });
   const [generatingImage, setGeneratingImage] = useState(false);
   const [generateOneResult, setGenerateOneResult] = useState<StoryboardImageGenerateOneDTO | null>(null);
+  const [reviewingShotId, setReviewingShotId] = useState<string | null>(null);
+  const [reviewResult, setReviewResult] = useState<StoryboardImageReviewResultDTO | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -193,6 +198,53 @@ export function StudioStoryboardAssetPage({
       setError(formatStudioGenerationError(message, '单镜头图片生成'));
     } finally {
       setGeneratingImage(false);
+    }
+  }
+
+  async function handleReviewImage(
+    asset: StoryboardAssetDTO,
+    decision: StoryboardImageReviewRequestDTO['decision']
+  ) {
+    const shotId = asset.sourceShotScriptId || asset.shotId;
+    if (!shotId) {
+      setError('缺少目标镜头 shotId，不能记录图片验收。');
+      return;
+    }
+    const reviewReason =
+      decision === 'accepted'
+        ? '画面满足当前单镜头验收要求'
+        : decision === 'needs_retry'
+          ? '需要单镜头重试；本操作只记录原因，不自动生成'
+          : '当前图片不满足镜头验收要求';
+    const tags =
+      decision === 'accepted'
+        ? ['single-shot-accepted']
+        : decision === 'needs_retry'
+          ? ['needs-retry', 'manual-review']
+          : ['rejected', 'manual-review'];
+
+    setReviewingShotId(shotId);
+    setError(null);
+    try {
+      const result = await reviewStudioStoryboardImage(projectId, {
+        shotId,
+        decision,
+        reason: reviewReason,
+        tags,
+      });
+      setReviewResult(result);
+      const [nextAssets, nextImageReadiness] = await Promise.all([
+        getStudioStoryboardAssets(projectId),
+        getStudioStoryboardImageReadiness(projectId),
+      ]);
+      setAssets(nextAssets);
+      setImageReadiness(nextImageReadiness);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to review Studio storyboard image';
+      setError(formatStudioGenerationError(message, '单镜头图片验收'));
+    } finally {
+      setReviewingShotId(null);
     }
   }
 
@@ -416,7 +468,12 @@ export function StudioStoryboardAssetPage({
           <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
             {imageAssets.length > 0 ? (
               imageAssets.map((asset) => (
-                <StoredImageAssetCard key={asset.id || asset.assetStorageKey || asset.shotId || asset.shotNo} asset={asset} />
+                <StoredImageAssetCard
+                  key={asset.id || asset.assetStorageKey || asset.shotId || asset.shotNo}
+                  asset={asset}
+                  reviewing={reviewingShotId === (asset.sourceShotScriptId || asset.shotId)}
+                  onReview={handleReviewImage}
+                />
               ))
             ) : (
               <InfoRow
@@ -426,6 +483,14 @@ export function StudioStoryboardAssetPage({
             )}
           </div>
         </section>
+
+        {reviewResult && (
+          <Callout
+            tone={reviewResult.status === 'ready' ? 'info' : 'warn'}
+            title="单镜头图片验收结果"
+            body={`${reviewResult.nextAction}\nwillCallProvider=${String(reviewResult.willCallProvider)}；willCreateJob=${String(reviewResult.willCreateJob)}；willGenerateVideo=${String(reviewResult.willGenerateVideo)}`}
+          />
+        )}
 
         <section style={{ marginTop: '1.5rem' }}>
           <div style={cardHeaderStyle()}>
@@ -568,15 +633,24 @@ export function StudioStoryboardAssetPage({
   );
 }
 
-function StoredImageAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
+function StoredImageAssetCard({
+  asset,
+  reviewing,
+  onReview,
+}: {
+  asset: StoryboardAssetDTO;
+  reviewing: boolean;
+  onReview: (asset: StoryboardAssetDTO, decision: StoryboardImageReviewRequestDTO['decision']) => void;
+}) {
   const [loadFailed, setLoadFailed] = useState(false);
   const hasPreview = Boolean(asset.assetUrl && !asset.assetUrl.startsWith('data:image'));
+  const review = asset.review;
   return (
     <article style={cardStyle()}>
       <div style={cardHeaderStyle()}>
         <h2 style={{ margin: 0 }}>镜头 {asset.shotNo || '-'} · 已存储图片</h2>
         <strong style={{ color: asset.status === 'done' ? 'var(--accent)' : 'var(--text-secondary)' }}>
-          {asset.status.toUpperCase()}
+          {formatImageReviewStatus(review?.status || 'pending_review')}
         </strong>
       </div>
       {hasPreview && !loadFailed ? (
@@ -599,6 +673,37 @@ function StoredImageAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
         <SummaryItem label="Model" value={asset.imageModel || '未记录'} />
         <SummaryItem label="Storage key" value={asset.assetStorageKey || '未写入'} />
         <SummaryItem label="Generated at" value={asset.imageGeneratedAt || asset.generatedAt || '未记录'} />
+        <SummaryItem label="Review" value={formatImageReviewStatus(review?.status || 'pending_review')} />
+        <SummaryItem label="Review reason" value={review?.reason || '待人工验收'} />
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+        <button
+          type="button"
+          onClick={() => onReview(asset, 'accepted')}
+          disabled={reviewing}
+          style={primaryButtonStyle(!reviewing)}
+        >
+          {reviewing ? '记录中...' : '接受当前图'}
+        </button>
+        <button
+          type="button"
+          onClick={() => onReview(asset, 'needs_retry')}
+          disabled={reviewing}
+          style={secondaryButtonStyle()}
+        >
+          标记需要重试
+        </button>
+        <button
+          type="button"
+          onClick={() => onReview(asset, 'rejected')}
+          disabled={reviewing}
+          style={secondaryButtonStyle()}
+        >
+          拒绝当前图
+        </button>
+        <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          只记录验收 metadata；不会调用 provider、不会创建 worker/job、不会生成视频。
+        </span>
       </div>
       <details style={{ marginTop: '1rem' }}>
         <summary style={{ cursor: 'pointer', fontWeight: 800 }}>查看图片资产详情</summary>
@@ -606,6 +711,10 @@ function StoredImageAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
           <InfoRow label="sourceShotScriptId" value={asset.sourceShotScriptId || '未绑定'} />
           <InfoRow label="assetUrl" value={asset.assetUrl || '未生成 signed URL'} />
           <InfoRow label="imagePrompt" value={asset.imagePrompt || '未记录'} />
+          <InfoRow
+            label="review metadata"
+            value={`status=${review?.status || 'pending_review'}；reason=${review?.reason || 'null'}；tags=${review?.tags?.join(', ') || 'none'}；reviewedAt=${review?.reviewedAt || 'null'}；reviewedBy=${review?.reviewedBy || 'null'}`}
+          />
           <InfoRow label="执行边界" value="已存储图片展示只读；不会调用图片模型、不会创建 worker/job、不会生成视频。" />
         </div>
       </details>
@@ -699,6 +808,13 @@ function formatGenerateOneAcceptanceState(state: StoryboardImageGenerateOneDTO['
   if (state === 'provider_failed') return 'PROVIDER FAILED';
   if (state === 'storage_failed') return 'STORAGE FAILED';
   return 'ROLLBACK REQUIRED';
+}
+
+function formatImageReviewStatus(status: NonNullable<StoryboardAssetDTO['review']>['status']) {
+  if (status === 'accepted') return 'ACCEPTED';
+  if (status === 'needs_retry') return 'NEEDS RETRY';
+  if (status === 'rejected') return 'REJECTED';
+  return 'PENDING REVIEW';
 }
 
 function describeGenerateOneAcceptanceState(state: StoryboardImageGenerateOneDTO['acceptanceState']) {

@@ -445,10 +445,44 @@ export interface StoryboardAssetDTO {
   imageGeneratedAt?: string | null;
   generationMode?: 'single_shot' | 'batch' | null;
   estimatedCostUnit?: number | null;
+  review?: StoryboardImageReviewDTO | null;
   locked: boolean;
   generatedAt: string | null;
   version: string;
   missingReason: string | null;
+}
+
+export type StoryboardImageReviewStatus =
+  | 'pending_review'
+  | 'accepted'
+  | 'needs_retry'
+  | 'rejected';
+
+export interface StoryboardImageReviewDTO {
+  status: StoryboardImageReviewStatus;
+  reason: string | null;
+  tags: string[];
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+}
+
+export interface StoryboardImageReviewRequestDTO {
+  shotId: string;
+  decision: Exclude<StoryboardImageReviewStatus, 'pending_review'>;
+  reason?: string | null;
+  tags?: string[];
+}
+
+export interface StoryboardImageReviewResultDTO {
+  projectId: string;
+  shotId: string | null;
+  status: 'ready' | 'blocked';
+  asset: StoryboardAssetDTO | null;
+  blockers: string[];
+  willCallProvider: false;
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
 }
 
 export interface StoryboardImageGenerationDryRunRequestDTO {

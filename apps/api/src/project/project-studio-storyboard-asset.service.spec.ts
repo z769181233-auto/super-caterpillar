@@ -98,6 +98,31 @@ function readyStoryboardAssets() {
   }));
 }
 
+function readyImageAsset(overrides: Record<string, any> = {}) {
+  const textAsset = readyStoryboardAssets()[0];
+  return {
+    ...textAsset,
+    id: 'storyboard-image-1',
+    assetKind: 'image',
+    assetStorageKey: 'studio/storyboards/project-1/shot-script-1/123.openai.png',
+    assetUrl: 'http://localhost:3000/api/storage/signed/studio/storyboards/project-1/shot-script-1/123.openai.png',
+    imageProvider: 'openai',
+    imageModel: 'gpt-image-1',
+    imageSize: '16:9',
+    imageQuality: 'standard',
+    imageGeneratedAt: '2026-05-27T00:00:00.000Z',
+    generationMode: 'single_shot',
+    review: {
+      status: 'pending_review',
+      reason: null,
+      tags: [],
+      reviewedAt: null,
+      reviewedBy: null,
+    },
+    ...overrides,
+  };
+}
+
 function readyVideoPrompts() {
   return readyShotScripts().map((shot) => ({
     id: `video-prompt-${shot.shot_no}`,
@@ -1129,5 +1154,148 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.blockers.join('\n')).toContain('confirmProviderCall=true');
     expect(result.providerCall.attempted).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks image review when no image asset exists and does not call provider or write metadata', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: readyStoryboardAssets(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.reviewStoryboardImage('project-1', 'org-1', 'user-1', {
+      shotId: 'shot-script-1',
+      decision: 'accepted',
+      reason: 'looks good',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('没有已存储 image asset');
+    expect(result.willCallProvider).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('accepts a single stored image asset by updating review metadata only', async () => {
+    const textAssets = readyStoryboardAssets();
+    const imageAsset = readyImageAsset();
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [...textAssets, imageAsset],
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.reviewStoryboardImage('project-1', 'org-1', 'user-1', {
+      shotId: 'shot-script-1',
+      decision: 'accepted',
+      reason: '画面满足当前镜头验收要求',
+      tags: ['single-shot-accepted'],
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.asset).toEqual(
+      expect.objectContaining({
+        assetKind: 'image',
+        sourceShotScriptId: 'shot-script-1',
+        review: expect.objectContaining({
+          status: 'accepted',
+          reason: '画面满足当前镜头验收要求',
+          tags: ['single-shot-accepted'],
+          reviewedBy: 'user-1',
+        }),
+      })
+    );
+    expect(result.willCallProvider).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(prisma.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            animationStudio: expect.objectContaining({
+              storyboardAssets: expect.arrayContaining([
+                expect.objectContaining({
+                  assetKind: 'image',
+                  sourceShotScriptId: 'shot-script-1',
+                  review: expect.objectContaining({ status: 'accepted' }),
+                }),
+              ]),
+              videoPrompts: expect.any(Array),
+            }),
+          }),
+        }),
+      })
+    );
+  });
+
+  it('marks a stored image as needs_retry without deleting or regenerating the asset', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [...readyStoryboardAssets(), readyImageAsset()],
+      },
+    });
+    const storage = createStorageMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      storage as any
+    );
+
+    const result = await service.reviewStoryboardImage('project-1', 'org-1', 'user-1', {
+      shotId: 'shot-script-1',
+      decision: 'needs_retry',
+      reason: '角色造型不一致',
+      tags: ['character-mismatch', 'needs-retry'],
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.asset?.review).toEqual(
+      expect.objectContaining({
+        status: 'needs_retry',
+        reason: '角色造型不一致',
+        tags: ['character-mismatch', 'needs-retry'],
+      })
+    );
+    expect(result.nextAction).toContain('再次显式执行单镜头生成');
+    expect(mockedAxios.post).not.toHaveBeenCalled();
+    expect(storage.adapter.delete).not.toHaveBeenCalled();
+  });
+
+  it('marks a stored image as rejected without removing the asset or creating jobs', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyboardAssets: [...readyStoryboardAssets(), readyImageAsset()],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.reviewStoryboardImage('project-1', 'org-1', 'user-1', {
+      shotId: 'shot-script-1',
+      decision: 'rejected',
+      reason: '构图不符合镜头目标',
+      tags: ['composition'],
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.asset?.review).toEqual(
+      expect.objectContaining({
+        status: 'rejected',
+        reason: '构图不符合镜头目标',
+        tags: ['composition'],
+      })
+    );
+    expect(result.asset?.assetStorageKey).toBe(
+      'studio/storyboards/project-1/shot-script-1/123.openai.png'
+    );
+    expect(result.willCallProvider).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 });
