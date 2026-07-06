@@ -544,6 +544,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('blocked');
+    expect(result.acceptanceState).toBe('blocked');
     expect(result.blockers.join('\n')).toContain('必须确认预计成本');
     expect(result.blockers.join('\n')).toContain('必须确认不会生成视频');
     expect(result.providerCall.attempted).toBe(false);
@@ -580,6 +581,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('ready');
+    expect(result.acceptanceState).toBe('ready');
     expect(result.asset).toEqual(
       expect.objectContaining({
         assetKind: 'image',
@@ -667,6 +669,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('ready');
+    expect(result.acceptanceState).toBe('ready');
     expect(result.auditLog.recorded).toBe(true);
     expect(result.auditLog.preflightRecorded).toBe(true);
     expect(result.auditLog.providerAttemptRecorded).toBe(true);
@@ -737,6 +740,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('failed');
+    expect(result.acceptanceState).toBe('rollback_required');
     expect(result.asset).toBeNull();
     expect(result.blockers.join('\n')).toContain('metadata write failed');
     expect(result.providerCall).toEqual({
@@ -816,6 +820,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('ready');
+    expect(result.acceptanceState).toBe('ready');
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://api.openai.com/v1/images/generations',
       expect.objectContaining({
@@ -915,6 +920,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('failed');
+    expect(result.acceptanceState).toBe('storage_failed');
     expect(result.blockers.join('\n')).toContain('requires provider b64_json');
     expect(mockedAxios.get).not.toHaveBeenCalled();
     expect(storage.adapter.put).not.toHaveBeenCalled();
@@ -968,6 +974,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('failed');
+    expect(result.acceptanceState).toBe('storage_failed');
     expect(result.blockers.join('\n')).toContain('only accepts PNG');
     expect(storage.adapter.put).not.toHaveBeenCalled();
     expect(prisma.project.update).not.toHaveBeenCalled();
@@ -1018,6 +1025,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('failed');
+    expect(result.acceptanceState).toBe('rollback_required');
     expect(storage.adapter.put).toHaveBeenCalledTimes(1);
     expect(storage.adapter.delete).toHaveBeenCalledWith(
       expect.stringMatching(/^studio\/storyboards\/project-1\/shot-script-1\/\d+\.openai\.png$/)
@@ -1063,6 +1071,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('failed');
+    expect(result.acceptanceState).toBe('provider_failed');
     expect(result.asset).toBeNull();
     expect(result.blockers.join('\n')).toContain('openai unavailable');
     expect(result.providerCall).toEqual({
@@ -1113,6 +1122,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     });
 
     expect(result.status).toBe('blocked');
+    expect(result.acceptanceState).toBe('blocked');
     expect(result.blockers.join('\n')).toContain('ENABLE_STUDIO_REAL_IMAGE_GENERATION=true');
     expect(result.blockers.join('\n')).toContain('OPENAI_API_KEY');
     expect(result.blockers.join('\n')).toContain('confirmRealImageGeneration=true');

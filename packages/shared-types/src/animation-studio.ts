@@ -514,6 +514,12 @@ export interface StoryboardImageProviderResultDTO {
 export interface StoryboardImageGenerateOneDTO {
   projectId: string;
   status: 'ready' | 'blocked' | 'failed';
+  acceptanceState:
+    | 'blocked'
+    | 'provider_failed'
+    | 'storage_failed'
+    | 'rollback_required'
+    | 'ready';
   mode: 'single_shot';
   asset: StoryboardAssetDTO | null;
   blockers: string[];
