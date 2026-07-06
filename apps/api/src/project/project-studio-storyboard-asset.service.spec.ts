@@ -1,7 +1,12 @@
+import axios from 'axios';
 import {
   ProjectStudioStoryboardAssetService,
   validateStoryboardAssetQuality,
 } from './project-studio-storyboard-asset.service';
+
+jest.mock('axios');
+
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 function readyShotScript(shotNo: number, overrides: Record<string, any> = {}) {
   return {
@@ -220,6 +225,8 @@ describe('ProjectStudioStoryboardAssetService', () => {
     process.env = { ...originalEnv };
     delete process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER;
     delete process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION;
+    delete process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER_TIMEOUT_MS;
+    mockedAxios.post.mockReset();
   });
 
   afterAll(() => {
@@ -607,7 +614,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
           status: 'approved',
           willCreateJob: false,
           willGenerateVideo: false,
-          phase: '3A-E',
+          phase: '3A-G',
         }),
       })
     );
@@ -689,10 +696,19 @@ describe('ProjectStudioStoryboardAssetService', () => {
     );
   });
 
-  it('blocks openai provider skeleton even when real-image flags are present', async () => {
+  it('calls OpenAI provider for one confirmed shot and writes one image asset without jobs or video', async () => {
     process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
     process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
     process.env.OPENAI_API_KEY = 'test-key';
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            b64_json: 'ZmFrZS1pbWFnZQ==',
+          },
+        ],
+      },
+    });
     const prisma = createPrismaMock({
       animationStudio: {
         storyBible: {
@@ -720,21 +736,97 @@ describe('ProjectStudioStoryboardAssetService', () => {
       confirmRealImageGeneration: true,
     });
 
-    expect(result.status).toBe('blocked');
-    expect(result.blockers.join('\n')).toContain('provider skeleton');
+    expect(result.status).toBe('ready');
+    expect(mockedAxios.post).toHaveBeenCalledWith(
+      'https://api.openai.com/v1/images/generations',
+      expect.objectContaining({
+        model: 'gpt-image-1',
+        prompt: expect.stringContaining('分镜构图提示词，本阶段不生成图片。'),
+        size: '1536x1024',
+        quality: 'low',
+        n: 1,
+      }),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-key',
+        }),
+        timeout: 60000,
+      })
+    );
+    expect(result.asset).toEqual(
+      expect.objectContaining({
+        assetKind: 'image',
+        sourceShotScriptId: 'shot-script-1',
+        imageProvider: 'openai',
+        assetStorageKey: 'studio/storyboards/project-1/shot-script-1.openai.png',
+        assetUrl: 'data:image/png;base64,ZmFrZS1pbWFnZQ==',
+      })
+    );
     expect(result.providerCall).toEqual({
-      attempted: false,
+      attempted: true,
       provider: 'openai',
       model: 'gpt-image-1',
       confirmed: true,
     });
-    expect(result.auditLog).toEqual(
-      expect.objectContaining({
-        planned: true,
-        recorded: false,
-        resourceId: 'project-1:shot-script-1',
-      })
-    );
+    expect(result.auditLog.providerAttemptRecorded).toBe(false);
+    expect(result.auditLog.providerSuccessRecorded).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns failed without metadata write when OpenAI provider fails', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
+    process.env.OPENAI_API_KEY = 'test-key';
+    mockedAxios.post.mockRejectedValueOnce(new Error('openai unavailable'));
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const auditLogService = {
+      record: jest.fn().mockResolvedValue(undefined),
+    };
+    const service = new ProjectStudioStoryboardAssetService(prisma as any, auditLogService as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmProviderCall: true,
+      confirmRealImageGeneration: true,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.asset).toBeNull();
+    expect(result.blockers.join('\n')).toContain('openai unavailable');
+    expect(result.providerCall).toEqual({
+      attempted: true,
+      provider: 'openai',
+      model: 'gpt-image-1',
+      confirmed: true,
+    });
+    expect(result.auditLog.providerAttemptRecorded).toBe(true);
+    expect(result.auditLog.providerFailureRecorded).toBe(true);
+    expect(result.rollback).toEqual({
+      required: false,
+      reason: 'Provider failed before metadata write',
+      metadataWritten: false,
+      metadataRestored: false,
+    });
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
