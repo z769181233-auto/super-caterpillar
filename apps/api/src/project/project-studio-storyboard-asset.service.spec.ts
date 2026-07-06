@@ -428,4 +428,105 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(dryRun.willGenerateImage).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
   });
+
+  it('blocks generate-one when single-shot confirmations are missing', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('必须确认预计成本');
+    expect(result.blockers.join('\n')).toContain('必须确认不会生成视频');
+    expect(result.providerCall.attempted).toBe(false);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('writes one mock image asset for a single ready text binding without creating jobs or video', async () => {
+    const storyboardAssets = readyStoryboardAssets();
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets,
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+    });
+
+    expect(result.status).toBe('ready');
+    expect(result.asset).toEqual(
+      expect.objectContaining({
+        assetKind: 'image',
+        sourceShotScriptId: 'shot-script-1',
+        assetStorageKey: 'studio/storyboards/project-1/shot-script-1.mock.png',
+        assetUrl: '/mock-assets/studio/storyboards/project-1/shot-script-1.png',
+        imageProvider: 'mock',
+        imageModel: 'gpt-image-1',
+        generationMode: 'single_shot',
+        locked: true,
+      })
+    );
+    expect(result.providerCall).toEqual({
+      attempted: true,
+      provider: 'mock',
+      model: 'gpt-image-1',
+    });
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            animationStudio: expect.objectContaining({
+              storyboardAssets: expect.arrayContaining([
+                expect.objectContaining({
+                  assetKind: 'text_binding',
+                  sourceShotScriptId: 'shot-script-1',
+                }),
+                expect.objectContaining({
+                  assetKind: 'image',
+                  sourceShotScriptId: 'shot-script-1',
+                }),
+              ]),
+            }),
+          }),
+        }),
+      })
+    );
+  });
 });
