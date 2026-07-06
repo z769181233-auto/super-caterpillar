@@ -134,6 +134,31 @@ export interface StoryboardImageGenerateOneDTO {
   nextAction: string;
 }
 
+export type StoryboardImageReviewStatus =
+  | 'pending_review'
+  | 'accepted'
+  | 'needs_retry'
+  | 'rejected';
+
+export interface StoryboardImageReviewRequestDTO {
+  shotId: string;
+  decision: Exclude<StoryboardImageReviewStatus, 'pending_review'>;
+  reason?: string | null;
+  tags?: string[];
+}
+
+export interface StoryboardImageReviewResultDTO {
+  projectId: string;
+  shotId: string | null;
+  status: 'ready' | 'blocked';
+  asset: StoryboardAssetDTO | null;
+  blockers: string[];
+  willCallProvider: false;
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -465,6 +490,26 @@ export async function generateOneStudioStoryboardImage(
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.error?.message || 'Failed to generate one mock Studio storyboard image');
+  }
+
+  return result.data;
+}
+
+export async function reviewStudioStoryboardImage(
+  projectId: string,
+  payload: StoryboardImageReviewRequestDTO
+): Promise<StoryboardImageReviewResultDTO> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-images/review`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageReviewResultDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to review Studio storyboard image');
   }
 
   return result.data;
