@@ -725,6 +725,35 @@ export class ProjectController {
     };
   }
 
+  @Get(':projectId/storyboard-images/episode-acceptance')
+  @Permissions(ProjectPermissions.PROJECT_READ)
+  async getStudioStoryboardImageEpisodeAcceptance(
+    @Param('projectId') projectId: string,
+    @Query('episodeId') episodeId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryboardAssetService) {
+      throw new BadRequestException('Studio StoryboardAsset service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data =
+      await this.projectStudioStoryboardAssetService.getStoryboardImageEpisodeAcceptance(
+        projectId,
+        organizationId,
+        episodeId || null
+      );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post(':projectId/storyboard-images/generate')
   @Permissions(ProjectPermissions.PROJECT_GENERATE)
   async dryRunStudioStoryboardImageGeneration(

@@ -123,6 +123,33 @@ function readyImageAsset(overrides: Record<string, any> = {}) {
   };
 }
 
+function imageAssetFromTextBinding(
+  textAsset: Record<string, any>,
+  reviewStatus: 'pending_review' | 'accepted' | 'needs_retry' | 'rejected',
+  overrides: Record<string, any> = {}
+) {
+  return readyImageAsset({
+    ...textAsset,
+    id: `storyboard-image-${textAsset.shotNo}`,
+    assetKind: 'image',
+    assetStorageKey: `studio/storyboards/project-1/${textAsset.sourceShotScriptId}/accepted.png`,
+    assetUrl: `http://localhost:3000/api/storage/signed/studio/storyboards/project-1/${textAsset.sourceShotScriptId}/accepted.png`,
+    imageGeneratedAt: '2026-05-27T00:00:00.000Z',
+    review: {
+      status: reviewStatus,
+      reason: reviewStatus === 'accepted' ? '验收通过' : '需要人工处理',
+      tags: reviewStatus === 'accepted' ? ['single-shot-accepted'] : [],
+      reviewedAt: '2026-05-28T00:00:00.000Z',
+      reviewedBy: 'user-1',
+    },
+    ...overrides,
+  });
+}
+
+function acceptedImageAssets() {
+  return readyStoryboardAssets().map((asset) => imageAssetFromTextBinding(asset, 'accepted'));
+}
+
 function readyVideoPrompts() {
   return readyShotScripts().map((shot) => ({
     id: `video-prompt-${shot.shot_no}`,
@@ -1681,6 +1708,206 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.status).toBe('blocked');
     expect(result.blockers.join('\n')).toContain('已有 pending_review retry candidate');
     expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('returns blocked episode acceptance for an empty project without writing metadata', async () => {
+    const prisma = createPrismaMock({ animationStudio: {} });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('blocked');
+    expect(result.expectedShotCount).toBe(0);
+    expect(result.acceptedShotCount).toBe(0);
+    expect(result.blockers.join('\n')).toContain('缺少 ready ShotScript');
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateImage).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('requires StoryboardAsset text bindings before episode image acceptance can be ready', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('blocked');
+    expect(result.expectedShotCount).toBe(8);
+    expect(result.missingImageShotCount).toBe(8);
+    expect(result.shotSummaries[0]).toEqual(
+      expect.objectContaining({
+        shotId: 'shot-script-1',
+        status: 'missing_text_binding',
+        textBindingAssetId: null,
+        acceptedImageAssetId: null,
+      })
+    );
+    expect(result.blockers.join('\n')).toContain('缺少 StoryboardAsset 文本绑定');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('requires generated image assets before episode image acceptance can be ready', async () => {
+    const prisma = createPrismaMock({
+      animationStudio: {
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('blocked');
+    expect(result.missingImageShotCount).toBe(8);
+    expect(result.shotSummaries[0]).toEqual(
+      expect.objectContaining({
+        status: 'missing_image',
+        textBindingAssetId: 'storyboard-asset-1',
+        acceptedImageAssetId: null,
+      })
+    );
+    expect(result.blockers.join('\n')).toContain('缺少单镜头图片资产');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('summarizes pending review, retry, and rejected image states without marking ready', async () => {
+    const textAssets = readyStoryboardAssets();
+    const images = [
+      imageAssetFromTextBinding(textAssets[0], 'pending_review'),
+      imageAssetFromTextBinding(textAssets[1], 'needs_retry'),
+      imageAssetFromTextBinding(textAssets[2], 'rejected'),
+      ...textAssets.slice(3).map((asset) => imageAssetFromTextBinding(asset, 'accepted')),
+    ];
+    const prisma = createPrismaMock({
+      animationStudio: {
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [...textAssets, ...images],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('blocked');
+    expect(result.pendingReviewShotCount).toBe(1);
+    expect(result.needsRetryShotCount).toBe(1);
+    expect(result.rejectedShotCount).toBe(1);
+    expect(result.acceptedShotCount).toBe(5);
+    expect(result.shotSummaries.map((item: { status: string }) => item.status)).toEqual([
+      'pending_review',
+      'needs_retry',
+      'rejected',
+      'accepted',
+      'accepted',
+      'accepted',
+      'accepted',
+      'accepted',
+    ]);
+    expect(result.blockers.join('\n')).toContain('等待人工验收');
+    expect(result.blockers.join('\n')).toContain('需要重试');
+    expect(result.blockers.join('\n')).toContain('已拒绝');
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('uses latest pending retry candidate for shot acceptance when no image is accepted', async () => {
+    const textAssets = readyStoryboardAssets();
+    const previousNeedsRetry = imageAssetFromTextBinding(textAssets[0], 'needs_retry');
+    const pendingRetry = imageAssetFromTextBinding(textAssets[0], 'pending_review', {
+      id: 'storyboard-image-retry-1',
+      retryOfAssetId: previousNeedsRetry.id,
+      retryAttemptNo: 1,
+      imageGeneratedAt: '2026-05-29T00:00:00.000Z',
+      review: {
+        status: 'pending_review',
+        reason: null,
+        tags: ['single-shot-retry'],
+        reviewedAt: null,
+        reviewedBy: null,
+      },
+    });
+    const prisma = createPrismaMock({
+      animationStudio: {
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [
+          ...textAssets,
+          previousNeedsRetry,
+          pendingRetry,
+          ...textAssets.slice(1).map((asset) => imageAssetFromTextBinding(asset, 'accepted')),
+        ],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('blocked');
+    expect(result.pendingReviewShotCount).toBe(1);
+    expect(result.needsRetryShotCount).toBe(0);
+    expect(result.shotSummaries[0]).toEqual(
+      expect.objectContaining({
+        status: 'pending_review',
+        latestImageAssetId: 'storyboard-image-retry-1',
+        retryAttemptCount: 1,
+      })
+    );
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('marks episode image acceptance ready only when every ready shot has an accepted image', async () => {
+    const textAssets = readyStoryboardAssets();
+    const prisma = createPrismaMock({
+      animationStudio: {
+        shotScripts: readyShotScripts(),
+        storyboardAssets: [...textAssets, ...acceptedImageAssets()],
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.getStoryboardImageEpisodeAcceptance(
+      'project-1',
+      'org-1',
+      'episode-1'
+    );
+
+    expect(result.status).toBe('ready');
+    expect(result.expectedShotCount).toBe(8);
+    expect(result.acceptedShotCount).toBe(8);
+    expect(result.acceptedCoverageRate).toBe(1);
+    expect(result.blockers).toEqual([]);
+    expect(
+      result.shotSummaries.every((item: { status: string }) => item.status === 'accepted')
+    ).toBe(true);
+    expect(result.nextAction).toContain('不会自动创建 worker/job');
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateImage).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
     expect(prisma.project.update).not.toHaveBeenCalled();
   });

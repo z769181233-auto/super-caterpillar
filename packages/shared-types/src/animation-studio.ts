@@ -643,6 +643,45 @@ export interface StoryboardImageRetryOneDTO {
   nextAction: string;
 }
 
+export type StoryboardImageShotAcceptanceStatus =
+  | 'accepted'
+  | 'pending_review'
+  | 'needs_retry'
+  | 'rejected'
+  | 'missing_image'
+  | 'missing_text_binding';
+
+export interface StoryboardImageShotAcceptanceDTO {
+  shotId: string;
+  shotNo: number | null;
+  status: StoryboardImageShotAcceptanceStatus;
+  textBindingAssetId: string | null;
+  acceptedImageAssetId: string | null;
+  latestImageAssetId: string | null;
+  retryAttemptCount: number;
+  reviewReason: string | null;
+  nextAction: string;
+}
+
+export interface StoryboardImageEpisodeAcceptanceDTO {
+  projectId: string;
+  episodeId: string | null;
+  status: 'ready' | 'blocked';
+  expectedShotCount: number;
+  acceptedShotCount: number;
+  pendingReviewShotCount: number;
+  needsRetryShotCount: number;
+  rejectedShotCount: number;
+  missingImageShotCount: number;
+  acceptedCoverageRate: number;
+  blockers: string[];
+  shotSummaries: StoryboardImageShotAcceptanceDTO[];
+  willCreateJob: false;
+  willGenerateImage: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export interface StoryboardEpisodeAcceptanceDTO {
   projectId: string;
   episodeId: string;
