@@ -7,6 +7,9 @@ import {
 jest.mock('axios');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
+const PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lJkNqAAAAABJRU5ErkJggg==';
+const PNG_BUFFER = Buffer.from(PNG_BASE64, 'base64');
 
 function readyShotScript(shotNo: number, overrides: Record<string, any> = {}) {
   return {
@@ -218,6 +221,27 @@ function createPrismaMock(metadata: Record<string, any>) {
   };
 }
 
+function createStorageMock() {
+  return {
+    adapter: {
+      put: jest.fn().mockResolvedValue(undefined),
+      delete: jest.fn().mockResolvedValue(undefined),
+    },
+  };
+}
+
+function createSignedUrlMock() {
+  return {
+    generateSignedUrl: jest.fn().mockImplementation(({ key }) =>
+      Promise.resolve({
+        url: `http://localhost:3000/api/storage/signed/${key}`,
+        expiresAt: new Date('2026-05-24T01:00:00.000Z'),
+        signature: 'signed',
+      })
+    ),
+  };
+}
+
 describe('ProjectStudioStoryboardAssetService', () => {
   const originalEnv = process.env;
 
@@ -227,6 +251,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     delete process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION;
     delete process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER_TIMEOUT_MS;
     mockedAxios.post.mockReset();
+    mockedAxios.get?.mockReset();
   });
 
   afterAll(() => {
@@ -696,7 +721,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
     );
   });
 
-  it('calls OpenAI provider for one confirmed shot and writes one image asset without jobs or video', async () => {
+  it('stores OpenAI b64 image payload before writing one image asset without jobs or video', async () => {
     process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
     process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
     process.env.OPENAI_API_KEY = 'test-key';
@@ -704,7 +729,7 @@ describe('ProjectStudioStoryboardAssetService', () => {
       data: {
         data: [
           {
-            b64_json: 'ZmFrZS1pbWFnZQ==',
+            b64_json: PNG_BASE64,
           },
         ],
       },
@@ -722,7 +747,14 @@ describe('ProjectStudioStoryboardAssetService', () => {
         videoPrompts: readyVideoPrompts(),
       },
     });
-    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+    const storage = createStorageMock();
+    const signedUrl = createSignedUrlMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      storage as any,
+      signedUrl as any
+    );
 
     const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
       shotId: 'shot-script-1',
@@ -758,8 +790,21 @@ describe('ProjectStudioStoryboardAssetService', () => {
         assetKind: 'image',
         sourceShotScriptId: 'shot-script-1',
         imageProvider: 'openai',
-        assetStorageKey: 'studio/storyboards/project-1/shot-script-1.openai.png',
-        assetUrl: 'data:image/png;base64,ZmFrZS1pbWFnZQ==',
+        assetStorageKey: expect.stringMatching(
+          /^studio\/storyboards\/project-1\/shot-script-1\/\d+\.openai\.png$/
+        ),
+        assetUrl: expect.stringContaining('/api/storage/signed/studio/storyboards/project-1/shot-script-1/'),
+      })
+    );
+    expect(result.asset?.assetUrl).not.toContain('data:image');
+    expect(storage.adapter.put).toHaveBeenCalledWith(
+      expect.stringMatching(/^studio\/storyboards\/project-1\/shot-script-1\/\d+\.openai\.png$/),
+      PNG_BUFFER
+    );
+    expect(signedUrl.generateSignedUrl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'org-1',
+        userId: 'studio-system',
       })
     );
     expect(result.providerCall).toEqual({
@@ -773,6 +818,166 @@ describe('ProjectStudioStoryboardAssetService', () => {
     expect(result.willCreateJob).toBe(false);
     expect(result.willGenerateVideo).toBe(false);
     expect(prisma.project.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects OpenAI remote image URL before metadata write', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
+    process.env.OPENAI_API_KEY = 'test-key';
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            url: 'https://images.example.test/storyboard.png',
+          },
+        ],
+      },
+    });
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const storage = createStorageMock();
+    const signedUrl = createSignedUrlMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      storage as any,
+      signedUrl as any
+    );
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmProviderCall: true,
+      confirmRealImageGeneration: true,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.blockers.join('\n')).toContain('requires provider b64_json');
+    expect(mockedAxios.get).not.toHaveBeenCalled();
+    expect(storage.adapter.put).not.toHaveBeenCalled();
+    expect(result.asset).toBeNull();
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('fails before metadata write when OpenAI payload is not a PNG image', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
+    process.env.OPENAI_API_KEY = 'test-key';
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            b64_json: Buffer.from('not-a-png').toString('base64'),
+          },
+        ],
+      },
+    });
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const storage = createStorageMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      storage as any,
+      createSignedUrlMock() as any
+    );
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmProviderCall: true,
+      confirmRealImageGeneration: true,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(result.blockers.join('\n')).toContain('only accepts PNG');
+    expect(storage.adapter.put).not.toHaveBeenCalled();
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('cleans stored OpenAI image when metadata write fails', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
+    process.env.OPENAI_API_KEY = 'test-key';
+    mockedAxios.post.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            b64_json: PNG_BASE64,
+          },
+        ],
+      },
+    });
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: { status: 'ready', title: '表姑娘又又又又跑了' },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    prisma.project.update.mockRejectedValueOnce(new Error('metadata write failed'));
+    const storage = createStorageMock();
+    const service = new ProjectStudioStoryboardAssetService(
+      prisma as any,
+      undefined,
+      storage as any,
+      createSignedUrlMock() as any
+    );
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmProviderCall: true,
+      confirmRealImageGeneration: true,
+    });
+
+    expect(result.status).toBe('failed');
+    expect(storage.adapter.put).toHaveBeenCalledTimes(1);
+    expect(storage.adapter.delete).toHaveBeenCalledWith(
+      expect.stringMatching(/^studio\/storyboards\/project-1\/shot-script-1\/\d+\.openai\.png$/)
+    );
+    expect(result.rollback.required).toBe(true);
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
   });
 
   it('returns failed without metadata write when OpenAI provider fails', async () => {
