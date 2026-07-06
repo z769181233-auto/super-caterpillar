@@ -62,6 +62,45 @@ export interface StoryboardImageReadinessDTO {
   nextAction: string;
 }
 
+type StoryboardImageShotAcceptanceStatus =
+  | 'accepted'
+  | 'pending_review'
+  | 'needs_retry'
+  | 'rejected'
+  | 'missing_image'
+  | 'missing_text_binding';
+
+interface StoryboardImageShotAcceptanceDTO {
+  shotId: string;
+  shotNo: number | null;
+  status: StoryboardImageShotAcceptanceStatus;
+  textBindingAssetId: string | null;
+  acceptedImageAssetId: string | null;
+  latestImageAssetId: string | null;
+  retryAttemptCount: number;
+  reviewReason: string | null;
+  nextAction: string;
+}
+
+export interface StoryboardImageEpisodeAcceptanceDTO {
+  projectId: string;
+  episodeId: string | null;
+  status: 'ready' | 'blocked';
+  expectedShotCount: number;
+  acceptedShotCount: number;
+  pendingReviewShotCount: number;
+  needsRetryShotCount: number;
+  rejectedShotCount: number;
+  missingImageShotCount: number;
+  acceptedCoverageRate: number;
+  blockers: string[];
+  shotSummaries: StoryboardImageShotAcceptanceDTO[];
+  willCreateJob: false;
+  willGenerateImage: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 const DEFAULT_IMAGE_MODEL = 'image-generation-model-not-selected';
 const DEFAULT_IMAGE_SIZE = '16:9';
 const DEFAULT_IMAGE_QUALITY = 'draft';
@@ -764,6 +803,132 @@ function toRetryOneResult(
   };
 }
 
+function imageAssetTime(asset: StoryboardAssetDTO): number {
+  const source = asset.imageGeneratedAt || asset.generatedAt || '';
+  const value = Date.parse(source);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function latestImageAsset(assets: StoryboardAssetDTO[]): StoryboardAssetDTO | null {
+  return (
+    [...assets].sort((a, b) => {
+      const attemptDiff = (b.retryAttemptNo || 0) - (a.retryAttemptNo || 0);
+      if (attemptDiff !== 0) return attemptDiff;
+      return imageAssetTime(b) - imageAssetTime(a);
+    })[0] || null
+  );
+}
+
+function shotAcceptanceNextAction(status: StoryboardImageShotAcceptanceStatus): string {
+  if (status === 'accepted') return '该镜头图片已验收通过；不会自动进入视频阶段。';
+  if (status === 'pending_review') return '请人工验收当前单镜头图片。';
+  if (status === 'needs_retry') return '请准备 retry plan 并显式执行单镜头重试。';
+  if (status === 'rejected') return '请根据拒绝原因准备 retry plan，再显式执行单镜头重试。';
+  if (status === 'missing_image') return '请先为该镜头执行单镜头图片生成。';
+  return '请先生成 StoryboardAsset 文本绑定。';
+}
+
+function buildStoryboardImageEpisodeAcceptance(
+  projectId: string,
+  episodeId: string | null,
+  shotScripts: unknown,
+  storyboardAssets: unknown
+): StoryboardImageEpisodeAcceptanceDTO {
+  const readyShots = asArray(shotScripts)
+    .map((item) => asRecord(item))
+    .filter((shot) => asString(shot.status) === 'ready' && asString(shot.shot_id))
+    .filter((shot) => !episodeId || asString(shot.episode_id) === episodeId);
+  const normalizedAssets = asArray(storyboardAssets).map((item) =>
+    normalizeStoryboardAsset(projectId, item)
+  );
+  const shotSummaries: StoryboardImageShotAcceptanceDTO[] = readyShots.map((shot) => {
+    const shotId = asString(shot.shot_id) || '';
+    const textBinding =
+      normalizedAssets.find(
+        (asset) =>
+          asset.assetKind === 'text_binding' &&
+          (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+      ) || null;
+    const imageAssets = normalizedAssets.filter(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    const acceptedImage =
+      imageAssets.find((asset) => asset.review?.status === 'accepted') || null;
+    const latestImage = latestImageAsset(imageAssets);
+    const latestStatus = latestImage?.review?.status || null;
+    const status: StoryboardImageShotAcceptanceStatus = !textBinding
+      ? 'missing_text_binding'
+      : acceptedImage
+        ? 'accepted'
+        : !latestImage
+          ? 'missing_image'
+          : latestStatus === 'needs_retry' || latestStatus === 'rejected' || latestStatus === 'pending_review'
+            ? latestStatus
+            : 'pending_review';
+
+    return {
+      shotId,
+      shotNo: asNumber(shot.shot_no),
+      status,
+      textBindingAssetId: textBinding?.id || null,
+      acceptedImageAssetId: acceptedImage?.id || null,
+      latestImageAssetId: latestImage?.id || null,
+      retryAttemptCount: imageAssets.filter((asset) => Boolean(asset.retryOfAssetId)).length,
+      reviewReason: latestImage?.review?.reason || null,
+      nextAction: shotAcceptanceNextAction(status),
+    };
+  });
+  const expectedShotCount = readyShots.length;
+  const acceptedShotCount = shotSummaries.filter((item) => item.status === 'accepted').length;
+  const pendingReviewShotCount = shotSummaries.filter((item) => item.status === 'pending_review').length;
+  const needsRetryShotCount = shotSummaries.filter((item) => item.status === 'needs_retry').length;
+  const rejectedShotCount = shotSummaries.filter((item) => item.status === 'rejected').length;
+  const missingImageShotCount = shotSummaries.filter(
+    (item) => item.status === 'missing_image' || item.status === 'missing_text_binding'
+  ).length;
+  const blockers: string[] = [];
+  if (expectedShotCount === 0) blockers.push('缺少 ready ShotScript，不能做整集图片验收汇总。');
+  if (expectedShotCount > 0 && (expectedShotCount < 8 || expectedShotCount > 20)) {
+    blockers.push(`ready ShotScript 数量必须保持 8-20：${expectedShotCount}`);
+  }
+  if (shotSummaries.some((item) => item.status === 'missing_text_binding')) {
+    blockers.push('仍有镜头缺少 StoryboardAsset 文本绑定。');
+  }
+  if (shotSummaries.some((item) => item.status === 'missing_image')) {
+    blockers.push('仍有镜头缺少单镜头图片资产。');
+  }
+  if (pendingReviewShotCount > 0) blockers.push(`仍有 ${pendingReviewShotCount} 个镜头等待人工验收。`);
+  if (needsRetryShotCount > 0) blockers.push(`仍有 ${needsRetryShotCount} 个镜头需要重试。`);
+  if (rejectedShotCount > 0) blockers.push(`仍有 ${rejectedShotCount} 个镜头已拒绝，需重试。`);
+  if (expectedShotCount > 0 && acceptedShotCount !== expectedShotCount) {
+    blockers.push(`accepted 覆盖率未达 100%：${acceptedShotCount}/${expectedShotCount}`);
+  }
+
+  return {
+    projectId,
+    episodeId,
+    status: blockers.length === 0 ? 'ready' : 'blocked',
+    expectedShotCount,
+    acceptedShotCount,
+    pendingReviewShotCount,
+    needsRetryShotCount,
+    rejectedShotCount,
+    missingImageShotCount,
+    acceptedCoverageRate: expectedShotCount > 0 ? acceptedShotCount / expectedShotCount : 0,
+    blockers,
+    shotSummaries,
+    willCreateJob: false,
+    willGenerateImage: false,
+    willGenerateVideo: false,
+    nextAction:
+      blockers.length === 0
+        ? '整集图片已逐镜验收通过；仍不会自动创建 worker/job 或进入视频生成。'
+        : '请按镜头处理缺失图片、人工验收或单镜头重试；本汇总不会生成图片、创建 worker/job 或生成视频。',
+  };
+}
+
 function buildPromptPatch(reviewReason: string | null, reviewTags: string[]): string {
   const rules: string[] = [];
   const reason = reviewReason || '人工验收标记需要重试';
@@ -1063,6 +1228,29 @@ export class ProjectStudioStoryboardAssetService {
 
     const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
     return buildStoryboardImageReadiness(projectId, animationStudio);
+  }
+
+  async getStoryboardImageEpisodeAcceptance(
+    projectId: string,
+    organizationId: string,
+    episodeId?: string | null
+  ): Promise<StoryboardImageEpisodeAcceptanceDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
+    return buildStoryboardImageEpisodeAcceptance(
+      projectId,
+      asString(episodeId),
+      animationStudio.shotScripts,
+      animationStudio.storyboardAssets
+    );
   }
 
   async dryRunStoryboardImageGeneration(

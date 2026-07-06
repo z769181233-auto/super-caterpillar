@@ -203,6 +203,45 @@ export interface StoryboardImageRetryOneDTO {
   nextAction: string;
 }
 
+export type StoryboardImageShotAcceptanceStatus =
+  | 'accepted'
+  | 'pending_review'
+  | 'needs_retry'
+  | 'rejected'
+  | 'missing_image'
+  | 'missing_text_binding';
+
+export interface StoryboardImageShotAcceptanceDTO {
+  shotId: string;
+  shotNo: number | null;
+  status: StoryboardImageShotAcceptanceStatus;
+  textBindingAssetId: string | null;
+  acceptedImageAssetId: string | null;
+  latestImageAssetId: string | null;
+  retryAttemptCount: number;
+  reviewReason: string | null;
+  nextAction: string;
+}
+
+export interface StoryboardImageEpisodeAcceptanceDTO {
+  projectId: string;
+  episodeId: string | null;
+  status: 'ready' | 'blocked';
+  expectedShotCount: number;
+  acceptedShotCount: number;
+  pendingReviewShotCount: number;
+  needsRetryShotCount: number;
+  rejectedShotCount: number;
+  missingImageShotCount: number;
+  acceptedCoverageRate: number;
+  blockers: string[];
+  shotSummaries: StoryboardImageShotAcceptanceDTO[];
+  willCreateJob: false;
+  willGenerateImage: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -594,6 +633,29 @@ export async function retryOneStudioStoryboardImage(
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.error?.message || 'Failed to retry one Studio storyboard image');
+  }
+
+  return result.data;
+}
+
+export async function getStudioStoryboardImageEpisodeAcceptance(
+  projectId: string,
+  episodeId?: string | null
+): Promise<StoryboardImageEpisodeAcceptanceDTO> {
+  const query = episodeId ? `?episodeId=${encodeURIComponent(episodeId)}` : '';
+  const response = await fetch(
+    `/api/projects/${projectId}/storyboard-images/episode-acceptance${query}`,
+    {
+      cache: 'no-store',
+      credentials: 'include',
+    }
+  );
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageEpisodeAcceptanceDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(
+      result.error?.message || 'Failed to fetch Studio storyboard image episode acceptance'
+    );
   }
 
   return result.data;
