@@ -3,12 +3,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { ProductionStateDTO, StoryboardAssetDTO } from '@scu/shared-types';
 import {
+  dryRunStudioStoryboardImageGeneration,
   generateStudioStoryboardAssets,
   getStudioProductionState,
   getStudioStoryboardImageReadiness,
   getStudioStoryboardAssets,
 } from './api';
-import type { StoryboardImageReadinessDTO } from './api';
+import type {
+  StoryboardImageGenerationDryRunDTO,
+  StoryboardImageReadinessDTO,
+} from './api';
 import {
   formatStudioGenerationError,
   getStoryboardAssetGenerationGate,
@@ -29,8 +33,15 @@ export function StudioStoryboardAssetPage({
   const [state, setState] = useState<ProductionStateDTO | null>(null);
   const [assets, setAssets] = useState<StoryboardAssetDTO[]>([]);
   const [imageReadiness, setImageReadiness] = useState<StoryboardImageReadinessDTO | null>(null);
+  const [imageDryRun, setImageDryRun] = useState<StoryboardImageGenerationDryRunDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [dryRunning, setDryRunning] = useState(false);
+  const [imageModel, setImageModel] = useState('gpt-image-1');
+  const [imageSize, setImageSize] = useState('16:9');
+  const [imageQuality, setImageQuality] = useState('standard');
+  const [costConfirmed, setCostConfirmed] = useState(false);
+  const [showDryRunDialog, setShowDryRunDialog] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -97,6 +108,28 @@ export function StudioStoryboardAssetPage({
     }
   }
 
+  async function handleDryRunImageGeneration() {
+    setDryRunning(true);
+    setError(null);
+    try {
+      const nextDryRun = await dryRunStudioStoryboardImageGeneration(projectId, {
+        episodeId: episodeId && episodeId !== 'episode-placeholder' ? episodeId : null,
+        imageModel,
+        imageSize,
+        imageQuality,
+        confirmCost: costConfirmed,
+      });
+      setImageDryRun(nextDryRun);
+      setShowDryRunDialog(true);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to dry-run Studio storyboard image generation';
+      setError(formatStudioGenerationError(message, 'Storyboard 图片生成预估'));
+    } finally {
+      setDryRunning(false);
+    }
+  }
+
   return (
     <StudioLayout locale={locale} projectId={projectId} state={state}>
       <section style={panelStyle()}>
@@ -149,7 +182,7 @@ export function StudioStoryboardAssetPage({
             <div>
               <h2 style={{ margin: 0 }}>图片生成准备度</h2>
               <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>
-                Phase 2D 第一段只检查生成前条件和成本预估，不调用图片模型，不创建 worker/job。
+                Phase 3A-B：只做生成前 dry-run、成本预估和确认弹窗，不调用图片模型，不创建 worker/job。
               </p>
             </div>
             <strong style={{ color: imageReadiness?.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
@@ -174,9 +207,124 @@ export function StudioStoryboardAssetPage({
               body={imageReadiness?.nextAction || '下一阶段需要单独审批真实图片生成。'}
             />
           )}
-          <button type="button" disabled style={primaryButtonStyle(false)}>
-            生成图片 · 后续阶段开放
-          </button>
+
+          <div style={formGridStyle()}>
+            <label style={fieldStyle()}>
+              <span style={fieldLabelStyle()}>图片模型</span>
+              <select value={imageModel} onChange={(event) => setImageModel(event.target.value)} style={inputStyle()}>
+                <option value="gpt-image-1">gpt-image-1</option>
+                <option value="image-generation-model-not-selected">暂不选择模型</option>
+              </select>
+            </label>
+            <label style={fieldStyle()}>
+              <span style={fieldLabelStyle()}>画幅</span>
+              <select value={imageSize} onChange={(event) => setImageSize(event.target.value)} style={inputStyle()}>
+                <option value="16:9">16:9</option>
+                <option value="9:16">9:16</option>
+                <option value="1:1">1:1</option>
+              </select>
+            </label>
+            <label style={fieldStyle()}>
+              <span style={fieldLabelStyle()}>质量</span>
+              <select value={imageQuality} onChange={(event) => setImageQuality(event.target.value)} style={inputStyle()}>
+                <option value="standard">standard</option>
+                <option value="high">high</option>
+                <option value="draft">draft</option>
+              </select>
+            </label>
+          </div>
+
+          <label style={checkboxStyle()}>
+            <input
+              type="checkbox"
+              checked={costConfirmed}
+              onChange={(event) => setCostConfirmed(event.target.checked)}
+            />
+            <span>确认仅做成本预估 dry-run；不会调用图片模型、不会产生费用、不会写入图片资产。</span>
+          </label>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              type="button"
+              onClick={handleDryRunImageGeneration}
+              disabled={dryRunning}
+              style={primaryButtonStyle(!dryRunning)}
+            >
+              {dryRunning ? '预估中...' : '预估生成计划'}
+            </button>
+            <button type="button" disabled style={primaryButtonStyle(false)}>
+              生成图片 · 后续阶段开放
+            </button>
+          </div>
+
+          {imageDryRun && (
+            <section style={{ ...cardStyle(), marginTop: '1rem' }}>
+              <div style={cardHeaderStyle()}>
+                <div>
+                  <h3 style={{ margin: 0 }}>Dry-run 生成计划</h3>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 0 }}>
+                    当前计划只用于评审真实图片生成入口，不会写入 metadata。
+                  </p>
+                </div>
+                <strong style={{ color: imageDryRun.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                  {imageDryRun.status.toUpperCase()}
+                </strong>
+              </div>
+              <div style={metricsGridStyle()}>
+                <MetricCard label="计划生成张数" value={`${imageDryRun.plannedImageCount}`} />
+                <MetricCard label="预计成本单位" value={`${imageDryRun.estimatedCostUnits}`} />
+                <MetricCard label="已有图片资产" value={`${imageDryRun.existingImageAssetCount}`} />
+                <MetricCard label="模型" value={imageDryRun.imageModel || '未选择'} />
+                <MetricCard label="画幅" value={imageDryRun.imageSize || '未选择'} />
+                <MetricCard label="质量" value={imageDryRun.imageQuality || '未选择'} />
+              </div>
+              <InfoRow
+                label="执行边界"
+                value={`willGenerateImage=${String(imageDryRun.willGenerateImage)}；willCallProvider=${String(imageDryRun.willCallProvider)}；willCreateJob=${String(imageDryRun.willCreateJob)}；willWriteMetadata=${String(imageDryRun.willWriteMetadata)}`}
+              />
+              {imageDryRun.blockers.length > 0 ? (
+                <Callout tone="warn" title="Dry-run blockers" body={imageDryRun.blockers.join('\n')} />
+              ) : (
+                <Callout tone="info" title="Dry-run 已通过" body={imageDryRun.nextAction} />
+              )}
+              <details style={{ marginTop: '1rem' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 800 }}>查看镜头级 image prompt 计划</summary>
+                <div style={{ display: 'grid', gap: '0.75rem', marginTop: '0.9rem' }}>
+                  {imageDryRun.assets.slice(0, 8).map((item) => (
+                    <InfoRow
+                      key={item.shotId || item.shotNo || item.sourceStoryboardAssetId}
+                      label={`镜头 ${item.shotNo || '-'} · ${item.blockers.length ? 'BLOCKED' : 'READY'}`}
+                      value={item.blockers.length ? item.blockers.join('\n') : item.imagePrompt || '未生成 image prompt'}
+                    />
+                  ))}
+                </div>
+              </details>
+            </section>
+          )}
+
+          {showDryRunDialog && imageDryRun && (
+            <div style={dialogBackdropStyle()} role="presentation">
+              <section style={dialogStyle()} role="dialog" aria-modal="true" aria-labelledby="storyboard-image-dry-run-title">
+                <h2 id="storyboard-image-dry-run-title" style={{ marginTop: 0 }}>图片生成确认 · Dry-run</h2>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                  本次只生成计划和成本预估，不调用图片模型、不产生费用、不写入图片资产、不创建 worker/job。
+                </p>
+                <div style={metricsGridStyle()}>
+                  <MetricCard label="计划张数" value={`${imageDryRun.plannedImageCount}`} />
+                  <MetricCard label="预计成本单位" value={`${imageDryRun.estimatedCostUnits}`} />
+                  <MetricCard label="状态" value={imageDryRun.status.toUpperCase()} />
+                </div>
+                {imageDryRun.blockers.length > 0 && (
+                  <Callout tone="warn" title="仍有阻断项" body={imageDryRun.blockers.join('\n')} />
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="button" onClick={() => setShowDryRunDialog(false)} style={primaryButtonStyle(true)}>
+                    我知道了
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
         </section>
 
         <div style={metricsGridStyle()}>
@@ -310,6 +458,80 @@ function primaryButtonStyle(enabled: boolean): React.CSSProperties {
     fontWeight: 800,
     minWidth: '168px',
     padding: '0.85rem 1.15rem',
+  };
+}
+
+function formGridStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.75rem',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    marginTop: '1rem',
+  };
+}
+
+function fieldStyle(): React.CSSProperties {
+  return {
+    display: 'grid',
+    gap: '0.35rem',
+  };
+}
+
+function fieldLabelStyle(): React.CSSProperties {
+  return {
+    color: 'var(--text-secondary)',
+    fontSize: '0.85rem',
+    fontWeight: 700,
+  };
+}
+
+function inputStyle(): React.CSSProperties {
+  return {
+    background: 'var(--bg-panel)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-sm)',
+    color: 'var(--text-primary)',
+    minHeight: '40px',
+    padding: '0.6rem 0.7rem',
+  };
+}
+
+function checkboxStyle(): React.CSSProperties {
+  return {
+    alignItems: 'flex-start',
+    color: 'var(--text-secondary)',
+    display: 'flex',
+    gap: '0.6rem',
+    lineHeight: 1.6,
+    marginTop: '1rem',
+  };
+}
+
+function dialogBackdropStyle(): React.CSSProperties {
+  return {
+    alignItems: 'center',
+    background: 'rgba(15, 17, 21, 0.62)',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    left: 0,
+    padding: '1rem',
+    position: 'fixed',
+    right: 0,
+    top: 0,
+    zIndex: 50,
+  };
+}
+
+function dialogStyle(): React.CSSProperties {
+  return {
+    background: 'var(--bg-panel)',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: 'var(--r-lg)',
+    boxShadow: '0 24px 80px rgba(0, 0, 0, 0.35)',
+    maxWidth: '680px',
+    padding: '1.5rem',
+    width: '100%',
   };
 }
 
