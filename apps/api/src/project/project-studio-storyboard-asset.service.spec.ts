@@ -214,6 +214,18 @@ function createPrismaMock(metadata: Record<string, any>) {
 }
 
 describe('ProjectStudioStoryboardAssetService', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+    delete process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER;
+    delete process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION;
+  });
+
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
   it('returns missing StoryboardAsset state without throwing', async () => {
     const prisma = createPrismaMock({ animationStudio: {} });
     const service = new ProjectStudioStoryboardAssetService(prisma as any);
@@ -528,5 +540,83 @@ describe('ProjectStudioStoryboardAssetService', () => {
         }),
       })
     );
+  });
+
+  it('blocks openai provider skeleton even when real-image flags are present', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION = 'true';
+    process.env.OPENAI_API_KEY = 'test-key';
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+      confirmRealImageGeneration: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('provider skeleton');
+    expect(result.providerCall).toEqual({
+      attempted: false,
+      provider: 'openai',
+      model: 'gpt-image-1',
+    });
+    expect(result.willCreateJob).toBe(false);
+    expect(result.willGenerateVideo).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks openai provider when real-image environment gates are missing', async () => {
+    process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER = 'openai';
+    delete process.env.OPENAI_API_KEY;
+    const prisma = createPrismaMock({
+      animationStudio: {
+        storyBible: {
+          status: 'ready',
+          title: '表姑娘又又又又跑了',
+        },
+        shotScripts: readyShotScripts(),
+        storyboardAssets: readyStoryboardAssets(),
+        characterBibles: readyCharacterBibles(),
+        locationBibles: readyLocationBibles(),
+        videoPrompts: readyVideoPrompts(),
+      },
+    });
+    const service = new ProjectStudioStoryboardAssetService(prisma as any);
+
+    const result = await service.generateOneStoryboardImage('project-1', 'org-1', {
+      shotId: 'shot-script-1',
+      imageModel: 'gpt-image-1',
+      imageSize: '16:9',
+      imageQuality: 'standard',
+      confirmCost: true,
+      confirmSingleShot: true,
+      confirmNoVideo: true,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.blockers.join('\n')).toContain('ENABLE_STUDIO_REAL_IMAGE_GENERATION=true');
+    expect(result.blockers.join('\n')).toContain('OPENAI_API_KEY');
+    expect(result.blockers.join('\n')).toContain('confirmRealImageGeneration=true');
+    expect(result.providerCall.attempted).toBe(false);
+    expect(prisma.project.update).not.toHaveBeenCalled();
   });
 });

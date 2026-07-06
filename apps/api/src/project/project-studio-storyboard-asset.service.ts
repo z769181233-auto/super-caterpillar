@@ -52,6 +52,20 @@ const DEFAULT_IMAGE_MODEL = 'image-generation-model-not-selected';
 const DEFAULT_IMAGE_SIZE = '16:9';
 const DEFAULT_IMAGE_QUALITY = 'draft';
 
+type StoryboardImageProviderName = 'mock' | 'openai';
+
+interface StoryboardImageProviderInput {
+  projectId: string;
+  asset: StoryboardAssetDTO;
+  request: StoryboardImageGenerateOneRequestDTO;
+  imagePrompt: string | null;
+}
+
+interface StoryboardImageProvider {
+  provider: StoryboardImageProviderName;
+  generate(input: StoryboardImageProviderInput): Promise<StoryboardImageProviderResultDTO>;
+}
+
 function asRecord(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {};
 }
@@ -475,18 +489,55 @@ function validateGenerateOneRequest(request: Partial<StoryboardImageGenerateOneR
   return blockers;
 }
 
-function mockStoryboardImageProvider(
-  projectId: string,
-  asset: StoryboardAssetDTO,
-  request: StoryboardImageGenerateOneRequestDTO
-): StoryboardImageProviderResultDTO {
-  const shotId = asset.sourceShotScriptId || asset.shotId || request.shotId;
-  return {
-    provider: 'mock',
-    attempted: true,
-    assetStorageKey: `studio/storyboards/${projectId}/${shotId}.mock.png`,
-    assetUrl: `/mock-assets/studio/storyboards/${projectId}/${shotId}.png`,
-  };
+class MockStoryboardImageProvider implements StoryboardImageProvider {
+  readonly provider = 'mock' as const;
+
+  async generate(input: StoryboardImageProviderInput): Promise<StoryboardImageProviderResultDTO> {
+    const shotId = input.asset.sourceShotScriptId || input.asset.shotId || input.request.shotId;
+    return {
+      provider: this.provider,
+      attempted: true,
+      assetStorageKey: `studio/storyboards/${input.projectId}/${shotId}.mock.png`,
+      assetUrl: `/mock-assets/studio/storyboards/${input.projectId}/${shotId}.png`,
+    };
+  }
+}
+
+class OpenAIStoryboardImageProviderSkeleton implements StoryboardImageProvider {
+  readonly provider = 'openai' as const;
+
+  async generate(): Promise<StoryboardImageProviderResultDTO> {
+    throw new Error('OpenAI storyboard image provider skeleton is configured but real provider calls are disabled in Phase 3A-D first segment');
+  }
+}
+
+function getConfiguredStoryboardImageProviderName(): StoryboardImageProviderName {
+  return process.env.STUDIO_STORYBOARD_IMAGE_PROVIDER === 'openai' ? 'openai' : 'mock';
+}
+
+function validateStoryboardImageProviderGate(
+  provider: StoryboardImageProviderName,
+  request: Partial<StoryboardImageGenerateOneRequestDTO>
+): string[] {
+  if (provider !== 'openai') return [];
+  const blockers: string[] = [];
+  if (process.env.ENABLE_STUDIO_REAL_IMAGE_GENERATION !== 'true') {
+    blockers.push('真实图片 provider 需要 ENABLE_STUDIO_REAL_IMAGE_GENERATION=true');
+  }
+  if (!process.env.OPENAI_API_KEY) {
+    blockers.push('真实图片 provider 需要 OPENAI_API_KEY');
+  }
+  if (request.confirmRealImageGeneration !== true) {
+    blockers.push('真实图片 provider 需要 confirmRealImageGeneration=true');
+  }
+  blockers.push('Phase 3A-D 第一段只接入 OpenAI provider skeleton，不调用真实图片模型');
+  return blockers;
+}
+
+function resolveStoryboardImageProvider(provider: StoryboardImageProviderName): StoryboardImageProvider {
+  return provider === 'openai'
+    ? new OpenAIStoryboardImageProviderSkeleton()
+    : new MockStoryboardImageProvider();
 }
 
 @Injectable()
@@ -625,7 +676,9 @@ export class ProjectStudioStoryboardAssetService {
 
     const metadata = asRecord(project.metadata);
     const animationStudio = asRecord(metadata.animationStudio);
+    const providerName = getConfiguredStoryboardImageProviderName();
     const requestBlockers = validateGenerateOneRequest(request);
+    const providerBlockers = validateStoryboardImageProviderGate(providerName, request);
     const shotId = asString(request.shotId);
     const dryRun = buildStoryboardImageGenerationDryRun(projectId, animationStudio, {
       shotIds: shotId ? [shotId] : [],
@@ -650,6 +703,7 @@ export class ProjectStudioStoryboardAssetService {
     );
     const blockers = uniq([
       ...requestBlockers,
+      ...providerBlockers,
       ...dryRun.blockers,
       ...(dryRun.assets.length !== 1 ? ['本阶段只允许单镜头图片生成'] : []),
       ...(!textBindingAsset ? ['缺少目标镜头的 ready StoryboardAsset 文本绑定'] : []),
@@ -665,7 +719,7 @@ export class ProjectStudioStoryboardAssetService {
         blockers,
         providerCall: {
           attempted: false,
-          provider: null,
+          provider: providerName,
           model: asString(request.imageModel),
         },
         willCreateJob: false,
@@ -675,7 +729,13 @@ export class ProjectStudioStoryboardAssetService {
     }
 
     const safeRequest = request as StoryboardImageGenerateOneRequestDTO;
-    const providerResult = mockStoryboardImageProvider(projectId, textBindingAsset, safeRequest);
+    const provider = resolveStoryboardImageProvider(providerName);
+    const providerResult = await provider.generate({
+      projectId,
+      asset: textBindingAsset,
+      request: safeRequest,
+      imagePrompt: dryRun.assets[0]?.imagePrompt || textBindingAsset.sourcePrompt || textBindingAsset.prompt,
+    });
     const generatedAt = new Date().toISOString();
     const imageAsset: StoryboardAssetDTO = {
       ...textBindingAsset,
