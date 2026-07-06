@@ -445,6 +445,9 @@ export interface StoryboardAssetDTO {
   imageGeneratedAt?: string | null;
   generationMode?: 'single_shot' | 'batch' | null;
   estimatedCostUnit?: number | null;
+  retryOfAssetId?: string | null;
+  retryAttemptNo?: number | null;
+  retryPromptPatch?: string | null;
   review?: StoryboardImageReviewDTO | null;
   locked: boolean;
   generatedAt: string | null;
@@ -604,6 +607,37 @@ export interface StoryboardImageGenerateOneDTO {
     metadataWritten: boolean;
     metadataRestored: boolean;
   };
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
+export interface StoryboardImageRetryOneRequestDTO extends StoryboardImageGenerateOneRequestDTO {
+  confirmRetryReplacesPreviousCandidate: true;
+}
+
+export interface StoryboardImageRetryOneDTO {
+  projectId: string;
+  status: 'ready' | 'blocked' | 'failed';
+  acceptanceState:
+    | 'blocked'
+    | 'provider_failed'
+    | 'storage_failed'
+    | 'rollback_required'
+    | 'ready';
+  mode: 'single_shot_retry';
+  asset: StoryboardAssetDTO | null;
+  previousImageAsset: StoryboardAssetDTO | null;
+  retryPlan: StoryboardImageRetryPlanDTO | null;
+  blockers: string[];
+  providerCall: {
+    attempted: boolean;
+    provider: 'mock' | 'openai' | null;
+    model: string | null;
+    confirmed: boolean;
+  };
+  auditLog: StoryboardImageGenerateOneDTO['auditLog'];
+  rollback: StoryboardImageGenerateOneDTO['rollback'];
   willCreateJob: false;
   willGenerateVideo: false;
   nextAction: string;

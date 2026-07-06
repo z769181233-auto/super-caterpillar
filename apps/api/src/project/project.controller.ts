@@ -781,6 +781,34 @@ export class ProjectController {
     };
   }
 
+  @Post(':projectId/storyboard-images/retry-one')
+  @Permissions(ProjectPermissions.PROJECT_GENERATE)
+  async retryOneStudioStoryboardImage(
+    @Param('projectId') projectId: string,
+    @Body() body: any,
+    @CurrentUser() user: AuthenticatedUser,
+    @CurrentOrganization() organizationId: string | null
+  ): Promise<any> {
+    if (!organizationId) {
+      throw new Error('No organization context');
+    }
+    if (!this.projectStudioStoryboardAssetService) {
+      throw new BadRequestException('Studio StoryboardAsset service is not available');
+    }
+    await this.projectService.checkOwnership(projectId, user.userId);
+    const data = await this.projectStudioStoryboardAssetService.retryOneStoryboardImage(
+      projectId,
+      organizationId,
+      body || {}
+    );
+    return {
+      success: true,
+      data,
+      requestId: randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   @Post(':projectId/storyboard-images/review')
   @Permissions(ProjectPermissions.PROJECT_GENERATE)
   async reviewStudioStoryboardImage(
