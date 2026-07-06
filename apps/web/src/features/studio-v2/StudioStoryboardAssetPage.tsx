@@ -6,6 +6,7 @@ import {
   dryRunStudioStoryboardImageGeneration,
   generateOneStudioStoryboardImage,
   getStudioStoryboardImageRetryPlan,
+  retryOneStudioStoryboardImage,
   generateStudioStoryboardAssets,
   getStudioProductionState,
   getStudioStoryboardImageReadiness,
@@ -19,6 +20,7 @@ import type {
   StoryboardImageReviewRequestDTO,
   StoryboardImageReviewResultDTO,
   StoryboardImageRetryPlanDTO,
+  StoryboardImageRetryOneDTO,
 } from './api';
 import {
   formatStudioGenerationError,
@@ -63,6 +65,17 @@ export function StudioStoryboardAssetPage({
   const [reviewResult, setReviewResult] = useState<StoryboardImageReviewResultDTO | null>(null);
   const [retryPlanningShotId, setRetryPlanningShotId] = useState<string | null>(null);
   const [retryPlan, setRetryPlan] = useState<StoryboardImageRetryPlanDTO | null>(null);
+  const [selectedRetryAsset, setSelectedRetryAsset] = useState<StoryboardAssetDTO | null>(null);
+  const [retryConfirmations, setRetryConfirmations] = useState({
+    cost: false,
+    singleShot: false,
+    noVideo: false,
+    providerCall: false,
+    noWorkerJob: false,
+    keepPrevious: false,
+  });
+  const [retryingImage, setRetryingImage] = useState(false);
+  const [retryOneResult, setRetryOneResult] = useState<StoryboardImageRetryOneDTO | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -263,12 +276,66 @@ export function StudioStoryboardAssetPage({
     try {
       const result = await getStudioStoryboardImageRetryPlan(projectId, { shotId });
       setRetryPlan(result);
+      if (result.status === 'ready') {
+        setSelectedRetryAsset(asset);
+        setRetryOneResult(null);
+        setRetryConfirmations({
+          cost: false,
+          singleShot: false,
+          noVideo: false,
+          providerCall: false,
+          noWorkerJob: false,
+          keepPrevious: false,
+        });
+      }
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to prepare Studio storyboard retry plan';
       setError(formatStudioGenerationError(message, '单镜头重试计划'));
     } finally {
       setRetryPlanningShotId(null);
+    }
+  }
+
+  async function handleRetryOneImage() {
+    const shotId = selectedRetryAsset?.sourceShotScriptId || selectedRetryAsset?.shotId;
+    if (!shotId) {
+      setError('缺少目标镜头 shotId，不能执行单镜头重试。');
+      return;
+    }
+    if (!isRetryConfirmed(retryConfirmations)) {
+      setError('请先完成所有单镜头重试确认项。');
+      return;
+    }
+
+    setRetryingImage(true);
+    setError(null);
+    try {
+      const result = await retryOneStudioStoryboardImage(projectId, {
+        shotId,
+        imageModel,
+        imageSize,
+        imageQuality,
+        confirmCost: true,
+        confirmSingleShot: true,
+        confirmNoVideo: true,
+        confirmProviderCall: true,
+        confirmRealImageGeneration: true,
+        confirmRetryReplacesPreviousCandidate: true,
+      });
+      setRetryOneResult(result);
+      const [nextAssets, nextImageReadiness] = await Promise.all([
+        getStudioStoryboardAssets(projectId),
+        getStudioStoryboardImageReadiness(projectId),
+      ]);
+      setAssets(nextAssets);
+      setImageReadiness(nextImageReadiness);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to retry one Studio storyboard image';
+      setError(formatStudioGenerationError(message, '单镜头图片重试'));
+    } finally {
+      setRetryingImage(false);
     }
   }
 
@@ -499,6 +566,18 @@ export function StudioStoryboardAssetPage({
                   retryPlanning={retryPlanningShotId === (asset.sourceShotScriptId || asset.shotId)}
                   onReview={handleReviewImage}
                   onPrepareRetryPlan={handlePrepareRetryPlan}
+                  onOpenRetryDialog={(nextAsset) => {
+                    setSelectedRetryAsset(nextAsset);
+                    setRetryOneResult(null);
+                    setRetryConfirmations({
+                      cost: false,
+                      singleShot: false,
+                      noVideo: false,
+                      providerCall: false,
+                      noWorkerJob: false,
+                      keepPrevious: false,
+                    });
+                  }}
                 />
               ))
             ) : (
@@ -686,6 +765,127 @@ export function StudioStoryboardAssetPage({
             </section>
           </div>
         )}
+
+        {selectedRetryAsset && (
+          <div style={dialogBackdropStyle()} role="presentation">
+            <section style={dialogStyle()} role="dialog" aria-modal="true" aria-labelledby="storyboard-retry-one-title">
+              <div style={cardHeaderStyle()}>
+                <div>
+                  <h2 id="storyboard-retry-one-title" style={{ margin: 0 }}>单镜头图片重试确认</h2>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 0 }}>
+                    Phase 3A-N 只允许当前镜头创建一个新的 retry candidate。旧图保留，不批量、不创建 worker/job、不生成视频。
+                  </p>
+                </div>
+                <button type="button" onClick={() => setSelectedRetryAsset(null)} style={secondaryButtonStyle()}>
+                  关闭
+                </button>
+              </div>
+
+              <div style={metricsGridStyle()}>
+                <MetricCard label="镜头" value={`${selectedRetryAsset.shotNo || '-'}`} />
+                <MetricCard label="模型" value={imageModel} />
+                <MetricCard label="画幅" value={imageSize} />
+                <MetricCard label="质量" value={imageQuality} />
+              </div>
+
+              <InfoRow label="Review reason" value={selectedRetryAsset.review?.reason || '未记录'} />
+              <InfoRow label="Review tags" value={selectedRetryAsset.review?.tags?.join('、') || '无'} />
+              {retryPlan?.shotId === (selectedRetryAsset.sourceShotScriptId || selectedRetryAsset.shotId) ? (
+                <>
+                  <InfoRow label="Prompt patch" value={retryPlan.promptPatch || '未生成'} />
+                  <InfoRow label="Next prompt preview" value={retryPlan.nextPromptPreview || '未生成'} />
+                </>
+              ) : (
+                <Callout
+                  tone="warn"
+                  title="请先准备重试计划"
+                  body="当前弹窗尚未绑定 retry plan；请先点击图片卡片上的“准备重试计划”。"
+                />
+              )}
+
+              <div style={{ display: 'grid', gap: '0.7rem', marginTop: '1rem' }}>
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.singleShot}
+                  label="我确认只重试当前单个镜头，不执行批量重试。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, singleShot: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.cost}
+                  label="我确认已查看成本预估，并接受单镜头重试成本。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, cost: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.providerCall}
+                  label="我确认本次会调用已配置的图片 provider。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, providerCall: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.noVideo}
+                  label="我确认不会生成视频，也不会调用视频链路。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, noVideo: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.noWorkerJob}
+                  label="我确认不会创建 worker/job。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, noWorkerJob: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={retryConfirmations.keepPrevious}
+                  label="我确认旧图片会保留，本次只创建新的 retry candidate，不覆盖旧图。"
+                  onChange={(checked) => setRetryConfirmations((current) => ({ ...current, keepPrevious: checked }))}
+                />
+              </div>
+
+              {retryOneResult && (
+                <section style={{ ...cardStyle(), marginTop: '1rem' }}>
+                  <div style={cardHeaderStyle()}>
+                    <h3 style={{ margin: 0 }}>重试结果</h3>
+                    <strong style={{ color: retryOneResult.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                      {formatGenerateOneAcceptanceState(retryOneResult.acceptanceState)}
+                    </strong>
+                  </div>
+                  {retryOneResult.blockers.length > 0 && (
+                    <Callout tone="warn" title="阻断/失败原因" body={retryOneResult.blockers.join('\n')} />
+                  )}
+                  <InfoRow
+                    label="retry candidate"
+                    value={`asset=${retryOneResult.asset?.id || '未写入'}；retryOf=${retryOneResult.asset?.retryOfAssetId || '未绑定'}；attempt=${retryOneResult.asset?.retryAttemptNo || '未记录'}`}
+                  />
+                  <InfoRow
+                    label="providerCall"
+                    value={`attempted=${String(retryOneResult.providerCall.attempted)}；provider=${retryOneResult.providerCall.provider || 'none'}；confirmed=${String(retryOneResult.providerCall.confirmed)}`}
+                  />
+                  <InfoRow
+                    label="auditLog"
+                    value={`recorded=${String(retryOneResult.auditLog.recorded)}；preflight=${String(retryOneResult.auditLog.preflightRecorded)}；attempt=${String(retryOneResult.auditLog.providerAttemptRecorded)}；success=${String(retryOneResult.auditLog.providerSuccessRecorded)}；failure=${String(retryOneResult.auditLog.providerFailureRecorded)}`}
+                  />
+                  <InfoRow
+                    label="rollback"
+                    value={`required=${String(retryOneResult.rollback.required)}；metadataWritten=${String(retryOneResult.rollback.metadataWritten)}；metadataRestored=${String(retryOneResult.rollback.metadataRestored)}；reason=${retryOneResult.rollback.reason || 'none'}`}
+                  />
+                  <InfoRow
+                    label="执行边界"
+                    value={`willCreateJob=${String(retryOneResult.willCreateJob)}；willGenerateVideo=${String(retryOneResult.willGenerateVideo)}；${retryOneResult.nextAction}`}
+                  />
+                </section>
+              )}
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setSelectedRetryAsset(null)} style={secondaryButtonStyle()}>
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRetryOneImage}
+                  disabled={retryingImage || !isRetryConfirmed(retryConfirmations)}
+                  style={primaryButtonStyle(!retryingImage && isRetryConfirmed(retryConfirmations))}
+                >
+                  {retryingImage ? '重试中...' : '仅重试当前镜头'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </section>
     </StudioLayout>
   );
@@ -697,12 +897,14 @@ function StoredImageAssetCard({
   retryPlanning,
   onReview,
   onPrepareRetryPlan,
+  onOpenRetryDialog,
 }: {
   asset: StoryboardAssetDTO;
   reviewing: boolean;
   retryPlanning: boolean;
   onReview: (asset: StoryboardAssetDTO, decision: StoryboardImageReviewRequestDTO['decision']) => void;
   onPrepareRetryPlan: (asset: StoryboardAssetDTO) => void;
+  onOpenRetryDialog: (asset: StoryboardAssetDTO) => void;
 }) {
   const [loadFailed, setLoadFailed] = useState(false);
   const hasPreview = Boolean(asset.assetUrl && !asset.assetUrl.startsWith('data:image'));
@@ -771,8 +973,16 @@ function StoredImageAssetCard({
         >
           {retryPlanning ? '准备中...' : '准备重试计划'}
         </button>
+        <button
+          type="button"
+          onClick={() => onOpenRetryDialog(asset)}
+          disabled={review?.status !== 'needs_retry' && review?.status !== 'rejected'}
+          style={secondaryButtonStyle()}
+        >
+          确认重试生成
+        </button>
         <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-          只记录验收 metadata；不会调用 provider、不会创建 worker/job、不会生成视频。
+          验收按钮只记录 metadata；重试生成也只允许单镜头，不批量、不会创建 worker/job、不会生成视频。
         </span>
       </div>
       <details style={{ marginTop: '1rem' }}>
@@ -869,6 +1079,24 @@ function isSingleShotConfirmed(confirmations: {
     confirmations.noVideo &&
     confirmations.providerCall &&
     confirmations.noWorkerJob
+  );
+}
+
+function isRetryConfirmed(confirmations: {
+  cost: boolean;
+  singleShot: boolean;
+  noVideo: boolean;
+  providerCall: boolean;
+  noWorkerJob: boolean;
+  keepPrevious: boolean;
+}) {
+  return (
+    confirmations.cost &&
+    confirmations.singleShot &&
+    confirmations.noVideo &&
+    confirmations.providerCall &&
+    confirmations.noWorkerJob &&
+    confirmations.keepPrevious
   );
 }
 
