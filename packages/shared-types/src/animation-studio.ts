@@ -492,6 +492,39 @@ export interface StoryboardImageGenerationDryRunDTO {
   nextAction: string;
 }
 
+export interface StoryboardImageGenerateOneRequestDTO {
+  shotId: string;
+  imageModel: string;
+  imageSize: string;
+  imageQuality: string;
+  confirmCost: true;
+  confirmSingleShot: true;
+  confirmNoVideo: true;
+}
+
+export interface StoryboardImageProviderResultDTO {
+  provider: 'mock';
+  assetUrl: string;
+  assetStorageKey: string;
+  attempted: boolean;
+}
+
+export interface StoryboardImageGenerateOneDTO {
+  projectId: string;
+  status: 'ready' | 'blocked' | 'failed';
+  mode: 'single_shot';
+  asset: StoryboardAssetDTO | null;
+  blockers: string[];
+  providerCall: {
+    attempted: boolean;
+    provider: 'mock' | null;
+    model: string | null;
+  };
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export interface StoryboardEpisodeAcceptanceDTO {
   projectId: string;
   episodeId: string;

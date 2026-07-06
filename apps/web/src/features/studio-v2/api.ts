@@ -81,6 +81,32 @@ export interface StoryboardImageGenerationDryRunDTO {
   nextAction: string;
 }
 
+export interface StoryboardImageGenerateOneRequestDTO {
+  shotId: string;
+  imageModel: string;
+  imageSize: string;
+  imageQuality: string;
+  confirmCost: true;
+  confirmSingleShot: true;
+  confirmNoVideo: true;
+}
+
+export interface StoryboardImageGenerateOneDTO {
+  projectId: string;
+  status: 'ready' | 'blocked' | 'failed';
+  mode: 'single_shot';
+  asset: StoryboardAssetDTO | null;
+  blockers: string[];
+  providerCall: {
+    attempted: boolean;
+    provider: 'mock' | null;
+    model: string | null;
+  };
+  willCreateJob: false;
+  willGenerateVideo: false;
+  nextAction: string;
+}
+
 export class StudioApiError extends Error {
   status: number;
   apiBaseUrl: string;
@@ -392,6 +418,26 @@ export async function dryRunStudioStoryboardImageGeneration(
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.error?.message || 'Failed to dry-run Studio storyboard image generation');
+  }
+
+  return result.data;
+}
+
+export async function generateOneStudioStoryboardImage(
+  projectId: string,
+  payload: StoryboardImageGenerateOneRequestDTO
+): Promise<StoryboardImageGenerateOneDTO> {
+  const response = await fetch(`/api/projects/${projectId}/storyboard-images/generate-one`, {
+    method: 'POST',
+    cache: 'no-store',
+    credentials: 'include',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = (await response.json()) as ApiEnvelope<StoryboardImageGenerateOneDTO>;
+
+  if (!response.ok || !result.success || !result.data) {
+    throw new Error(result.error?.message || 'Failed to generate one mock Studio storyboard image');
   }
 
   return result.data;

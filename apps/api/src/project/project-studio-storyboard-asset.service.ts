@@ -1,9 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import {
   StoryboardAssetDTO,
+  StoryboardImageGenerateOneDTO,
+  StoryboardImageGenerateOneRequestDTO,
   StoryboardImageGenerationDryRunDTO,
   StoryboardImageGenerationDryRunRequestDTO,
   StoryboardImageGenerationPlanItemDTO,
+  StoryboardImageProviderResultDTO,
 } from '@scu/shared-types';
 import { Prisma } from 'database';
 import { PrismaService } from '../prisma/prisma.service';
@@ -460,6 +463,32 @@ function buildStoryboardImageGenerationDryRun(
   };
 }
 
+function validateGenerateOneRequest(request: Partial<StoryboardImageGenerateOneRequestDTO>): string[] {
+  const blockers: string[] = [];
+  if (!asString(request.shotId)) blockers.push('必须选择一个 shotId');
+  if (!asString(request.imageModel)) blockers.push('必须选择图片模型');
+  if (!asString(request.imageSize)) blockers.push('必须选择图片尺寸');
+  if (!asString(request.imageQuality)) blockers.push('必须选择图片质量');
+  if (request.confirmCost !== true) blockers.push('必须确认预计成本');
+  if (request.confirmSingleShot !== true) blockers.push('本阶段只允许确认单镜头生成');
+  if (request.confirmNoVideo !== true) blockers.push('必须确认不会生成视频');
+  return blockers;
+}
+
+function mockStoryboardImageProvider(
+  projectId: string,
+  asset: StoryboardAssetDTO,
+  request: StoryboardImageGenerateOneRequestDTO
+): StoryboardImageProviderResultDTO {
+  const shotId = asset.sourceShotScriptId || asset.shotId || request.shotId;
+  return {
+    provider: 'mock',
+    attempted: true,
+    assetStorageKey: `studio/storyboards/${projectId}/${shotId}.mock.png`,
+    assetUrl: `/mock-assets/studio/storyboards/${projectId}/${shotId}.png`,
+  };
+}
+
 @Injectable()
 export class ProjectStudioStoryboardAssetService {
   constructor(private readonly prisma: PrismaService) {}
@@ -578,5 +607,123 @@ export class ProjectStudioStoryboardAssetService {
 
     const animationStudio = asRecord(asRecord(project.metadata).animationStudio);
     return buildStoryboardImageGenerationDryRun(projectId, animationStudio, request);
+  }
+
+  async generateOneStoryboardImage(
+    projectId: string,
+    organizationId: string,
+    request: Partial<StoryboardImageGenerateOneRequestDTO> = {}
+  ): Promise<StoryboardImageGenerateOneDTO> {
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, organizationId },
+      select: { id: true, metadata: true },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    const metadata = asRecord(project.metadata);
+    const animationStudio = asRecord(metadata.animationStudio);
+    const requestBlockers = validateGenerateOneRequest(request);
+    const shotId = asString(request.shotId);
+    const dryRun = buildStoryboardImageGenerationDryRun(projectId, animationStudio, {
+      shotIds: shotId ? [shotId] : [],
+      imageModel: asString(request.imageModel),
+      imageSize: asString(request.imageSize),
+      imageQuality: asString(request.imageQuality),
+      confirmCost: request.confirmCost,
+    });
+    const storyboardAssets = asArray(animationStudio.storyboardAssets).map((item) =>
+      normalizeStoryboardAsset(projectId, item)
+    );
+    const textBindingAsset = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'text_binding' &&
+        asset.status === 'done' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    const existingImageAsset = storyboardAssets.find(
+      (asset) =>
+        asset.assetKind === 'image' &&
+        (asset.sourceShotScriptId === shotId || asset.shotId === shotId)
+    );
+    const blockers = uniq([
+      ...requestBlockers,
+      ...dryRun.blockers,
+      ...(dryRun.assets.length !== 1 ? ['本阶段只允许单镜头图片生成'] : []),
+      ...(!textBindingAsset ? ['缺少目标镜头的 ready StoryboardAsset 文本绑定'] : []),
+      ...(existingImageAsset ? ['目标镜头已存在 image asset；本阶段不支持覆盖'] : []),
+    ]);
+
+    if (blockers.length > 0 || !textBindingAsset || !shotId) {
+      return {
+        projectId,
+        status: 'blocked',
+        mode: 'single_shot',
+        asset: null,
+        blockers,
+        providerCall: {
+          attempted: false,
+          provider: null,
+          model: asString(request.imageModel),
+        },
+        willCreateJob: false,
+        willGenerateVideo: false,
+        nextAction: '先修复单镜头图片生成 blockers；不会调用真实图片模型、worker 或视频链路。',
+      };
+    }
+
+    const safeRequest = request as StoryboardImageGenerateOneRequestDTO;
+    const providerResult = mockStoryboardImageProvider(projectId, textBindingAsset, safeRequest);
+    const generatedAt = new Date().toISOString();
+    const imageAsset: StoryboardAssetDTO = {
+      ...textBindingAsset,
+      id: `project-metadata:${projectId}:storyboard-image:${shotId}`,
+      status: 'done',
+      assetKind: 'image',
+      assetUrl: providerResult.assetUrl,
+      assetStorageKey: providerResult.assetStorageKey,
+      imageProvider: providerResult.provider,
+      imageModel: safeRequest.imageModel,
+      imageSize: safeRequest.imageSize,
+      imageQuality: safeRequest.imageQuality,
+      imagePrompt: dryRun.assets[0]?.imagePrompt || textBindingAsset.sourcePrompt || textBindingAsset.prompt,
+      imageGeneratedAt: generatedAt,
+      generationMode: 'single_shot',
+      estimatedCostUnit: dryRun.assets[0]?.estimatedCostUnit ?? 1,
+      locked: true,
+      generatedAt,
+      missingReason: null,
+    };
+    const nextStoryboardAssets = [...storyboardAssets, imageAsset];
+    const nextMetadata = {
+      ...metadata,
+      animationStudio: {
+        ...animationStudio,
+        storyboardAssets: nextStoryboardAssets,
+      },
+    } as unknown as Prisma.InputJsonValue;
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data: { metadata: nextMetadata },
+    });
+
+    return {
+      projectId,
+      status: 'ready',
+      mode: 'single_shot',
+      asset: imageAsset,
+      blockers: [],
+      providerCall: {
+        attempted: providerResult.attempted,
+        provider: providerResult.provider,
+        model: safeRequest.imageModel,
+      },
+      willCreateJob: false,
+      willGenerateVideo: false,
+      nextAction: '已写入单镜头 mock image asset；未调用真实图片模型、worker 或视频链路。',
+    };
   }
 }
