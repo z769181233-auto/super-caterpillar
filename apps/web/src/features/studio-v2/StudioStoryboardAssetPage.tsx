@@ -4,12 +4,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import type { ProductionStateDTO, StoryboardAssetDTO } from '@scu/shared-types';
 import {
   dryRunStudioStoryboardImageGeneration,
+  generateOneStudioStoryboardImage,
   generateStudioStoryboardAssets,
   getStudioProductionState,
   getStudioStoryboardImageReadiness,
   getStudioStoryboardAssets,
 } from './api';
 import type {
+  StoryboardImageGenerateOneDTO,
   StoryboardImageGenerationDryRunDTO,
   StoryboardImageReadinessDTO,
 } from './api';
@@ -42,6 +44,16 @@ export function StudioStoryboardAssetPage({
   const [imageQuality, setImageQuality] = useState('standard');
   const [costConfirmed, setCostConfirmed] = useState(false);
   const [showDryRunDialog, setShowDryRunDialog] = useState(false);
+  const [selectedImageAsset, setSelectedImageAsset] = useState<StoryboardAssetDTO | null>(null);
+  const [singleShotConfirmations, setSingleShotConfirmations] = useState({
+    cost: false,
+    singleShot: false,
+    noVideo: false,
+    providerCall: false,
+    noWorkerJob: false,
+  });
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [generateOneResult, setGenerateOneResult] = useState<StoryboardImageGenerateOneDTO | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -129,6 +141,58 @@ export function StudioStoryboardAssetPage({
       setError(formatStudioGenerationError(message, 'Storyboard 图片生成预估'));
     } finally {
       setDryRunning(false);
+    }
+  }
+
+  function openSingleShotDialog(asset: StoryboardAssetDTO) {
+    setSelectedImageAsset(asset);
+    setGenerateOneResult(null);
+    setSingleShotConfirmations({
+      cost: false,
+      singleShot: false,
+      noVideo: false,
+      providerCall: false,
+      noWorkerJob: false,
+    });
+  }
+
+  async function handleGenerateOneImage() {
+    if (!selectedImageAsset?.sourceShotScriptId && !selectedImageAsset?.shotId) {
+      setError('缺少目标镜头 shotId，不能执行单镜头图片生成。');
+      return;
+    }
+    if (!singleShotConfirmations.cost || !singleShotConfirmations.singleShot || !singleShotConfirmations.noVideo || !singleShotConfirmations.providerCall || !singleShotConfirmations.noWorkerJob) {
+      setError('请先完成所有单镜头生成确认项。');
+      return;
+    }
+
+    setGeneratingImage(true);
+    setError(null);
+    try {
+      const result = await generateOneStudioStoryboardImage(projectId, {
+        shotId: selectedImageAsset.sourceShotScriptId || selectedImageAsset.shotId || '',
+        imageModel,
+        imageSize,
+        imageQuality,
+        confirmCost: true,
+        confirmSingleShot: true,
+        confirmNoVideo: true,
+        confirmProviderCall: true,
+        confirmRealImageGeneration: true,
+      });
+      setGenerateOneResult(result);
+      const [nextAssets, nextImageReadiness] = await Promise.all([
+        getStudioStoryboardAssets(projectId),
+        getStudioStoryboardImageReadiness(projectId),
+      ]);
+      setAssets(nextAssets);
+      setImageReadiness(nextImageReadiness);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to generate one Studio storyboard image';
+      setError(formatStudioGenerationError(message, '单镜头图片生成'));
+    } finally {
+      setGeneratingImage(false);
     }
   }
 
@@ -255,7 +319,7 @@ export function StudioStoryboardAssetPage({
               {dryRunning ? '预估中...' : '预估生成计划'}
             </button>
             <button type="button" disabled style={primaryButtonStyle(false)}>
-              生成图片 · 后续阶段开放
+              批量生成图片 · 未开放
             </button>
           </div>
 
@@ -374,12 +438,121 @@ export function StudioStoryboardAssetPage({
           </div>
           <div style={{ display: 'grid', gap: '1rem', marginTop: '1rem' }}>
             {textBindingAssets.length > 0 ? (
-              textBindingAssets.map((asset) => <StoryboardAssetCard key={asset.id || asset.shotId || asset.shotNo} asset={asset} />)
+              textBindingAssets.map((asset) => (
+                <StoryboardAssetCard
+                  key={asset.id || asset.shotId || asset.shotNo}
+                  asset={asset}
+                  existingImageAsset={findImageAssetForTextBinding(asset, imageAssets)}
+                  onGenerateOne={openSingleShotDialog}
+                />
+              ))
             ) : (
               <InfoRow label="当前状态" value="未生成 StoryboardAsset 文本绑定" />
             )}
           </div>
         </section>
+
+        {selectedImageAsset && (
+          <div style={dialogBackdropStyle()} role="presentation">
+            <section style={dialogStyle()} role="dialog" aria-modal="true" aria-labelledby="storyboard-generate-one-title">
+              <div style={cardHeaderStyle()}>
+                <div>
+                  <h2 id="storyboard-generate-one-title" style={{ margin: 0 }}>单镜头图片生成确认</h2>
+                  <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 0 }}>
+                    Phase 3A-J 只允许当前镜头生成一张图片。不会批量、不会生成视频、不会创建 worker/job。
+                  </p>
+                </div>
+                <button type="button" onClick={() => setSelectedImageAsset(null)} style={secondaryButtonStyle()}>
+                  关闭
+                </button>
+              </div>
+
+              <div style={metricsGridStyle()}>
+                <MetricCard label="镜头" value={`${selectedImageAsset.shotNo || '-'}`} />
+                <MetricCard label="模型" value={imageModel} />
+                <MetricCard label="画幅" value={imageSize} />
+                <MetricCard label="质量" value={imageQuality} />
+              </div>
+
+              <InfoRow
+                label="image prompt 摘要"
+                value={selectedImageAsset.sourcePrompt || selectedImageAsset.prompt || selectedImageAsset.frameDescription || '未生成 image prompt'}
+              />
+
+              <div style={{ display: 'grid', gap: '0.7rem', marginTop: '1rem' }}>
+                <ConfirmationCheckbox
+                  checked={singleShotConfirmations.singleShot}
+                  label="我确认只生成当前单个镜头，不执行批量生成。"
+                  onChange={(checked) => setSingleShotConfirmations((current) => ({ ...current, singleShot: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={singleShotConfirmations.cost}
+                  label="我确认已查看 dry-run 成本预估，并接受单镜头成本。"
+                  onChange={(checked) => setSingleShotConfirmations((current) => ({ ...current, cost: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={singleShotConfirmations.providerCall}
+                  label="我确认本次会调用已配置的图片 provider。"
+                  onChange={(checked) => setSingleShotConfirmations((current) => ({ ...current, providerCall: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={singleShotConfirmations.noVideo}
+                  label="我确认不会生成视频，也不会调用视频链路。"
+                  onChange={(checked) => setSingleShotConfirmations((current) => ({ ...current, noVideo: checked }))}
+                />
+                <ConfirmationCheckbox
+                  checked={singleShotConfirmations.noWorkerJob}
+                  label="我确认不会创建 worker/job。"
+                  onChange={(checked) => setSingleShotConfirmations((current) => ({ ...current, noWorkerJob: checked }))}
+                />
+              </div>
+
+              {generateOneResult && (
+                <section style={{ ...cardStyle(), marginTop: '1rem' }}>
+                  <div style={cardHeaderStyle()}>
+                    <h3 style={{ margin: 0 }}>生成结果</h3>
+                    <strong style={{ color: generateOneResult.status === 'ready' ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                      {generateOneResult.status.toUpperCase()}
+                    </strong>
+                  </div>
+                  {generateOneResult.blockers.length > 0 && (
+                    <Callout tone="warn" title="阻断/失败原因" body={generateOneResult.blockers.join('\n')} />
+                  )}
+                  <InfoRow
+                    label="providerCall"
+                    value={`attempted=${String(generateOneResult.providerCall.attempted)}；provider=${generateOneResult.providerCall.provider || 'none'}；confirmed=${String(generateOneResult.providerCall.confirmed)}`}
+                  />
+                  <InfoRow
+                    label="auditLog"
+                    value={`recorded=${String(generateOneResult.auditLog.recorded)}；preflight=${String(generateOneResult.auditLog.preflightRecorded)}；attempt=${String(generateOneResult.auditLog.providerAttemptRecorded)}；success=${String(generateOneResult.auditLog.providerSuccessRecorded)}；failure=${String(generateOneResult.auditLog.providerFailureRecorded)}`}
+                  />
+                  <InfoRow
+                    label="rollback"
+                    value={`required=${String(generateOneResult.rollback.required)}；metadataWritten=${String(generateOneResult.rollback.metadataWritten)}；metadataRestored=${String(generateOneResult.rollback.metadataRestored)}；reason=${generateOneResult.rollback.reason || 'none'}`}
+                  />
+                  <InfoRow
+                    label="执行边界"
+                    value={`willCreateJob=${String(generateOneResult.willCreateJob)}；willGenerateVideo=${String(generateOneResult.willGenerateVideo)}；${generateOneResult.nextAction}`}
+                  />
+                </section>
+              )}
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                <button type="button" onClick={() => setSelectedImageAsset(null)} style={secondaryButtonStyle()}>
+                  取消
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateOneImage}
+                  disabled={generatingImage || !isSingleShotConfirmed(singleShotConfirmations)}
+                  style={primaryButtonStyle(!generatingImage && isSingleShotConfirmed(singleShotConfirmations))}
+                >
+                  {generatingImage ? '生成中...' : '确认生成当前镜头'}
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
       </section>
     </StudioLayout>
   );
@@ -430,7 +603,15 @@ function StoredImageAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
   );
 }
 
-function StoryboardAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
+function StoryboardAssetCard({
+  asset,
+  existingImageAsset,
+  onGenerateOne,
+}: {
+  asset: StoryboardAssetDTO;
+  existingImageAsset: StoryboardAssetDTO | null;
+  onGenerateOne: (asset: StoryboardAssetDTO) => void;
+}) {
   return (
     <article style={cardStyle()}>
       <div style={cardHeaderStyle()}>
@@ -446,6 +627,19 @@ function StoryboardAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
         <SummaryItem label="资产类型" value={asset.assetKind === 'text_binding' ? '文本绑定' : '图片资产'} />
       </div>
       <p style={{ color: 'var(--text-primary)', lineHeight: 1.7 }}>{asset.frameDescription || asset.prompt || '未生成画面描述'}</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '1rem' }}>
+        <button
+          type="button"
+          onClick={() => onGenerateOne(asset)}
+          disabled={Boolean(existingImageAsset)}
+          style={primaryButtonStyle(!existingImageAsset)}
+        >
+          {existingImageAsset ? '该镜头已有图片' : '生成该镜头图片'}
+        </button>
+        <span style={{ alignSelf: 'center', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          单镜头确认入口；不会批量、不会视频、不会创建 worker/job。
+        </span>
+      </div>
       <details>
         <summary style={{ cursor: 'pointer', fontWeight: 800 }}>查看绑定详情</summary>
         <div style={{ display: 'grid', gap: '0.75rem', marginTop: '0.9rem' }}>
@@ -457,6 +651,52 @@ function StoryboardAssetCard({ asset }: { asset: StoryboardAssetDTO }) {
         </div>
       </details>
     </article>
+  );
+}
+
+function findImageAssetForTextBinding(
+  textAsset: StoryboardAssetDTO,
+  imageAssets: StoryboardAssetDTO[]
+): StoryboardAssetDTO | null {
+  const shotId = textAsset.sourceShotScriptId || textAsset.shotId;
+  return (
+    imageAssets.find((asset) => {
+      const imageShotId = asset.sourceShotScriptId || asset.shotId;
+      return Boolean(shotId && imageShotId === shotId);
+    }) || null
+  );
+}
+
+function isSingleShotConfirmed(confirmations: {
+  cost: boolean;
+  singleShot: boolean;
+  noVideo: boolean;
+  providerCall: boolean;
+  noWorkerJob: boolean;
+}) {
+  return (
+    confirmations.cost &&
+    confirmations.singleShot &&
+    confirmations.noVideo &&
+    confirmations.providerCall &&
+    confirmations.noWorkerJob
+  );
+}
+
+function ConfirmationCheckbox({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label style={checkboxStyle()}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span>{label}</span>
+    </label>
   );
 }
 
@@ -543,6 +783,18 @@ function primaryButtonStyle(enabled: boolean): React.CSSProperties {
     fontWeight: 800,
     minWidth: '168px',
     padding: '0.85rem 1.15rem',
+  };
+}
+
+function secondaryButtonStyle(): React.CSSProperties {
+  return {
+    background: 'transparent',
+    border: '1px solid var(--border-subtle)',
+    borderRadius: '999px',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontWeight: 800,
+    padding: '0.75rem 1rem',
   };
 }
 
