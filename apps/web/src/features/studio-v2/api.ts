@@ -89,6 +89,7 @@ export interface StoryboardImageGenerateOneRequestDTO {
   confirmCost: true;
   confirmSingleShot: true;
   confirmNoVideo: true;
+  confirmProviderCall?: true;
   confirmRealImageGeneration?: true;
 }
 
@@ -102,6 +103,19 @@ export interface StoryboardImageGenerateOneDTO {
     attempted: boolean;
     provider: 'mock' | 'openai' | null;
     model: string | null;
+    confirmed: boolean;
+  };
+  auditLog: {
+    planned: boolean;
+    recorded: boolean;
+    action: string;
+    resourceType: string;
+    resourceId: string | null;
+    failureReason: string | null;
+  };
+  rollback: {
+    required: false;
+    reason: null;
   };
   willCreateJob: false;
   willGenerateVideo: false;
